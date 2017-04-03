@@ -1,7 +1,7 @@
 package model_test
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -10,7 +10,7 @@ import (
 	"github.com/caarlos0/env"
 	"github.com/jackc/pgx"
 	"github.com/matthewmueller/pogo/manual"
-	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 var db *pgx.Conn
@@ -40,26 +40,37 @@ func TestSetup(t *testing.T) {
 	}
 }
 
-func TestStandupCreate(t *testing.T) {
-	name := "standup"
-	slackChannelID := "C123145"
-	teamID := uuid.NewV4()
-	now := "11:00:00"
-	timezone := "America/Los_Angeles"
-	standup := model.Standup{
-		Name:           &name,
-		SlackChannelID: &slackChannelID,
-		Time:           &now,
-		TeamID:         &teamID,
-		Timezone:       &timezone,
-	}
+func TestTeamCreate(t *testing.T) {
+	bytes := []byte(`
+  {
+    "slack_team_id": "T123123",
+    "slack_team_access_token": "T123123",
+    "slack_bot_access_token": "T123123",
+    "slack_bot_id": "U123123",
+    "team_name": "Test Team",
+    "scope": ["email"],
+    "email": "testteam@gmail.com"
+  }
+  `)
 
-	s, err := standup.Insert(db)
+	var team model.Team
+	err := json.Unmarshal(bytes, &team)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(s)
+	s, err := team.Insert(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, s.SlackTeamID, "T123123")
+	assert.Equal(t, s.SlackTeamAccessToken, "T123123")
+	assert.Equal(t, s.SlackBotAccessToken, "T123123")
+	assert.Equal(t, s.SlackBotID, "T123123")
+	assert.Equal(t, s.TeamName, "Test Team")
+	assert.Equal(t, s.Scope, []string{"email"})
+	assert.Equal(t, s.Email, "email")
 }
 
 // func TestStandupCreate(t *testing.T) {

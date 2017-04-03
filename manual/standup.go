@@ -8,7 +8,7 @@ import (
 
 // Standup type
 type Standup struct {
-	ID             *uuid.UUID              `json:"id"`
+	ID             uuid.NullUUID           `json:"id"`
 	Name           *string                 `json:"name"`
 	SlackChannelID *string                 `json:"slack_channel_id"`
 	Time           *string                 `json:"time"`
@@ -23,8 +23,8 @@ type Standup struct {
 func (s *Standup) getFields() map[string]interface{} {
 	fields := map[string]interface{}{}
 
-	if s.ID != nil {
-		fields["id"] = s.ID
+	if s.ID.Valid {
+		fields["id"] = s.ID.UUID
 	}
 	if s.Name != nil {
 		fields["name"] = s.Name

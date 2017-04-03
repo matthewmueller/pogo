@@ -2,19 +2,17 @@ package model
 
 import (
 	"time"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 // Team type
 type Team struct {
-	ID                   *uuid.UUID `json:"id,omitempty"`                      // id
+	ID                   *string    `json:"id,omitempty"`                      // id
 	SlackTeamID          *string    `json:"slack_team_id,omitempty"`           // slack_team_id
 	SlackTeamAccessToken *string    `json:"slack_team_access_token,omitempty"` // slack_team_access_token
 	SlackBotAccessToken  *string    `json:"slack_bot_access_token,omitempty"`  // slack_bot_access_token
 	SlackBotID           *string    `json:"slack_bot_id,omitempty"`            // slack_bot_id
 	TeamName             *string    `json:"team_name,omitempty"`               // team_name
-	Scope                []*string  `json:"scope,omitempty"`                   // scope
+	Scope                *[]string  `json:"scope,omitempty"`                   // scope
 	Email                *string    `json:"email,omitempty"`                   // email
 	StripeID             *string    `json:"stripe_id,omitempty"`               // stripe_id
 	Active               *bool      `json:"active,omitempty"`                  // active

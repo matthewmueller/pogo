@@ -11,10 +11,10 @@ func (t *Team) Insert(db DB) (team Team, err error) {
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
-    INSERT INTO
-    jack.team (` + strings.Join(c, ", ") + `)
-    VALUES (` + strings.Join(i, ", ") + `)
-    RETURNING id, slack_team_id, slack_team_access_token, slack_bot_access_token, slack_bot_id, team_name, scope, email, stripe_id, active, free_teammates, cost_per_user, trial_ends, created_at, updated_at`
+	  INSERT INTO
+	  jack.teams (` + strings.Join(c, ", ") + `)
+	  VALUES (` + strings.Join(i, ", ") + `)
+	  RETURNING id, slack_team_id, slack_team_access_token, slack_bot_access_token, slack_bot_id, team_name, scope, email, stripe_id, active, free_teammates, cost_per_user, trial_ends, created_at, updated_at`
 
 	XOLog(sqlstr, v...)
 	row := db.QueryRow(sqlstr, v...)

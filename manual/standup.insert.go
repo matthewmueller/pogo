@@ -1,6 +1,8 @@
 package model
 
-import "strings"
+import (
+	"strings"
+)
 
 // Insert a standup
 func (s *Standup) Insert(db DB) (standup Standup, err error) {
