@@ -19,30 +19,38 @@ type environment struct {
 	PostgresURL string `env:"POSTGRES_URL,required"`
 }
 
-func TestSetup(t *testing.T) {
+func init() {
 	log.SetHandler(text.New(os.Stderr))
 	model.XOLog = log.Infof
 
 	var ev environment
 	err := env.Parse(&ev)
 	if err != nil {
-		t.Fatal("unable to parse env variables")
+		log.WithError(err).Fatal("unable to parse env variables")
 	}
 
 	config, err := pgx.ParseURI(ev.PostgresURL)
 	if err != nil {
-		t.Fatal("postgres uri invalid")
+		log.WithError(err).Fatal("postgres uri invalid")
 	}
 
 	db, err = pgx.Connect(config)
 	if err != nil {
-		t.Fatal("unable to connect to postgres")
+		log.WithError(err).Fatal("unable to connect to postgres")
+	}
+
+	_, err = db.Exec(`
+		delete from jack.teams where slack_team_id = 'T123123'
+	`)
+	if err != nil {
+		log.WithError(err).Fatal("unable to delete team")
 	}
 }
 
 func TestTeamCreate(t *testing.T) {
 	bytes := []byte(`
   {
+		"id": "54a93908-08d8-4eb6-8cff-7a232aace285",
     "slack_team_id": "T123123",
     "slack_team_access_token": "T123123",
     "slack_bot_access_token": "T123123",
@@ -59,19 +67,136 @@ func TestTeamCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := team.Insert(db)
+	teams := model.NewTeam(db)
+	s, err := teams.Insert(&team)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, s.SlackTeamID, "T123123")
-	assert.Equal(t, s.SlackTeamAccessToken, "T123123")
-	assert.Equal(t, s.SlackBotAccessToken, "T123123")
-	assert.Equal(t, s.SlackBotID, "T123123")
-	assert.Equal(t, s.TeamName, "Test Team")
-	assert.Equal(t, s.Scope, []string{"email"})
-	assert.Equal(t, s.Email, "email")
+	assert.Equal(t, *s.SlackTeamID, "T123123")
+	assert.Equal(t, *s.SlackTeamAccessToken, "T123123")
+	assert.Equal(t, *s.SlackBotAccessToken, "T123123")
+	assert.Equal(t, *s.SlackBotID, "U123123")
+	assert.Equal(t, *s.TeamName, "Test Team")
+	assert.Equal(t, *s.Scope, []string{"email"})
+	assert.Equal(t, *s.Email, "testteam@gmail.com")
+	assert.Equal(t, *s.Active, true)
+	assert.Equal(t, *s.FreeTeammates, 4)
+	assert.Equal(t, *s.CostPerUser, 1)
 }
+
+func TestTeamUpdate(t *testing.T) {
+	bytes := []byte(`
+  {
+		"id": "54a93908-08d8-4eb6-8cff-7a232aace285",
+    "slack_bot_id": "U123123",
+    "scope": ["email", "another"],
+    "email": "matt@gmail.com",
+		"stripe_id": "abc123"
+  }
+  `)
+
+	var team model.Team
+	err := json.Unmarshal(bytes, &team)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	teams := model.NewTeam(db)
+	s, err := teams.Update(team.ID, &team)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, *s.SlackTeamID, "T123123")
+	assert.Equal(t, *s.SlackTeamAccessToken, "T123123")
+	assert.Equal(t, *s.SlackBotAccessToken, "T123123")
+	assert.Equal(t, *s.SlackBotID, "U123123")
+	assert.Equal(t, *s.TeamName, "Test Team")
+	assert.Equal(t, *s.Scope, []string{"email", "another"})
+	assert.Equal(t, *s.Email, "matt@gmail.com")
+	assert.Equal(t, *s.StripeID, "abc123")
+}
+
+func TestTeamFind(t *testing.T) {
+	bytes := []byte(`
+  {
+		"id": "54a93908-08d8-4eb6-8cff-7a232aace285"
+  }
+  `)
+
+	var team model.Team
+	err := json.Unmarshal(bytes, &team)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	teams := model.NewTeam(db)
+	s, err := teams.Find(team.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, *s.SlackTeamID, "T123123")
+	assert.Equal(t, *s.SlackTeamAccessToken, "T123123")
+	assert.Equal(t, *s.SlackBotAccessToken, "T123123")
+	assert.Equal(t, *s.SlackBotID, "U123123")
+	assert.Equal(t, *s.TeamName, "Test Team")
+	assert.Equal(t, *s.Scope, []string{"email", "another"})
+	assert.Equal(t, *s.Email, "matt@gmail.com")
+	assert.Equal(t, *s.StripeID, "abc123")
+}
+
+func TestTeamDelete(t *testing.T) {
+	bytes := []byte(`
+  {
+		"id": "54a93908-08d8-4eb6-8cff-7a232aace285"
+  }
+  `)
+
+	var team model.Team
+	err := json.Unmarshal(bytes, &team)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	teams := model.NewTeam(db)
+	err = teams.Delete(team.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// func TestTeamDelete(t *testing.T) {
+// 	bytes := []byte(`
+//   {
+// 		"id": "54a93908-08d8-4eb6-8cff-7a232aace285",
+//     "slack_bot_id": "U123123",
+//     "scope": ["email", "another"],
+//     "email": "matt@gmail.com"
+//   }
+//   `)
+//
+// 	var team model.Team
+// 	err := json.Unmarshal(bytes, &team)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	teams := model.NewTeam(db)
+// 	s, err := teams.Update(team.ID, &team)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	assert.Equal(t, *s.SlackTeamID, "T123123")
+// 	assert.Equal(t, *s.SlackTeamAccessToken, "T123123")
+// 	assert.Equal(t, *s.SlackBotAccessToken, "T123123")
+// 	assert.Equal(t, *s.SlackBotID, "U123123")
+// 	assert.Equal(t, *s.TeamName, "Test Team")
+// 	assert.Equal(t, *s.Scope, []string{"email", "another"})
+// 	assert.Equal(t, *s.Email, "matt@gmail.com")
+// }
 
 // func TestStandupCreate(t *testing.T) {
 // 	name := "standup"

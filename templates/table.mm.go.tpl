@@ -1,23 +1,23 @@
 {{ $shortClass := shortname .Table.TableName }}
-{{ $class := classname .Table.TableName }}
+{{ $class := classnameMM .Table.TableName }}
 {{ $shortModel := shortname .Table.TableName $shortClass }}
-{{ $model := modelname .Table.TableName }}
+{{ $model := modelnameMM .Table.TableName }}
 package model
 
-// {{ classname .Table.TableName }} class
-type {{ classname .Table.TableName }} struct {
+// {{ $class }} class
+type {{ $class }} struct {
 	DB DB
 }
 
-// {{ modelname .Table.TableName }} model
-type {{ modelname .Table.TableName }} struct {
+// {{ $model }} model
+type {{ $model }} struct {
   {{ range .Columns }}
   {{ field .ColumnName }} {{ fieldtype .DataType }} `json:"{{ .ColumnName }},omitempty"`{{ end }}
 }
 
-// New{{ modelname .Table.TableName }} model
-func New{{ modelname .Table.TableName }}(db DB) {{ classname .Table.TableName }} {
-	return {{ classname .Table.TableName }}{
+// New{{ $model }} model
+func New{{ $model }}(db DB) {{ $class }} {
+	return {{ $class }}{
 		DB: db,
 	}
 }

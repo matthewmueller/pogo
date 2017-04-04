@@ -1,5 +1,5 @@
 run:
-	go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable
+	go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable -schema jack -path model
 
 migrate:
 	@migrate -path migration -url $(POSTGRES_URL) down

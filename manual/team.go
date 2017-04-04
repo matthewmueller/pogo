@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+// Teams model
+type Teams struct {
+	DB DB
+}
+
 // Team type
 type Team struct {
 	ID                   *string    `json:"id,omitempty"`                      // id
@@ -23,8 +28,15 @@ type Team struct {
 	UpdatedAt            *time.Time `json:"updated_at,omitempty"`              // updated_at
 }
 
-// GetFields the non-nil fields
-func (t *Team) getFields() map[string]interface{} {
+// NewTeam model
+func NewTeam(db DB) Teams {
+	return Teams{
+		DB: db,
+	}
+}
+
+// getFields the non-nil fields
+func (m *Teams) getFields(t *Team) map[string]interface{} {
 	fields := map[string]interface{}{}
 
 	if t.ID != nil {
