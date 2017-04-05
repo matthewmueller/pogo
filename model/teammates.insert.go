@@ -19,7 +19,7 @@ func (t *Teammates) Insert(tt *Teammate) (teammate Teammate, err error) {
 	VALUES (` + strings.Join(i, ", ") + `)
 	RETURNING id, slack_id, username, first_name, last_name, email, avatar, timezone, created_at, updated_at`
 
- XOLog(sqlstr, v...)
+ DBLog(sqlstr, v...)
  row := t.DB.QueryRow(sqlstr, v...)
  err = row.Scan(&teammate.ID, &teammate.SlackID, &teammate.Username, &teammate.FirstName, &teammate.LastName, &teammate.Email, &teammate.Avatar, &teammate.Timezone, &teammate.CreatedAt, &teammate.UpdatedAt)
  if err != nil {

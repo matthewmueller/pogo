@@ -10,7 +10,7 @@ func (t *Teams) Find(id *string) (team Team, err error) {
     FROM jack.teams
     WHERE id = $1`
 
- XOLog(sqlstr, id)
+ DBLog(sqlstr, id)
  row := t.DB.QueryRow(sqlstr, id)
  err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
  if err != nil {

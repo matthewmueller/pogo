@@ -31,7 +31,7 @@ func (t *Teammates) Update(id *string, tt *Teammate) (teammate Teammate, err err
 
  // run query
  values := append([]interface{}{tt.ID}, v...)
- XOLog(sqlstr, values...)
+ DBLog(sqlstr, values...)
 
  row := t.DB.QueryRow(sqlstr, values...)
  err = row.Scan(&teammate.ID, &teammate.SlackID, &teammate.Username, &teammate.FirstName, &teammate.LastName, &teammate.Email, &teammate.Avatar, &teammate.Timezone, &teammate.CreatedAt, &teammate.UpdatedAt)

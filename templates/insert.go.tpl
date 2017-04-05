@@ -18,7 +18,7 @@ func ({{ $shortClass }} *{{ $class }}) Insert({{ $shortModel }} *{{ $model }}) (
 	VALUES (` + strings.Join(i, ", ") + `)
 	RETURNING {{ fields .Columns }}`
 
-	XOLog(sqlstr, v...)
+	DBLog(sqlstr, v...)
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, v...)
 	err = row.Scan({{ gofields .Columns $return }})
 	if err != nil {

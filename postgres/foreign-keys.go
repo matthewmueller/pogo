@@ -34,7 +34,7 @@ func ForeignKeys(db db.DB, schema string, table string) (fks []*ForeignKey, err 
   `
 
 	// run query
-	// XOLog(sqlstr, schema, table)
+	// DBLog(sqlstr, schema, table)
 	q, err := db.Query(sqlstr, schema, table)
 	if err != nil {
 		return fks, err

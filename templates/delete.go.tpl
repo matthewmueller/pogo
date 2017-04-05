@@ -16,7 +16,7 @@ func ({{ $shortClass }} *{{ $class }}) Delete({{ primaryname .Columns }} {{ prim
   `
 
 	// run query
-	XOLog(sqlstr, {{ primaryname .Columns }})
+	DBLog(sqlstr, {{ primaryname .Columns }})
 	_, err = {{ $shortClass }}.DB.Exec(sqlstr, {{ primaryname .Columns }})
 	if err != nil {
 		return err

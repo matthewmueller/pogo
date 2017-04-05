@@ -19,7 +19,7 @@ func (st *StandupTeammates) Insert(stst *StandupTeammate) (standupteammate Stand
 	VALUES (` + strings.Join(i, ", ") + `)
 	RETURNING standup_id, teammate_id, team_owner, created_at, updated_at`
 
- XOLog(sqlstr, v...)
+ DBLog(sqlstr, v...)
  row := st.DB.QueryRow(sqlstr, v...)
  err = row.Scan(&standupteammate.StandupID, &standupteammate.TeammateID, &standupteammate.TeamOwner, &standupteammate.CreatedAt, &standupteammate.UpdatedAt)
  if err != nil {

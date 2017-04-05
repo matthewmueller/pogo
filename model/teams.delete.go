@@ -11,7 +11,7 @@ func (t *Teams) Delete(id *string) (err error) {
   `
 
  // run query
- XOLog(sqlstr, id)
+ DBLog(sqlstr, id)
  _, err = t.DB.Exec(sqlstr, id)
  if err != nil {
   return err

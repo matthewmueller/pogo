@@ -38,7 +38,7 @@ func Columns(db db.DB, schema string, table string) (columns []*Column, err erro
 		`
 
 	// run query
-	// XOLog(sqlstr, schema, table, sys)
+	// DBLog(sqlstr, schema, table, sys)
 	q, err := db.Query(sqlstr, schema, table)
 	if err != nil {
 		return columns, err

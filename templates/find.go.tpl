@@ -15,7 +15,7 @@ func ({{ $shortClass }} *{{ $class }}) Find({{ primaryname .Columns }} {{ primar
     FROM {{ schema .Schema .Table.TableName }}
     WHERE {{ primaryname .Columns }} = $1`
 
-	XOLog(sqlstr, {{ primaryname .Columns }})
+	DBLog(sqlstr, {{ primaryname .Columns }})
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, {{ primaryname .Columns }})
 	err = row.Scan({{ gofields .Columns $return }})
 	if err != nil {

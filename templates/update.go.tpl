@@ -36,7 +36,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ primaryname .Columns }} {{ prim
 
 	// run query
 	values := append([]interface{}{ {{ $shortModel }}.{{ primaryid .Columns }} }, v...)
-	XOLog(sqlstr, values...)
+	DBLog(sqlstr, values...)
 
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)
 	err = row.Scan({{ gofields .Columns $return }})

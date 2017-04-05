@@ -31,7 +31,7 @@ func (t *Teams) Update(id *string, tt *Team) (team Team, err error) {
 
  // run query
  values := append([]interface{}{tt.ID}, v...)
- XOLog(sqlstr, values...)
+ DBLog(sqlstr, values...)
 
  row := t.DB.QueryRow(sqlstr, values...)
  err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)

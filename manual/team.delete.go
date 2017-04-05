@@ -9,7 +9,7 @@ func (m *Teams) Delete(ID *string) (err error) {
   `
 
 	// run query
-	XOLog(sqlstr, ID)
+	DBLog(sqlstr, ID)
 	_, err = m.DB.Exec(sqlstr, ID)
 	if err != nil {
 		return err

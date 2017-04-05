@@ -11,7 +11,7 @@ func (s *Standups) Delete(id *string) (err error) {
   `
 
  // run query
- XOLog(sqlstr, id)
+ DBLog(sqlstr, id)
  _, err = s.DB.Exec(sqlstr, id)
  if err != nil {
   return err

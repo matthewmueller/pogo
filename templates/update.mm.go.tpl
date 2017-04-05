@@ -39,7 +39,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ fkparams .ForeignKeys .Columns 
 		values = append(values, {{ field .ColumnName }})
 	{{ end }}
 	values = append(values, v...)
-	XOLog(sqlstr, values...)
+	DBLog(sqlstr, values...)
 
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)
 	err = row.Scan({{ gofields .Columns $return }})

@@ -1,11 +1,15 @@
 - [x] json type? whatever questions is
 - [x] Enums
 - [x] Fix up coerce
-- [ ] Test the models actually work
-  - [ ] No Go errors
-  - [ ] Can actually perform actions on the DB
+- [x] Test the models actually work
+  - [x] No Go errors
+  - [x] Can actually perform actions on the DB
+- [x] Only update files with an automated comment & are one of the specified templates
+
 --- Tonight ---
 
-- [ ] Implement additional find, update, delete methods for unique fields
-- [ ] Only update files with an automated comment & are one of the specified templates
 - [ ] Finish up the CLI
+
+--- Later ---
+
+- [ ] Implement additional find, update, delete methods for unique fields

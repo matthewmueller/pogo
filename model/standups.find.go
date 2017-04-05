@@ -10,7 +10,7 @@ func (s *Standups) Find(id *string) (standup Standup, err error) {
     FROM jack.standups
     WHERE id = $1`
 
- XOLog(sqlstr, id)
+ DBLog(sqlstr, id)
  row := s.DB.QueryRow(sqlstr, id)
  err = row.Scan(&standup.ID, &standup.Name, &standup.SlackChannelID, &standup.Time, &standup.Timezone, &standup.Questions, &standup.TeamID, &standup.CreatedAt, &standup.UpdatedAt)
  if err != nil {

@@ -10,7 +10,7 @@ func (st *StandupTeammates) Find(StandupID *string, TeammateID *string) (standup
     FROM jack.standups_teammates
     WHERE standup_id = $1 AND teammate_id = $2`
 
- XOLog(sqlstr, StandupID, TeammateID)
+ DBLog(sqlstr, StandupID, TeammateID)
  row := st.DB.QueryRow(sqlstr, StandupID, TeammateID)
  err = row.Scan(&standupteammate.StandupID, &standupteammate.TeammateID, &standupteammate.TeamOwner, &standupteammate.CreatedAt, &standupteammate.UpdatedAt)
  if err != nil {

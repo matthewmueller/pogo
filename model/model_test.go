@@ -21,7 +21,7 @@ type environment struct {
 
 func init() {
 	log.SetHandler(text.New(os.Stderr))
-	// model.XOLog = log.Infof
+	// model.DBLog = log.Infof
 
 	var ev environment
 	err := env.Parse(&ev)

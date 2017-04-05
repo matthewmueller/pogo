@@ -10,7 +10,7 @@ func (r *Reports) Find(id *string) (report Report, err error) {
     FROM jack.reports
     WHERE id = $1`
 
- XOLog(sqlstr, id)
+ DBLog(sqlstr, id)
  row := r.DB.QueryRow(sqlstr, id)
  err = row.Scan(&report.ID, &report.UserID, &report.Timestamp, &report.Questions, &report.StandupID, &report.Status, &report.CreatedAt, &report.UpdatedAt)
  if err != nil {

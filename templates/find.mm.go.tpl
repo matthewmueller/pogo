@@ -15,7 +15,7 @@ func ({{ $shortClass }} *{{ $class }}) Find({{ fkparams .ForeignKeys .Columns }}
     FROM {{ schema .Schema .Table.TableName }}
     WHERE {{ fkwhere .ForeignKeys }}`
 
-	XOLog(sqlstr, {{ fklist .ForeignKeys }})
+	DBLog(sqlstr, {{ fklist .ForeignKeys }})
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, {{ fklist .ForeignKeys }})
 	err = row.Scan({{ gofields .Columns $return }})
 	if err != nil {

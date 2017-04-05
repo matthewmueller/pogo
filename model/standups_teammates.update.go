@@ -45,7 +45,7 @@ func (st *StandupTeammates) Update(StandupID *string, TeammateID *string, stst *
  values = append(values, TeammateID)
 
  values = append(values, v...)
- XOLog(sqlstr, values...)
+ DBLog(sqlstr, values...)
 
  row := st.DB.QueryRow(sqlstr, values...)
  err = row.Scan(&standupteammate.StandupID, &standupteammate.TeammateID, &standupteammate.TeamOwner, &standupteammate.CreatedAt, &standupteammate.UpdatedAt)

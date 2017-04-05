@@ -19,7 +19,7 @@ func (s *Standups) Insert(ss *Standup) (standup Standup, err error) {
 	VALUES (` + strings.Join(i, ", ") + `)
 	RETURNING id, name, slack_channel_id, time, timezone, questions, team_id, created_at, updated_at`
 
- XOLog(sqlstr, v...)
+ DBLog(sqlstr, v...)
  row := s.DB.QueryRow(sqlstr, v...)
  err = row.Scan(&standup.ID, &standup.Name, &standup.SlackChannelID, &standup.Time, &standup.Timezone, &standup.Questions, &standup.TeamID, &standup.CreatedAt, &standup.UpdatedAt)
  if err != nil {

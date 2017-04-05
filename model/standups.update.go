@@ -31,7 +31,7 @@ func (s *Standups) Update(id *string, ss *Standup) (standup Standup, err error) 
 
  // run query
  values := append([]interface{}{ss.ID}, v...)
- XOLog(sqlstr, values...)
+ DBLog(sqlstr, values...)
 
  row := s.DB.QueryRow(sqlstr, values...)
  err = row.Scan(&standup.ID, &standup.Name, &standup.SlackChannelID, &standup.Time, &standup.Timezone, &standup.Questions, &standup.TeamID, &standup.CreatedAt, &standup.UpdatedAt)

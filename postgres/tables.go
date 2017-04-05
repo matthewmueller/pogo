@@ -21,7 +21,7 @@ func Tables(db db.DB, schema string) (tables []*Table, err error) {
   `
 
 	// run query
-	// XOLog(sqlstr, schema, relkind)
+	// DBLog(sqlstr, schema, relkind)
 	// "r" constant is for tables
 	q, err := db.Query(sqlstr, schema, "r")
 	if err != nil {

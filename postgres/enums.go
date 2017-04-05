@@ -33,7 +33,7 @@ func Enums(db db.DB, schema string) ([]*Enum, error) {
   `
 
 	// run query
-	// XOLog(sqlstr, schema)
+	// DBLog(sqlstr, schema)
 	q, err := db.Query(sqlstr, schema)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func Values(db db.DB, schema string, enum string) ([]*Value, error) {
   `
 
 	// run query
-	// XOLog(sqlstr, schema, enum)
+	// DBLog(sqlstr, schema, enum)
 	q, err := db.Query(sqlstr, schema, enum)
 	if err != nil {
 		return nil, err

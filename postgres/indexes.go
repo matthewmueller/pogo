@@ -31,7 +31,7 @@ func Indexes(db db.DB, schema string, table string) ([]*Index, error) {
 		`WHERE i.indkey <> '0' AND n.nspname = $1 AND c.relname = $2`
 
 	// run query
-	// XOLog(sqlstr, schema, table)
+	// DBLog(sqlstr, schema, table)
 	q, err := db.Query(sqlstr, schema, table)
 	if err != nil {
 		return nil, err

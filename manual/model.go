@@ -16,8 +16,8 @@ type DB interface {
 	QueryRow(string, ...interface{}) *pgx.Row
 }
 
-// XOLog provides the log func used by generated queries.
-var XOLog = func(string, ...interface{}) {}
+// DBLog provides the log func used by generated queries.
+var DBLog = func(string, ...interface{}) {}
 
 func querySlices(fields map[string]interface{}, offset int) (c []string, i []string, v []interface{}) {
 	n := offset + 1

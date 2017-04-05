@@ -16,7 +16,7 @@ func ({{ $shortClass }} *{{ $class }}) Delete({{ fkparams .ForeignKeys .Columns 
   `
 
 	// run query
-	XOLog(sqlstr, {{ fklist .ForeignKeys }})
+	DBLog(sqlstr, {{ fklist .ForeignKeys }})
 	_, err = {{ $shortClass }}.DB.Exec(sqlstr, {{ fklist .ForeignKeys }})
 	if err != nil {
 		return err

@@ -89,7 +89,7 @@ func indexColumns(db db.DB, schema string, index string) ([]*IndexColumn, error)
 		`WHERE i.indkey <> '0' AND n.nspname = $1 AND ic.relname = $2`
 
 	// run query
-	// XOLog(sqlstr, schema, index)
+	// DBLog(sqlstr, schema, index)
 	q, err := db.Query(sqlstr, schema, index)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func colOrder(db db.DB, schema string, index string) (*PgColOrder, error) {
 		`WHERE n.nspname = $1 AND ic.relname = $2`
 
 	// run query
-	// XOLog(sqlstr, schema, index)
+	// DBLog(sqlstr, schema, index)
 	var pco PgColOrder
 	err = db.QueryRow(sqlstr, schema, index).Scan(&pco.Ord)
 	if err != nil {

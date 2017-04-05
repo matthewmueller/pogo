@@ -31,7 +31,7 @@ func (r *Reports) Update(id *string, rr *Report) (report Report, err error) {
 
  // run query
  values := append([]interface{}{rr.ID}, v...)
- XOLog(sqlstr, values...)
+ DBLog(sqlstr, values...)
 
  row := r.DB.QueryRow(sqlstr, values...)
  err = row.Scan(&report.ID, &report.UserID, &report.Timestamp, &report.Questions, &report.StandupID, &report.Status, &report.CreatedAt, &report.UpdatedAt)

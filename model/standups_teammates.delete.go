@@ -11,7 +11,7 @@ func (st *StandupTeammates) Delete(StandupID *string, TeammateID *string) (err e
   `
 
  // run query
- XOLog(sqlstr, StandupID, TeammateID)
+ DBLog(sqlstr, StandupID, TeammateID)
  _, err = st.DB.Exec(sqlstr, StandupID, TeammateID)
  if err != nil {
   return err

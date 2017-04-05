@@ -11,7 +11,7 @@ func (r *Reports) Delete(id *string) (err error) {
   `
 
  // run query
- XOLog(sqlstr, id)
+ DBLog(sqlstr, id)
  _, err = r.DB.Exec(sqlstr, id)
  if err != nil {
   return err
