@@ -1,8 +1,9 @@
 - [x] json type? whatever questions is
 - [x] Enums
-- [ ] Fix up coerce
+- [x] Fix up coerce
 - [ ] Test the models actually work
-
+  - [ ] No Go errors
+  - [ ] Can actually perform actions on the DB
 --- Tonight ---
 
 - [ ] Implement additional find, update, delete methods for unique fields

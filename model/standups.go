@@ -6,68 +6,68 @@ import "time"
 
 // Standups class
 type Standups struct {
-	DB DB
+ DB DB
 }
 
 // Standup model
 type Standup struct {
-	ID             *string                 `json:"id,omitempty"`
-	Name           *string                 `json:"name,omitempty"`
-	SlackChannelID *string                 `json:"slack_channel_id,omitempty"`
-	Time           *string                 `json:"time,omitempty"`
-	Timezone       *string                 `json:"timezone,omitempty"`
-	Questions      *map[string]interface{} `json:"questions,omitempty"`
-	TeamID         *string                 `json:"team_id,omitempty"`
-	CreatedAt      *time.Time              `json:"created_at,omitempty"`
-	UpdatedAt      *time.Time              `json:"updated_at,omitempty"`
+ ID             *string                 `json:"id,omitempty"`
+ Name           *string                 `json:"name,omitempty"`
+ SlackChannelID *string                 `json:"slack_channel_id,omitempty"`
+ Time           *string                 `json:"time,omitempty"`
+ Timezone       *string                 `json:"timezone,omitempty"`
+ Questions      *map[string]interface{} `json:"questions,omitempty"`
+ TeamID         *string                 `json:"team_id,omitempty"`
+ CreatedAt      *time.Time              `json:"created_at,omitempty"`
+ UpdatedAt      *time.Time              `json:"updated_at,omitempty"`
 }
 
 // NewStandup model
 func NewStandup(db DB) Standups {
-	return Standups{
-		DB: db,
-	}
+ return Standups{
+  DB: db,
+ }
 }
 
 // getFields fetch the non-nil fields
 func (s *Standups) getFields(ss *Standup) map[string]interface{} {
-	fields := map[string]interface{}{}
+ fields := map[string]interface{}{}
 
-	if ss.ID != nil {
-		fields["id"] = ss.ID
-	}
+ if ss.ID != nil {
+  fields["id"] = ss.ID
+ }
 
-	if ss.Name != nil {
-		fields["name"] = ss.Name
-	}
+ if ss.Name != nil {
+  fields["name"] = ss.Name
+ }
 
-	if ss.SlackChannelID != nil {
-		fields["slack_channel_id"] = ss.SlackChannelID
-	}
+ if ss.SlackChannelID != nil {
+  fields["slack_channel_id"] = ss.SlackChannelID
+ }
 
-	if ss.Time != nil {
-		fields["time"] = ss.Time
-	}
+ if ss.Time != nil {
+  fields["time"] = ss.Time
+ }
 
-	if ss.Timezone != nil {
-		fields["timezone"] = ss.Timezone
-	}
+ if ss.Timezone != nil {
+  fields["timezone"] = ss.Timezone
+ }
 
-	if ss.Questions != nil {
-		fields["questions"] = ss.Questions
-	}
+ if ss.Questions != nil {
+  fields["questions"] = ss.Questions
+ }
 
-	if ss.TeamID != nil {
-		fields["team_id"] = ss.TeamID
-	}
+ if ss.TeamID != nil {
+  fields["team_id"] = ss.TeamID
+ }
 
-	if ss.CreatedAt != nil {
-		fields["created_at"] = ss.CreatedAt
-	}
+ if ss.CreatedAt != nil {
+  fields["created_at"] = ss.CreatedAt
+ }
 
-	if ss.UpdatedAt != nil {
-		fields["updated_at"] = ss.UpdatedAt
-	}
+ if ss.UpdatedAt != nil {
+  fields["updated_at"] = ss.UpdatedAt
+ }
 
-	return fields
+ return fields
 }

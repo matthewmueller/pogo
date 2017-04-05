@@ -17,7 +17,7 @@ type Team struct {
  SlackBotAccessToken  *string    `json:"slack_bot_access_token,omitempty"`
  SlackBotID           *string    `json:"slack_bot_id,omitempty"`
  TeamName             *string    `json:"team_name,omitempty"`
- Scope                []*string  `json:"scope,omitempty"`
+ Scope                *[]string  `json:"scope,omitempty"`
  Email                *string    `json:"email,omitempty"`
  StripeID             *string    `json:"stripe_id,omitempty"`
  Active               *bool      `json:"active,omitempty"`

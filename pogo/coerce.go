@@ -33,7 +33,7 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 	if strings.HasSuffix(dt, "[]") {
 		dt = dt[:len(dt)-2]
 		t := c.Coerce(dt)
-		return "[]" + t
+		return "*[]" + strings.TrimPrefix(t, "*")
 	}
 
 	switch dt {
