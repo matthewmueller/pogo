@@ -16,27 +16,36 @@ func init() {
 	shortnameMap = map[string]string{}
 }
 
+// TemplateFuncs struct
+type TemplateFuncs struct {
+	Coerce *Coerce
+}
+
 // TemplateFunctions functions to pass in
-func TemplateFunctions() template.FuncMap {
+func TemplateFunctions(coerce *Coerce) template.FuncMap {
+	funcs := TemplateFuncs{
+		Coerce: coerce,
+	}
+
 	return template.FuncMap{
-		"shortname":     shortname,
-		"classname":     classname,
-		"classnameMM":   classnameMM,
-		"modelname":     modelname,
-		"modelnameMM":   modelnameMM,
-		"modelreturn":   modelreturn,
-		"modelreturnMM": modelreturnMM,
-		"field":         field,
-		"fieldtype":     fieldtype,
-		"schema":        schema,
-		"fields":        fields,
-		"gofields":      gofields,
-		"primaryname":   primaryname,
-		"primarytype":   primarytype,
-		"primaryid":     primaryid,
-		"fkparams":      fkparams,
-		"fklist":        fklist,
-		"fkwhere":       fkwhere,
+		"shortname":     funcs.shortname,
+		"classname":     funcs.classname,
+		"classnameMM":   funcs.classnameMM,
+		"modelname":     funcs.modelname,
+		"modelnameMM":   funcs.modelnameMM,
+		"modelreturn":   funcs.modelreturn,
+		"modelreturnMM": funcs.modelreturnMM,
+		"field":         funcs.field,
+		"fieldtype":     funcs.fieldtype,
+		"schema":        funcs.schema,
+		"fields":        funcs.fields,
+		"gofields":      funcs.gofields,
+		"primaryname":   funcs.primaryname,
+		"primarytype":   funcs.primarytype,
+		"primaryid":     funcs.primaryid,
+		"fkparams":      funcs.fkparams,
+		"fklist":        funcs.fklist,
+		"fkwhere":       funcs.fkwhere,
 	}
 }
 
@@ -56,11 +65,11 @@ func reverseIndexRune(s string, r rune) int {
 	return -1
 }
 
-func classname(s string) string {
+func (f *TemplateFuncs) classname(s string) string {
 	return snaker.SnakeToCamelIdentifier(s)
 }
 
-func classnameMM(s string) string {
+func (f *TemplateFuncs) classnameMM(s string) string {
 	if i := reverseIndexRune(s, '_'); i != -1 {
 		s = inflector.Singularize(s[:i]) + "_" + s[i+1:]
 	} else {
@@ -70,7 +79,7 @@ func classnameMM(s string) string {
 	return snaker.SnakeToCamelIdentifier(s)
 }
 
-func modelname(s string) string {
+func (f *TemplateFuncs) modelname(s string) string {
 	if i := reverseIndexRune(s, '_'); i != -1 {
 		s = s[:i] + "_" + inflector.Singularize(s[i+1:])
 	} else {
@@ -80,7 +89,7 @@ func modelname(s string) string {
 	return snaker.SnakeToCamelIdentifier(s)
 }
 
-func modelnameMM(s string) string {
+func (f *TemplateFuncs) modelnameMM(s string) string {
 	if i := reverseIndexRune(s, '_'); i != -1 {
 		s = inflector.Singularize(s[:i]) + "_" + inflector.Singularize(s[i+1:])
 	} else {
@@ -90,26 +99,26 @@ func modelnameMM(s string) string {
 	return snaker.SnakeToCamelIdentifier(s)
 }
 
-func modelreturn(s string) string {
-	return strings.ToLower(modelname(s))
+func (f *TemplateFuncs) modelreturn(s string) string {
+	return strings.ToLower(f.modelname(s))
 }
 
-func modelreturnMM(s string) string {
-	return strings.ToLower(modelnameMM(s))
+func (f *TemplateFuncs) modelreturnMM(s string) string {
+	return strings.ToLower(f.modelnameMM(s))
 }
 
-func field(name string) string {
+func (f *TemplateFuncs) field(name string) string {
 	return snaker.SnakeToCamelIdentifier(name)
 }
 
-func fieldtype(kind string) string {
-	return Coerce(kind)
+func (f *TemplateFuncs) fieldtype(kind string) string {
+	return f.Coerce.Coerce(kind)
 	// fmt.Println(name, t)
 	// return snaker.SnakeToCamelIdentifier(name) + " " + t + "`json:\"" + name + ",omitempty\"`"
 }
 
 // schema takes a series of names and joins them with the schema name.
-func schema(s string, names ...string) string {
+func (f *TemplateFuncs) schema(s string, names ...string) string {
 	n := strings.Join(names, ".")
 
 	if s == "" && n == "" {
@@ -140,7 +149,7 @@ func schema(s string, names ...string) string {
 // Note: recognized types for scopeConflicts are string, []*Field,
 // []*QueryParam.
 
-func shortname(typ string, scopeConflicts ...interface{}) string {
+func (f *TemplateFuncs) shortname(typ string, scopeConflicts ...interface{}) string {
 	var v string
 	var ok bool
 
@@ -205,7 +214,7 @@ func shortname(typ string, scopeConflicts ...interface{}) string {
 	return v
 }
 
-func fields(columns []*postgres.Column) string {
+func (f *TemplateFuncs) fields(columns []*postgres.Column) string {
 	cols := []string{}
 	for _, col := range columns {
 		cols = append(cols, col.ColumnName)
@@ -213,15 +222,15 @@ func fields(columns []*postgres.Column) string {
 	return strings.Join(cols, ", ")
 }
 
-func gofields(columns []*postgres.Column, key string) string {
+func (f *TemplateFuncs) gofields(columns []*postgres.Column, key string) string {
 	cols := []string{}
 	for _, col := range columns {
-		cols = append(cols, "&"+key+"."+field(col.ColumnName))
+		cols = append(cols, "&"+key+"."+f.field(col.ColumnName))
 	}
 	return strings.Join(cols, ", ")
 }
 
-func primaryname(columns []*postgres.Column) string {
+func (f *TemplateFuncs) primaryname(columns []*postgres.Column) string {
 	for _, col := range columns {
 		if col.IsPrimaryKey {
 			return col.ColumnName
@@ -230,46 +239,46 @@ func primaryname(columns []*postgres.Column) string {
 	return ""
 }
 
-func primarytype(columns []*postgres.Column) string {
+func (f *TemplateFuncs) primarytype(columns []*postgres.Column) string {
 	for _, col := range columns {
 		if col.IsPrimaryKey {
-			return Coerce(col.DataType)
+			return f.Coerce.Coerce(col.DataType)
 		}
 	}
 	return ""
 }
 
-func primaryid(columns []*postgres.Column) string {
+func (f *TemplateFuncs) primaryid(columns []*postgres.Column) string {
 	for _, col := range columns {
 		if col.IsPrimaryKey {
-			return field(col.ColumnName)
+			return f.field(col.ColumnName)
 		}
 	}
 	return ""
 }
 
-func fkparams(fks []*postgres.ForeignKey, cols []*postgres.Column) string {
+func (f *TemplateFuncs) fkparams(fks []*postgres.ForeignKey, cols []*postgres.Column) string {
 	out := []string{}
 	for _, fk := range fks {
 		colname := fk.ColumnName
 		for _, col := range cols {
 			if colname == col.ColumnName {
-				out = append(out, fk.ColumnName+" "+Coerce(col.DataType))
+				out = append(out, f.field(fk.ColumnName)+" "+f.Coerce.Coerce(col.DataType))
 			}
 		}
 	}
 	return strings.Join(out, ", ")
 }
 
-func fklist(fks []*postgres.ForeignKey) string {
+func (f *TemplateFuncs) fklist(fks []*postgres.ForeignKey) string {
 	out := []string{}
 	for _, fk := range fks {
-		out = append(out, fk.ColumnName)
+		out = append(out, f.field(fk.ColumnName))
 	}
 	return strings.Join(out, ", ")
 }
 
-func fkwhere(fks []*postgres.ForeignKey) string {
+func (f *TemplateFuncs) fkwhere(fks []*postgres.ForeignKey) string {
 	out := []string{}
 	for i, fk := range fks {
 		out = append(out, fk.ColumnName+" = $"+strconv.Itoa(i+1))

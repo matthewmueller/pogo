@@ -11,21 +11,22 @@ type Teams struct {
 
 // Team type
 type Team struct {
-	ID                   *string    `json:"id,omitempty"`                      // id
-	SlackTeamID          *string    `json:"slack_team_id,omitempty"`           // slack_team_id
-	SlackTeamAccessToken *string    `json:"slack_team_access_token,omitempty"` // slack_team_access_token
-	SlackBotAccessToken  *string    `json:"slack_bot_access_token,omitempty"`  // slack_bot_access_token
-	SlackBotID           *string    `json:"slack_bot_id,omitempty"`            // slack_bot_id
-	TeamName             *string    `json:"team_name,omitempty"`               // team_name
-	Scope                *[]string  `json:"scope,omitempty"`                   // scope
-	Email                *string    `json:"email,omitempty"`                   // email
-	StripeID             *string    `json:"stripe_id,omitempty"`               // stripe_id
-	Active               *bool      `json:"active,omitempty"`                  // active
-	FreeTeammates        *int       `json:"free_teammates,omitempty"`          // free_teammates
-	CostPerUser          *int       `json:"cost_per_user,omitempty"`           // cost_per_user
-	TrialEnds            *time.Time `json:"trial_ends,omitempty"`              // trial_ends
-	CreatedAt            *time.Time `json:"created_at,omitempty"`              // created_at
-	UpdatedAt            *time.Time `json:"updated_at,omitempty"`              // updated_at
+	ID                   *string       `json:"id,omitempty"`                      // id
+	SlackTeamID          *string       `json:"slack_team_id,omitempty"`           // slack_team_id
+	SlackTeamAccessToken *string       `json:"slack_team_access_token,omitempty"` // slack_team_access_token
+	SlackBotAccessToken  *string       `json:"slack_bot_access_token,omitempty"`  // slack_bot_access_token
+	SlackBotID           *string       `json:"slack_bot_id,omitempty"`            // slack_bot_id
+	TeamName             *string       `json:"team_name,omitempty"`               // team_name
+	Scope                *[]string     `json:"scope,omitempty"`                   // scope
+	Email                *string       `json:"email,omitempty"`                   // email
+	StripeID             *string       `json:"stripe_id,omitempty"`               // stripe_id
+	Active               *bool         `json:"active,omitempty"`                  // active
+	FreeTeammates        *int          `json:"free_teammates,omitempty"`          // free_teammates
+	CostPerUser          *int          `json:"cost_per_user,omitempty"`           // cost_per_user
+	TrialEnds            *time.Time    `json:"trial_ends,omitempty"`              // trial_ends
+	CreatedAt            *time.Time    `json:"created_at,omitempty"`              // created_at
+	UpdatedAt            *time.Time    `json:"updated_at,omitempty"`              // updated_at
+	Status               *ReportStatus `json:"report_status,omitempty"`
 }
 
 // NewTeam model

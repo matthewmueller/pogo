@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path"
 
@@ -43,8 +44,15 @@ func main() {
 	}
 	*pathdir = path.Join(cwd, "model")
 
-	err = pogo.Generate(db, *schema, *pathdir)
+	output, err := pogo.Generate(db, *schema, path.Base(*pathdir))
 	if err != nil {
 		log.WithError(err).Fatal("unable to generate models")
 	}
+
+	err = pogo.Write(output, *pathdir)
+	if err != nil {
+		log.WithError(err).Fatal("unable to write out models")
+	}
+
+	fmt.Println(output)
 }

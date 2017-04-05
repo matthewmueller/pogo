@@ -4,20 +4,35 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/knq/snaker"
+	"github.com/matthewmueller/pogo/postgres"
 )
 
+type Coerce struct {
+	Schema string
+	Enums  []*postgres.Enum
+}
+
+func NewCoerce(schema string, enums []*postgres.Enum) Coerce {
+	return Coerce{
+		Schema: schema,
+		Enums:  enums,
+	}
+}
+
 // Coerce a postgres type into a Go type based on the column definition.
-func Coerce(dt string) (kind string) {
+func (c *Coerce) Coerce(dt string) (kind string) {
 	// handle SETOF
 	if strings.HasPrefix(dt, "SETOF ") {
-		t := Coerce(dt[len("SETOF "):])
+		t := c.Coerce(dt[len("SETOF "):])
 		return "[]" + t
 	}
 
 	// determine if it's a slice
 	if strings.HasSuffix(dt, "[]") {
 		dt = dt[:len(dt)-2]
-		t := Coerce(dt)
+		t := c.Coerce(dt)
 		return "[]" + t
 	}
 
@@ -30,8 +45,17 @@ func Coerce(dt string) (kind string) {
 		return "*bool"
 	case "integer":
 		return "*int"
-	case "timestamp with time zone":
+	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
 		return "*time.Time"
+	case "json":
+		return "*map[string]interface{}"
+	default:
+		for _, enum := range c.Enums {
+			if c.Schema+"."+enum.Name == dt {
+				return "*" + snaker.SnakeToCamelIdentifier(enum.Name)
+			}
+		}
+		panic("don't understand the data type `" + dt + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")
 	}
 
 	// extract precision
@@ -180,7 +204,7 @@ func Coerce(dt string) (kind string) {
 	// 	nilVal = "nil"
 	// }
 
-	return kind
+	// return kind
 }
 
 // precScaleRE is the regexp that matches "(precision[,scale])" definitions in a
