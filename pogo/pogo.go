@@ -2,7 +2,6 @@ package pogo
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -272,7 +271,6 @@ func templatePath(basename string, typ string) string {
 
 func loadTemplate(paths ...string) (bytes []byte, err error) {
 	for _, path := range paths {
-		fmt.Println(path)
 		if _, err := os.Stat(path); err == nil {
 			return ioutil.ReadFile(path)
 		}

@@ -1,4 +1,4 @@
-package model
+package tempo
 
 import (
 	"strconv"

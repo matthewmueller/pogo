@@ -42,7 +42,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("unable to get the current working directory")
 	}
-	*pathdir = path.Join(cwd, "model")
+	*pathdir = path.Join(cwd, *pathdir)
 
 	output, err := pogo.Generate(db, *schema, path.Base(*pathdir))
 	if err != nil {

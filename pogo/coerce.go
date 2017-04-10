@@ -36,6 +36,14 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 		return "*[]" + strings.TrimPrefix(t, "*")
 	}
 
+	// ignore the content of functions
+	// TODO: not sure if this is a good idea or not
+	// was primarily added for numeric(10, 10)
+	idx := strings.Index(dt, "(")
+	if idx >= 0 {
+		dt = dt[:idx]
+	}
+
 	switch dt {
 	case "uuid":
 		return "*string"
@@ -43,15 +51,22 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 		return "*string"
 	case "boolean":
 		return "*bool"
-	case "integer":
+	case "integer", "smallint", "bigint":
 		return "*int"
 	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
 		return "*time.Time"
 	case "json":
 		return "*map[string]interface{}"
+	case "numeric":
+		return "*[]byte"
 	default:
 		for _, enum := range c.Enums {
-			if c.Schema+"."+enum.Name == dt {
+			name := enum.Name
+			if c.Schema != "" && c.Schema != "public" {
+				name = c.Schema + "." + name
+			}
+
+			if name == dt {
 				return "*" + snaker.SnakeToCamelIdentifier(enum.Name)
 			}
 		}
