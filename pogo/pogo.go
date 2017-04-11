@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/matthewmueller/pogo/bin"
 	"github.com/matthewmueller/pogo/db"
 	"github.com/matthewmueller/pogo/postgres"
 	"github.com/pkg/errors"
@@ -43,6 +44,7 @@ type TemplateData struct {
 	Table       *postgres.Table
 	Columns     []*postgres.Column
 	ForeignKeys []*postgres.ForeignKey
+	Indexes     []*Index
 }
 
 // EnumData is a template item for enums
@@ -50,6 +52,15 @@ type EnumData struct {
 	Package string
 	Schema  string
 	Enum    *postgres.Enum
+}
+
+// Index data
+type Index struct {
+	Name      string
+	Type      string
+	IsUnique  bool
+	IsPrimary bool
+	Columns   []*postgres.IndexColumn
 }
 
 // Generate the database
@@ -121,12 +132,34 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 			return output, errors.Wrap(err1, "unable to lookup foreign keys")
 		}
 
+		indexes, err1 := postgres.Indexes(db, schema, table.TableName)
+		if err != nil {
+			return output, errors.Wrap(err1, "unable to lookup the indexes")
+		}
+
+		var indices []*Index
+		for _, index := range indexes {
+
+			cols, err2 := postgres.IndexColumns(db, schema, table.TableName, index.IndexName)
+			if err2 != nil {
+				return output, errors.Wrap(err2, "unable to get the columns")
+			}
+
+			indices = append(indices, &Index{
+				Name:      index.IndexName,
+				IsUnique:  index.IsUnique,
+				IsPrimary: index.IsPrimary,
+				Columns:   cols,
+			})
+		}
+
 		data := TemplateData{
 			Schema:      schema,
 			Table:       table,
 			Columns:     columns,
 			ForeignKeys: fks,
 			Package:     pkg,
+			Indexes:     indices,
 		}
 
 		tableType := TableType(columns, fks)
@@ -176,7 +209,7 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 	}
 
 	for _, enum := range enums {
-		outputFile := path.Join(strings.Replace(enum.Name, "_", "-", -1) + ".enum.go")
+		outputFile := path.Join("enum." + strings.Replace(enum.Name, "_", "-", -1) + ".go")
 		// enum.Name
 		data := EnumData{
 			Package: pkg,
@@ -266,13 +299,15 @@ func templatePath(basename string, typ string) string {
 	if typ != "" {
 		basename += "." + typ
 	}
+
 	return path.Join("templates", basename+".go.tpl")
 }
 
 func loadTemplate(paths ...string) (bytes []byte, err error) {
 	for _, path := range paths {
-		if _, err := os.Stat(path); err == nil {
-			return ioutil.ReadFile(path)
+		bytes, err = bin.Asset(path)
+		if err == nil {
+			return bytes, nil
 		}
 	}
 	return bytes, errors.New("no template exists")

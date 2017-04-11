@@ -150,8 +150,8 @@ func TestJackIndexColumns(t *testing.T) {
 	// i think the cid or seqno refers to column position
 	// so unique order is correct, despite 2 being after 1
 	var indexTests = []*postgres.IndexColumn{
-		{2, 2, "teammate_id"},
-		{1, 1, "standup_id"},
+		{2, 2, "teammate_id", "uuid"},
+		{1, 1, "standup_id", "uuid"},
 	}
 
 	for i, tt := range indexTests {

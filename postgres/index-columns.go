@@ -13,11 +13,17 @@ type IndexColumn struct {
 	SeqNo      int    // seq_no
 	Cid        int    // cid
 	ColumnName string // column_name
+	DataType   string
 }
 
 // IndexColumns returns the column list for an index.
 func IndexColumns(db db.DB, schema string, table string, index string) ([]*IndexColumn, error) {
 	var err error
+
+	allcols, err := Columns(db, schema, table)
+	if err != nil {
+		return nil, err
+	}
 
 	// load columns
 	cols, err := indexColumns(db, schema, index)
@@ -62,6 +68,14 @@ func IndexColumns(db db.DB, schema string, table string, index string) ([]*Index
 		}
 
 		ret = append(ret, c)
+	}
+
+	for _, col := range ret {
+		for _, allcol := range allcols {
+			if col.ColumnName == allcol.ColumnName {
+				col.DataType = allcol.DataType
+			}
+		}
 	}
 
 	return ret, nil
