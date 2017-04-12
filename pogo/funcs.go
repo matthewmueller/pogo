@@ -53,6 +53,7 @@ func TemplateFunctions(coerce *Coerce) template.FuncMap {
 		"fklength":      funcs.fklength,
 		"indexmethod":   funcs.indexmethod,
 		"indexparams":   funcs.indexparams,
+		"indexvars":     funcs.indexvars,
 		"indexparam":    funcs.indexparam,
 		"indexwhere":    funcs.indexwhere,
 		"indexlength":   funcs.indexlength,
@@ -267,6 +268,19 @@ func (f *TemplateFuncs) indexparams(index *Index) string {
 	for _, col := range index.Columns {
 		if index.IsUnique && !index.IsPrimary {
 			cols = append(cols, strings.ToLower(f.field(col.ColumnName))+" "+f.Coerce.Coerce(col.DataType))
+		}
+	}
+
+	sort.Strings(cols)
+	return strings.Join(cols, ", ")
+}
+
+func (f *TemplateFuncs) indexvars(index *Index) string {
+	cols := []string{}
+
+	for _, col := range index.Columns {
+		if index.IsUnique && !index.IsPrimary {
+			cols = append(cols, strings.ToLower(f.field(col.ColumnName)))
 		}
 	}
 

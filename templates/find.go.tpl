@@ -34,17 +34,16 @@ func ({{ $shortClass }} *{{ $class }}) Find({{ primaryname .Columns }} {{ primar
 
 {{ range $idx := .Indexes }}
 {{ if .IsUnique }}{{ if not .IsPrimary }}
-{{ range .Columns }}
-// FindBy{{ field .ColumnName }} find a {{ $model }} by "{{ .ColumnName }}"
-func ({{ $shortClass }} *{{ $class }}) FindBy{{ field .ColumnName }}({{ param .ColumnName }} {{ fieldtype .DataType }}) ({{ $return }} {{ $model }}, err error) {
+// FindBy{{ indexmethod $idx }} find a {{ $model }}
+func ({{ $shortClass }} *{{ $class }}) FindBy{{ indexmethod $idx }}({{ indexparams $idx }}) ({{ $return }} {{ $model }}, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
-    SELECT {{ fields $.Columns }}
-    FROM {{ schema $.Schema $.Table.TableName }}
-    WHERE "{{ .ColumnName }}" = $1`
+		SELECT {{ fields $.Columns }}
+		FROM {{ schema $.Schema $.Table.TableName }}
+		WHERE {{ indexwhere $idx }}`
 
-	DBLog(sqlstr, {{ param .ColumnName }})
-	row := {{ $shortClass }}.DB.QueryRow(sqlstr, {{ param .ColumnName }})
+	DBLog(sqlstr, {{ indexvars $idx }})
+	row := {{ $shortClass }}.DB.QueryRow(sqlstr, {{ indexvars $idx }})
 	err = row.Scan({{ gofields $.Columns $return }})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -55,6 +54,5 @@ func ({{ $shortClass }} *{{ $class }}) FindBy{{ field .ColumnName }}({{ param .C
 
 	return {{ $return }}, nil
 }
-{{ end }}
 {{ end }}{{ end }}
 {{ end }}
