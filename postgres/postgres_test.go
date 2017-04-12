@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/caarlos0/env"
-	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pgx"
 	"github.com/matthewmueller/pogo/postgres"
 	"github.com/stretchr/testify/assert"
 )

@@ -1,9 +1,12 @@
 package pogo
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/gedex/inflector"
 	"github.com/knq/snaker"
@@ -36,6 +39,7 @@ func TemplateFunctions(coerce *Coerce) template.FuncMap {
 		"modelreturn":   funcs.modelreturn,
 		"modelreturnMM": funcs.modelreturnMM,
 		"field":         funcs.field,
+		"param":         funcs.param,
 		"fieldtype":     funcs.fieldtype,
 		"schema":        funcs.schema,
 		"fields":        funcs.fields,
@@ -46,6 +50,14 @@ func TemplateFunctions(coerce *Coerce) template.FuncMap {
 		"fkparams":      funcs.fkparams,
 		"fklist":        funcs.fklist,
 		"fkwhere":       funcs.fkwhere,
+		"fklength":      funcs.fklength,
+		"indexmethod":   funcs.indexmethod,
+		"indexparams":   funcs.indexparams,
+		"indexparam":    funcs.indexparam,
+		"indexwhere":    funcs.indexwhere,
+		"indexlength":   funcs.indexlength,
+		// "indexreturning": funcs.indexreturning,
+		// "indexscan":      funcs.indexscan,
 	}
 }
 
@@ -109,6 +121,12 @@ func (f *TemplateFuncs) modelreturnMM(s string) string {
 
 func (f *TemplateFuncs) field(name string) string {
 	return snaker.SnakeToCamelIdentifier(name)
+}
+
+func (f *TemplateFuncs) param(name string) string {
+	s := snaker.SnakeToCamelIdentifier(name)
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[n:]
 }
 
 func (f *TemplateFuncs) fieldtype(kind string) string {
@@ -219,7 +237,7 @@ func (f *TemplateFuncs) fields(columns []*postgres.Column) string {
 	for _, col := range columns {
 		cols = append(cols, col.ColumnName)
 	}
-	return strings.Join(cols, ", ")
+	return "\"" + strings.Join(cols, "\", \"") + "\""
 }
 
 func (f *TemplateFuncs) gofields(columns []*postgres.Column, key string) string {
@@ -228,6 +246,78 @@ func (f *TemplateFuncs) gofields(columns []*postgres.Column, key string) string 
 		cols = append(cols, "&"+key+"."+f.field(col.ColumnName))
 	}
 	return strings.Join(cols, ", ")
+}
+
+func (f *TemplateFuncs) indexmethod(index *Index) string {
+	cols := []string{}
+
+	for _, col := range index.Columns {
+		if index.IsUnique && !index.IsPrimary {
+			cols = append(cols, f.field(col.ColumnName))
+		}
+	}
+
+	sort.Strings(cols)
+	return strings.Join(cols, "And")
+}
+
+func (f *TemplateFuncs) indexparams(index *Index) string {
+	cols := []string{}
+
+	for _, col := range index.Columns {
+		if index.IsUnique && !index.IsPrimary {
+			cols = append(cols, strings.ToLower(f.field(col.ColumnName))+" "+f.Coerce.Coerce(col.DataType))
+		}
+	}
+
+	sort.Strings(cols)
+	return strings.Join(cols, ", ")
+}
+
+func (f *TemplateFuncs) indexparam(colname string) string {
+	return strings.ToLower(f.field(colname))
+}
+
+func (f *TemplateFuncs) indexwhere(index *Index) string {
+	cols := []string{}
+	i := 1
+
+	for _, col := range index.Columns {
+		if index.IsUnique && !index.IsPrimary {
+			cols = append(cols, "\""+col.ColumnName+"\" = $"+strconv.Itoa(i))
+			i++
+		}
+	}
+
+	return strings.Join(cols, " AND ")
+}
+
+// func (f *TemplateFuncs) indexreturning(index *Index) string {
+// 	cols := []string{}
+// 	for _, col := range index.Columns {
+// 		cols = append(cols, col.ColumnName)
+// 	}
+// 	return "\"" + strings.Join(cols, "\", \"") + "\""
+// }
+//
+// func (f *TemplateFuncs) indexscan(columns []*postgres.IndexColumn, key string) string {
+// 	cols := []string{}
+// 	for _, col := range columns {
+// 		cols = append(cols, "&"+key+"."+f.field(col.ColumnName))
+// 	}
+// 	return strings.Join(cols, ", ")
+// }
+
+func (f *TemplateFuncs) indexlength(index *Index) string {
+	i := 0
+
+	for range index.Columns {
+		if index.IsUnique && !index.IsPrimary {
+			i++
+		}
+	}
+
+	return strconv.Itoa(i)
 }
 
 func (f *TemplateFuncs) primaryname(columns []*postgres.Column) string {
@@ -278,10 +368,20 @@ func (f *TemplateFuncs) fklist(fks []*postgres.ForeignKey) string {
 	return strings.Join(out, ", ")
 }
 
+func (f *TemplateFuncs) fklength(fks []*postgres.ForeignKey) string {
+	i := 0
+
+	for range fks {
+		i++
+	}
+
+	return strconv.Itoa(i)
+}
+
 func (f *TemplateFuncs) fkwhere(fks []*postgres.ForeignKey) string {
 	out := []string{}
 	for i, fk := range fks {
-		out = append(out, fk.ColumnName+" = $"+strconv.Itoa(i+1))
+		out = append(out, "\""+fk.ColumnName+"\" = $"+strconv.Itoa(i+1))
 	}
 	return strings.Join(out, " AND ")
 }

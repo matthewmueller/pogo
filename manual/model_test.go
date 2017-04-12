@@ -8,7 +8,7 @@ import (
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/text"
 	"github.com/caarlos0/env"
-	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pgx"
 	"github.com/matthewmueller/pogo/manual"
 	"github.com/stretchr/testify/assert"
 )

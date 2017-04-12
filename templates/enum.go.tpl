@@ -7,6 +7,8 @@ package {{ .Package }}
 import (
 	"database/sql/driver"
 	"errors"
+
+	"github.com/matthewmueller/pgx"
 )
 
 // {{ $model }} is the '{{ .Enum.Name }}' enum type from schema '{{ .Schema }}'.
@@ -65,4 +67,12 @@ func ({{ $shortModel }} *{{ $model }}) Scan(src interface{}) error {
 	}
 
 	return {{ $shortModel }}.UnmarshalText(buf)
+}
+
+// ScanPgx into PGX
+func ({{ $shortModel }} *{{ $model }}) ScanPgx(vr *pgx.ValueReader) error {
+	if vr.Len() == -1 {
+		return nil
+	}
+	return {{ $shortModel }}.UnmarshalText(vr.ReadBytes(vr.Len()))
 }

@@ -46,7 +46,7 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 
 	switch dt {
 	case "uuid":
-		return "*string"
+		return "*uuid.UUID"
 	case "text":
 		return "*string"
 	case "boolean":
@@ -58,7 +58,7 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 	case "json":
 		return "*map[string]interface{}"
 	case "numeric":
-		return "*[]byte"
+		return "*decimal.Decimal"
 	default:
 		for _, enum := range c.Enums {
 			name := enum.Name

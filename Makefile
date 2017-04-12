@@ -10,6 +10,9 @@ bin:
 	@go-bindata -o bin/bin.go -pkg bin templates/
 .PHONY: bin
 
+install: bin
+	@go install ./...
+
 migrate:
 	@migrate -path migration -url $(POSTGRES_URL) down
 	@migrate -path migration -url $(POSTGRES_URL) up

@@ -24,7 +24,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ fkparams .ForeignKeys .Columns 
 	{{ end }}
 
 	// prepare the slices
-	c, i, v := querySlices(fields, 1)
+	c, i, v := querySlices(fields, {{ fklength .ForeignKeys }})
 
 	// sql query
 	sqlstr := `UPDATE {{ schema .Schema .Table.TableName }} SET (` +

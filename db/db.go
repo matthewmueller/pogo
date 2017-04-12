@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pgx"
 )
 
 // DB is the common interface for database operations that can be used with

@@ -31,7 +31,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ primaryname .Columns }} {{ prim
 	sqlstr := `UPDATE {{ schema .Schema .Table.TableName }} SET (` +
 		strings.Join(c, ", ") + `) = (` +
 		strings.Join(i, ", ") + `)
-		WHERE {{ primaryname .Columns }} = $1
+		WHERE "{{ primaryname .Columns }}" = $1
 		RETURNING {{ fields .Columns }}`
 
 	// run query
@@ -46,3 +46,47 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ primaryname .Columns }} {{ prim
 
 	return {{ $return }}, nil
 }
+
+{{ range $idx := .Indexes }}
+{{ if .IsUnique }}{{ if not .IsPrimary }}
+// UpdateBy{{ indexmethod $idx }} find a {{ $model }}
+func ({{ $shortClass }} *{{ $class }}) UpdateBy{{ indexmethod $idx }}({{ indexparams $idx }}, {{ $shortModel }} *{{ $model }}) ({{ $return }} {{ $model }}, err error) {
+	fields := {{ $shortClass }}.getFields({{ $shortModel }})
+
+	// first check if we have all the keys we need
+	{{ range .Columns }}if {{ indexparam .ColumnName }} == nil {
+		return {{ $return }}, errors.New(`{{ .ColumnName }} must be non-nil`)
+	}
+	{{ end }}
+
+	// don't update the keys
+	{{ range .Columns }}delete(fields, "{{ indexparam .ColumnName }}")
+	{{ end }}
+
+	// prepare the slices
+	c, i, v := querySlices(fields, {{ indexlength $idx }})
+
+	// sql query
+	sqlstr := `UPDATE {{ schema $.Schema $.Table.TableName }} SET (` +
+		strings.Join(c, ", ") + `) = (` +
+		strings.Join(i, ", ") + `) ` +
+		`WHERE {{ indexwhere $idx }} ` +
+		`RETURNING {{ fields $.Columns }}`
+
+	// run query
+	values := []interface{}{}
+	{{ range .Columns }}values = append(values, {{ indexparam .ColumnName }})
+	{{ end }}
+	values = append(values, v...)
+	DBLog(sqlstr, values...)
+
+	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)
+	err = row.Scan({{ gofields $.Columns $return }})
+	if err != nil {
+		return {{ $return }}, err
+	}
+
+	return {{ $return }}, nil
+}
+{{ end }}{{ end }}
+{{ end }}
