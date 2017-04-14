@@ -14,10 +14,7 @@ import (
 // Delete the {{ $model }} from the database.
 func ({{ $shortClass }} *{{ $class }}) Delete({{ primaryname .Columns }} {{ primarytype .Columns }}) (err error) {
 	// sql query
-	const sqlstr = `
-    DELETE FROM {{ schema .Schema .Table.TableName }}
-    WHERE "{{ primaryname .Columns }}" = $1
-  `
+	sqlstr := `DELETE FROM {{ schema .Schema .Table.TableName }} WHERE "{{ primaryname .Columns }}" = $1`
 
 	// run query
 	DBLog(sqlstr, {{ primaryname .Columns }})
@@ -31,26 +28,18 @@ func ({{ $shortClass }} *{{ $class }}) Delete({{ primaryname .Columns }} {{ prim
 
 {{ range $idx := .Indexes }}
 {{ if .IsUnique }}{{ if not .IsPrimary }}
-{{ range .Columns }}
-// DeleteBy{{ field .ColumnName }} find a {{ $model }} by "{{ .ColumnName }}"
-func ({{ $shortClass }} *{{ $class }}) DeleteBy{{ field .ColumnName }}({{ param .ColumnName }} {{ fieldtype .DataType }}) ({{ $return }} {{ $model }}, err error) {
+// FindBy{{ indexmethod $idx }} find a {{ $model }}
+func ({{ $shortClass }} *{{ $class }}) DeleteBy{{ indexmethod $idx }}({{ indexparams $idx }}) (err error) {
 	// sql select query, primary key provided by sequence
-	sqlstr := `
-    DELETE FROM {{ schema $.Schema $.Table.TableName }}
-    WHERE "{{ .ColumnName }}" = $1`
+	sqlstr := `DELETE FROM {{ schema $.Schema $.Table.TableName }} WHERE {{ indexwhere $idx }}`
 
-	DBLog(sqlstr, {{ param .ColumnName }})
-	row := {{ $shortClass }}.DB.QueryRow(sqlstr, {{ param .ColumnName }})
-	err = row.Scan({{ gofields $.Columns $return }})
+	DBLog(sqlstr, {{ indexvars $idx }})
+	_, err = {{ $shortClass }}.DB.Exec(sqlstr, {{ indexvars $idx }})
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return {{ $return }},  Err{{ $model }}NotFound
-		}
-		return {{ $return }}, err
+		return err
 	}
 
-	return {{ $return }}, nil
+	return nil
 }
-{{ end }}
 {{ end }}{{ end }}
 {{ end }}

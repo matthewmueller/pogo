@@ -58,6 +58,7 @@ func TemplateFunctions(coerce *Coerce) template.FuncMap {
 		"indexparamlist": funcs.indexparamlist,
 		"indexwhere":     funcs.indexwhere,
 		"indexlength":    funcs.indexlength,
+		"pluralize":      funcs.pluralize,
 		// "indexreturning": funcs.indexreturning,
 		// "indexscan":      funcs.indexscan,
 	}
@@ -412,6 +413,10 @@ func (f *TemplateFuncs) fkwhere(fks []*postgres.ForeignKey) string {
 		out = append(out, "\""+fk.ColumnName+"\" = $"+strconv.Itoa(i+1))
 	}
 	return strings.Join(out, " AND ")
+}
+
+func (f *TemplateFuncs) pluralize(s string) string {
+	return inflector.Pluralize(s)
 }
 
 // func fields ()

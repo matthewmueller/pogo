@@ -22,7 +22,7 @@ func ({{ $shortClass }} *{{ $class }}) Insert({{ $shortModel }} *{{ $model }}) (
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, v...)
 	err = row.Scan({{ gofields .Columns $return }})
 	if err != nil {
-	  return {{ $return }}, errors.Wrap(err, "could not insert into '{{ .Table.TableName }}'")
+	  return {{ $return }}, err
 	}
 
 	return {{ $return }}, nil
