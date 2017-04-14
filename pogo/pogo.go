@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 	"text/template"
@@ -231,12 +232,12 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 
 		// TODO: swap with: exec.Command("goimports", params...).Run()
 		//       move to the end
-		bytes, err = goimports.Process(outputFile, bytes, &goimports.Options{
-			Comments: true,
-		})
-		if err != nil {
-			return output, err
-		}
+		// bytes, err = goimports.Process(outputFile, bytes, &goimports.Options{
+		// 	Comments: true,
+		// })
+		// if err != nil {
+		// 	return output, err
+		// }
 
 		output[outputFile] = string(bytes)
 	}
@@ -272,7 +273,14 @@ func Write(models map[string]string, outpath string) (err error) {
 		}
 	}
 
-	return nil
+	// build goimports parameters, closing files
+	params := []string{"-w"}
+	for basepath := range models {
+		params = append(params, path.Join(outpath, basepath))
+	}
+
+	// process written files with goimports
+	return exec.Command("goimports", params...).Run()
 }
 
 // TableType get the table type
