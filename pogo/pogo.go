@@ -70,7 +70,7 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 	// 	return errors.Wrap(err, "unable to read the template directory")
 	// }
 
-	methods := []string{"table", "find", "insert", "delete", "update"}
+	methods := []string{"table", "find", "insert", "delete", "update", "find-many", "upsert"}
 	output = map[string]string{}
 	// templates := map[string][]byte{}
 	// for _, typ := range types {

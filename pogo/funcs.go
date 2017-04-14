@@ -31,32 +31,33 @@ func TemplateFunctions(coerce *Coerce) template.FuncMap {
 	}
 
 	return template.FuncMap{
-		"shortname":     funcs.shortname,
-		"classname":     funcs.classname,
-		"classnameMM":   funcs.classnameMM,
-		"modelname":     funcs.modelname,
-		"modelnameMM":   funcs.modelnameMM,
-		"modelreturn":   funcs.modelreturn,
-		"modelreturnMM": funcs.modelreturnMM,
-		"field":         funcs.field,
-		"param":         funcs.param,
-		"fieldtype":     funcs.fieldtype,
-		"schema":        funcs.schema,
-		"fields":        funcs.fields,
-		"gofields":      funcs.gofields,
-		"primaryname":   funcs.primaryname,
-		"primarytype":   funcs.primarytype,
-		"primaryid":     funcs.primaryid,
-		"fkparams":      funcs.fkparams,
-		"fklist":        funcs.fklist,
-		"fkwhere":       funcs.fkwhere,
-		"fklength":      funcs.fklength,
-		"indexmethod":   funcs.indexmethod,
-		"indexparams":   funcs.indexparams,
-		"indexvars":     funcs.indexvars,
-		"indexparam":    funcs.indexparam,
-		"indexwhere":    funcs.indexwhere,
-		"indexlength":   funcs.indexlength,
+		"shortname":      funcs.shortname,
+		"classname":      funcs.classname,
+		"classnameMM":    funcs.classnameMM,
+		"modelname":      funcs.modelname,
+		"modelnameMM":    funcs.modelnameMM,
+		"modelreturn":    funcs.modelreturn,
+		"modelreturnMM":  funcs.modelreturnMM,
+		"field":          funcs.field,
+		"param":          funcs.param,
+		"fieldtype":      funcs.fieldtype,
+		"schema":         funcs.schema,
+		"fields":         funcs.fields,
+		"gofields":       funcs.gofields,
+		"primaryname":    funcs.primaryname,
+		"primarytype":    funcs.primarytype,
+		"primaryid":      funcs.primaryid,
+		"fkparams":       funcs.fkparams,
+		"fklist":         funcs.fklist,
+		"fkwhere":        funcs.fkwhere,
+		"fklength":       funcs.fklength,
+		"indexmethod":    funcs.indexmethod,
+		"indexparams":    funcs.indexparams,
+		"indexvars":      funcs.indexvars,
+		"indexparam":     funcs.indexparam,
+		"indexparamlist": funcs.indexparamlist,
+		"indexwhere":     funcs.indexwhere,
+		"indexlength":    funcs.indexlength,
 		// "indexreturning": funcs.indexreturning,
 		// "indexscan":      funcs.indexscan,
 	}
@@ -290,6 +291,19 @@ func (f *TemplateFuncs) indexvars(index *Index) string {
 
 func (f *TemplateFuncs) indexparam(colname string) string {
 	return strings.ToLower(f.field(colname))
+}
+
+func (f *TemplateFuncs) indexparamlist(index *Index) string {
+	cols := []string{}
+
+	for _, col := range index.Columns {
+		if index.IsUnique && !index.IsPrimary {
+			cols = append(cols, strings.ToLower(f.field(col.ColumnName)))
+		}
+	}
+
+	sort.Strings(cols)
+	return `"` + strings.Join(cols, "\", \"") + `"`
 }
 
 func (f *TemplateFuncs) indexwhere(index *Index) string {

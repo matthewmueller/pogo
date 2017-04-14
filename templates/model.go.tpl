@@ -31,3 +31,10 @@ func querySlices(fields map[string]interface{}, offset int) (c []string, i []str
 	}
 	return c, i, v
 }
+
+const (
+  // UpsertDoNothing Do nothing if there's a conflict
+  UpsertDoNothing = "DO NOTHING"
+  // UpsertDoUpdate Perform an update when there's a conflict
+  UpsertDoUpdate = "DO UPDATE"
+)

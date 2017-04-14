@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path"
 
@@ -53,6 +52,4 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("unable to write out models")
 	}
-
-	fmt.Println(output)
 }
