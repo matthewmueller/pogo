@@ -7,7 +7,7 @@
 - [x] Only update files with an automated comment & are one of the specified templates
 - [x] Finish up the CLI
 - [x] Implement additional find, update, delete methods for unique fields
+- [x] upsert method
+- [x] findmany method
 
-- [ ] upsert method
-- [ ] findmany method
 - [ ] better indentation

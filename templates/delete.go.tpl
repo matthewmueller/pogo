@@ -28,7 +28,7 @@ func ({{ $shortClass }} *{{ $class }}) Delete({{ primaryname .Columns }} {{ prim
 
 {{ range $idx := .Indexes }}
 {{ if .IsUnique }}{{ if not .IsPrimary }}
-// FindBy{{ indexmethod $idx }} find a {{ $model }}
+// DeleteBy{{ indexmethod $idx }} find a {{ $model }}
 func ({{ $shortClass }} *{{ $class }}) DeleteBy{{ indexmethod $idx }}({{ indexparams $idx }}) (err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `DELETE FROM {{ schema $.Schema $.Table.TableName }} WHERE {{ indexwhere $idx }}`
