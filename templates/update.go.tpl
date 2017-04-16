@@ -13,7 +13,7 @@ import (
 )
 
 // Update the {{ $model }} by the Primary Key
-func ({{ $shortClass }} *{{ $class }}) Update({{ primaryname .Columns }} {{ primarytype .Columns }}, {{ $shortModel }} *{{ $model }}) ({{ $return }} {{ $model }}, err error) {
+func ({{ $shortClass }} *{{ $class }}) Update({{ $shortModel }} *{{ $model }}, {{ primaryname .Columns }} {{ primarytype .Columns }}) ({{ $return }} {{ $model }}, err error) {
 	fields := {{ $shortClass }}.getFields({{ $shortModel }})
 
 	// first check if we have the primary key
@@ -35,7 +35,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ primaryname .Columns }} {{ prim
 		RETURNING {{ fields .Columns }}`
 
 	// run query
-	values := append([]interface{}{ {{ $shortModel }}.{{ primaryid .Columns }} }, v...)
+	values := append([]interface{}{ {{ primaryname .Columns }} }, v...)
 	DBLog(sqlstr, values...)
 
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)
@@ -50,7 +50,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ primaryname .Columns }} {{ prim
 {{ range $idx := .Indexes }}
 {{ if .IsUnique }}{{ if not .IsPrimary }}
 // UpdateBy{{ indexmethod $idx }} find a {{ $model }}
-func ({{ $shortClass }} *{{ $class }}) UpdateBy{{ indexmethod $idx }}({{ indexparams $idx }}, {{ $shortModel }} *{{ $model }}) ({{ $return }} {{ $model }}, err error) {
+func ({{ $shortClass }} *{{ $class }}) UpdateBy{{ indexmethod $idx }}({{ $shortModel }} *{{ $model }}, {{ indexparams $idx }}) ({{ $return }} {{ $model }}, err error) {
 	fields := {{ $shortClass }}.getFields({{ $shortModel }})
 
 	// first check if we have all the keys we need

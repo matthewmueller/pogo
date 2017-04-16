@@ -20,8 +20,11 @@ func ({{ $shortClass }} *{{ $class }}) Delete({{ primaryname .Columns }} {{ prim
 	DBLog(sqlstr, {{ primaryname .Columns }})
 	_, err = {{ $shortClass }}.DB.Exec(sqlstr, {{ primaryname .Columns }})
 	if err != nil {
-		return err
-	}
+    if err == pgx.ErrNoRows {
+      return Err{{ $model }}NotFound
+    }
+    return err
+  }
 
 	return nil
 }
@@ -36,8 +39,11 @@ func ({{ $shortClass }} *{{ $class }}) DeleteBy{{ indexmethod $idx }}({{ indexpa
 	DBLog(sqlstr, {{ indexvars $idx }})
 	_, err = {{ $shortClass }}.DB.Exec(sqlstr, {{ indexvars $idx }})
 	if err != nil {
-		return err
-	}
+    if err == pgx.ErrNoRows {
+      return Err{{ $model }}NotFound
+    }
+    return err
+  }
 
 	return nil
 }

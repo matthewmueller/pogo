@@ -9,5 +9,6 @@
 - [x] Implement additional find, update, delete methods for unique fields
 - [x] upsert method
 - [x] findmany method
+- [x] better indentation
 
-- [ ] better indentation
+- [ ] warn about skipped files, but don't error out
