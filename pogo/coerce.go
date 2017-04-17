@@ -9,11 +9,13 @@ import (
 	"github.com/matthewmueller/pogo/postgres"
 )
 
+// Coerce struct
 type Coerce struct {
 	Schema string
 	Enums  []*postgres.Enum
 }
 
+// NewCoerce struct
 func NewCoerce(schema string, enums []*postgres.Enum) Coerce {
 	return Coerce{
 		Schema: schema,
