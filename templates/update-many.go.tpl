@@ -35,9 +35,6 @@ func ({{ $shortClass }} *{{ $class }}) UpdateMany({{ $shortModel }} *{{ $model }
 	DBLog(sqlstr, values...)
   rows, err := {{ $shortClass }}.DB.Query(sqlstr, values...)
   if err != nil {
-    if err == pgx.ErrNoRows {
-      return {{ $return }}, Err{{ $model }}NotFound
-    }
     return {{ $return }}, err
   }
   defer rows.Close()
@@ -54,6 +51,12 @@ func ({{ $shortClass }} *{{ $class }}) UpdateMany({{ $shortModel }} *{{ $model }
   if rows.Err() != nil {
     return {{ $return }}, rows.Err()
   }
+
+	// ensure we return an empty array
+	// rather than nil when we marshal
+	if len({{ $return }}) == 0 {
+		return make([]{{ $model }}, 0), nil
+	}
 
   return {{ $return }}, nil
 }

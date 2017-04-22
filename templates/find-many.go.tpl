@@ -21,9 +21,6 @@ func ({{ $shortClass }} *{{ $class }}) FindMany(condition string, params... inte
 	DBLog(sqlstr, params...)
   rows, err := {{ $shortClass }}.DB.Query(sqlstr, params...)
   if err != nil {
-    if err == pgx.ErrNoRows {
-      return {{ $return }}, Err{{ $model }}NotFound
-    }
     return {{ $return }}, err
   }
   defer rows.Close()
@@ -40,6 +37,12 @@ func ({{ $shortClass }} *{{ $class }}) FindMany(condition string, params... inte
   if rows.Err() != nil {
     return {{ $return }}, rows.Err()
   }
+
+	// ensure we return an empty array
+	// rather than nil when we marshal
+	if len({{ $return }}) == 0 {
+		return make([]{{ $model }}, 0), nil
+	}
 
   return {{ $return }}, nil
 }

@@ -18,9 +18,6 @@ func ({{ $shortClass }} *{{ $class }}) DeleteMany(condition string, params... in
 	DBLog(sqlstr, params...)
   _, err = {{ $shortClass }}.DB.Exec(sqlstr, params...)
   if err != nil {
-    if err == pgx.ErrNoRows {
-      return Err{{ $model }}NotFound
-    }
     return err
   }
 
