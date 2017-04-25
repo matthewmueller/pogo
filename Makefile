@@ -2,8 +2,9 @@ run: bin
 	go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable -schema jack -path model
 .PHONY: run
 
-tempo:  bin
+examples:  bin
 	go run cmd/pogo/pogo.go -db postgres://localhost:5432/tempo_dev?sslmode=disable -path tempo
+	go run cmd/pogo/pogo.go -db postgres://localhost:5432/bot-ii?sslmode=disable -path jack
 .PHONY: tempo
 
 bin:
