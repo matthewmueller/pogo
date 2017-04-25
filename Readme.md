@@ -1,14 +1,10 @@
-- [x] json type? whatever questions is
-- [x] Enums
-- [x] Fix up coerce
-- [x] Test the models actually work
-  - [x] No Go errors
-  - [x] Can actually perform actions on the DB
-- [x] Only update files with an automated comment & are one of the specified templates
-- [x] Finish up the CLI
-- [x] Implement additional find, update, delete methods for unique fields
-- [x] upsert method
-- [x] findmany method
-- [x] better indentation
+# Pogo
 
-- [ ] warn about skipped files, but don't error out
+```sh
+# connect to the tempo database and write to tempo/
+pogo -db postgres://localhost:5432/tempo?sslmode=disable -path tempo
+```
+
+TODO:
+
+  - [ ] warn about skipped files, but don't error out
