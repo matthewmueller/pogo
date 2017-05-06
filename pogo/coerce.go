@@ -41,6 +41,9 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 	// ignore the content of functions
 	// TODO: not sure if this is a good idea or not
 	// was primarily added for numeric(10, 10)
+	// NOTE: this won't work for float(4) vs float(64)
+	// where float(4) should be a float32 and float(64)
+	// should be a float64
 	idx := strings.Index(dt, "(")
 	if idx >= 0 {
 		dt = dt[:idx]
@@ -55,11 +58,15 @@ func (c *Coerce) Coerce(dt string) (kind string) {
 		return "*bool"
 	case "integer", "smallint", "bigint":
 		return "*int"
+	case "real":
+		return "*float32"
+	case "double", "float":
+		return "*float64"
 	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
 		return "*time.Time"
 	case "json":
 		return "*map[string]interface{}"
-	case "numeric":
+	case "numeric", "decimal":
 		return "*decimal.Decimal"
 	default:
 		for _, enum := range c.Enums {
