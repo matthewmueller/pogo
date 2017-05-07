@@ -18,18 +18,18 @@ func ({{ $shortClass }} *{{ $class }}) UpdateMany({{ $shortModel }} *{{ $model }
 	fields := {{ $shortClass }}.getFields({{ $shortModel }})
 
 	// prepare the slices
-	c, i, v := querySlices(fields, len(params))
+	_c, _i, _v := querySlices(fields, len(params))
 
 	// sql query
 	sqlstr := `UPDATE {{ schema .Schema .Table.TableName }} SET (` +
-		strings.Join(c, ", ") + `) = (` +
-		strings.Join(i, ", ") + `) ` +
+		strings.Join(_c, ", ") + `) = (` +
+		strings.Join(_i, ", ") + `) ` +
     `WHERE ` + condition + ` ` +
 		`RETURNING {{ fields .Columns }}`
 
   values := []interface{}{}
   values = append(values, params...)
-  values = append(values, v...)
+  values = append(values, _v...)
 
 	// run query
 	DBLog(sqlstr, values...)

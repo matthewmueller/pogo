@@ -25,17 +25,17 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ $shortModel }} *{{ $model }}, {
 	delete(fields, "{{ primaryname .Columns }}")
 
 	// prepare the slices
-	c, i, v := querySlices(fields, 1)
+	_c, _i, _v := querySlices(fields, 1)
 
 	// sql query
 	sqlstr := `UPDATE {{ schema .Schema .Table.TableName }} SET (` +
-		strings.Join(c, ", ") + `) = (` +
-		strings.Join(i, ", ") + `)
+		strings.Join(_c, ", ") + `) = (` +
+		strings.Join(_i, ", ") + `)
 		WHERE "{{ primaryname .Columns }}" = $1
 		RETURNING {{ fields .Columns }}`
 
 	// run query
-	values := append([]interface{}{ {{ primaryname .Columns }} }, v...)
+	values := append([]interface{}{ {{ primaryname .Columns }} }, _v...)
 	DBLog(sqlstr, values...)
 
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)
@@ -64,12 +64,12 @@ func ({{ $shortClass }} *{{ $class }}) UpdateBy{{ indexmethod $idx }}({{ $shortM
 	{{ end }}
 
 	// prepare the slices
-	c, i, v := querySlices(fields, {{ indexlength $idx }})
+	_c, _i, _v := querySlices(fields, {{ indexlength $idx }})
 
 	// sql query
 	sqlstr := `UPDATE {{ schema $.Schema $.Table.TableName }} SET (` +
-		strings.Join(c, ", ") + `) = (` +
-		strings.Join(i, ", ") + `) ` +
+		strings.Join(_c, ", ") + `) = (` +
+		strings.Join(_i, ", ") + `) ` +
 		`WHERE {{ indexwhere $idx }} ` +
 		`RETURNING {{ fields $.Columns }}`
 
@@ -77,7 +77,7 @@ func ({{ $shortClass }} *{{ $class }}) UpdateBy{{ indexmethod $idx }}({{ $shortM
 	values := []interface{}{}
 	{{ range .Columns }}values = append(values, {{ indexparam .ColumnName }})
 	{{ end }}
-	values = append(values, v...)
+	values = append(values, _v...)
 	DBLog(sqlstr, values...)
 
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)

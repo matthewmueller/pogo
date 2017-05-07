@@ -24,12 +24,12 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ fkparams .ForeignKeys .Columns 
 	{{ end }}
 
 	// prepare the slices
-	c, i, v := querySlices(fields, {{ fklength .ForeignKeys }})
+	_c, _i, _v := querySlices(fields, {{ fklength .ForeignKeys }})
 
 	// sql query
 	sqlstr := `UPDATE {{ schema .Schema .Table.TableName }} SET (` +
-		strings.Join(c, ", ") + `) = (` +
-		strings.Join(i, ", ") + `)
+		strings.Join(_c, ", ") + `) = (` +
+		strings.Join(_i, ", ") + `)
 		WHERE {{ fkwhere .ForeignKeys }}
 		RETURNING {{ fields .Columns }}`
 
@@ -38,7 +38,7 @@ func ({{ $shortClass }} *{{ $class }}) Update({{ fkparams .ForeignKeys .Columns 
 	{{ range .ForeignKeys }}
 		values = append(values, {{ field .ColumnName }})
 	{{ end }}
-	values = append(values, v...)
+	values = append(values, _v...)
 	DBLog(sqlstr, values...)
 
 	row := {{ $shortClass }}.DB.QueryRow(sqlstr, values...)

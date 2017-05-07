@@ -3,8 +3,8 @@ run: bin
 .PHONY: run
 
 examples:  bin
-	go run cmd/pogo/pogo.go -db postgres://localhost:5432/tempo_dev?sslmode=disable -path tempo
-	go run cmd/pogo/pogo.go -db postgres://localhost:5432/bot-ii?sslmode=disable -path jack
+	# go run cmd/pogo/pogo.go -db postgres://localhost:5432/tempo_dev?sslmode=disable -path tempo
+	# go run cmd/pogo/pogo.go -db postgres://localhost:5432/bot-ii?sslmode=disable -path jack
 .PHONY: tempo
 
 bin:

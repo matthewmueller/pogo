@@ -19,12 +19,12 @@ func ({{ $shortClass }} *{{ $class }}) Upsert({{ $shortModel }} *{{ $model }}, a
 	fields := {{ $shortClass }}.getFields({{ $shortModel }})
 
 	// prepare the slices
-	c, i, v := querySlices(fields, 0)
+	_c, _i, _v := querySlices(fields, 0)
 
   // determine on conflict action
   var upsertAction string
   if action == UpsertDoUpdate {
-    upsertAction = `DO UPDATE SET (` + strings.Join(c, ", ") + `) = ( EXCLUDED.` + strings.Join(c, ", EXCLUDED.") + `)`
+    upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
   } else if action == UpsertDoNothing {
     upsertAction = UpsertDoNothing
   } else {
@@ -32,15 +32,15 @@ func ({{ $shortClass }} *{{ $class }}) Upsert({{ $shortModel }} *{{ $model }}, a
   }
 
 	// sql query
-  sqlstr := `INSERT INTO {{ schema .Schema .Table.TableName }} (` + strings.Join(c, ", ") + `) ` +
-	`VALUES (` + strings.Join(i, ", ") + `) ` +
+  sqlstr := `INSERT INTO {{ schema .Schema .Table.TableName }} (` + strings.Join(_c, ", ") + `) ` +
+	`VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ("{{ primaryname .Columns }}") ` +
   upsertAction + ` ` +
   `RETURNING {{ fields .Columns }}`
 
 	// run query
-  DBLog(sqlstr, v...)
-	row := {{ $shortClass }}.DB.QueryRow(sqlstr, v...)
+  DBLog(sqlstr, _v...)
+	row := {{ $shortClass }}.DB.QueryRow(sqlstr, _v...)
 	err = row.Scan({{ gofields .Columns $return }})
 	if err != nil && err != pgx.ErrNoRows {
 	  return {{ $return }}, err
@@ -56,12 +56,12 @@ func ({{ $shortClass }} *{{ $class }}) UpsertBy{{ indexmethod $idx }}({{ $shortM
   fields := {{ $shortClass }}.getFields({{ $shortModel }})
 
 	// prepare the slices
-	c, i, v := querySlices(fields, 0)
+	_c, _i, _v := querySlices(fields, 0)
 
   // determine on conflict action
   var upsertAction string
   if action == UpsertDoUpdate {
-    upsertAction = `DO UPDATE SET (` + strings.Join(c, ", ") + `) = ( EXCLUDED.` + strings.Join(c, ", EXCLUDED.") + `)`
+    upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
   } else if action == UpsertDoNothing {
     upsertAction = UpsertDoNothing
   } else {
@@ -69,15 +69,15 @@ func ({{ $shortClass }} *{{ $class }}) UpsertBy{{ indexmethod $idx }}({{ $shortM
   }
 
   // sql query
-  sqlstr := `INSERT INTO {{ schema $.Schema $.Table.TableName }} (` + strings.Join(c, ", ") + `) ` +
-	`VALUES (` + strings.Join(i, ", ") + `) ` +
+  sqlstr := `INSERT INTO {{ schema $.Schema $.Table.TableName }} (` + strings.Join(_c, ", ") + `) ` +
+	`VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ({{ indexparamlist $idx }}) ` +
   upsertAction + ` ` +
   `RETURNING {{ fields $.Columns }}`
 
 	// run query
-  DBLog(sqlstr, v...)
-	row := {{ $shortClass }}.DB.QueryRow(sqlstr, v...)
+  DBLog(sqlstr, _v...)
+	row := {{ $shortClass }}.DB.QueryRow(sqlstr, _v...)
 	err = row.Scan({{ gofields $.Columns $return }})
 	if err != nil && err != pgx.ErrNoRows {
 	  return {{ $return }}, err

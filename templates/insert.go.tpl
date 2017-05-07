@@ -10,16 +10,16 @@ package {{ .Package }}
 // Insert the {{ $model }} to the database.
 func ({{ $shortClass }} *{{ $class }}) Insert({{ $shortModel }} *{{ $model }}) ({{ $return }} {{ $model }}, err error) {
 	// get all the non-nil fields and prepare them for the query
-	c, i, v := querySlices({{ $shortClass }}.getFields({{ $shortModel }}), 0)
+	_c, _i, _v := querySlices({{ $shortClass }}.getFields({{ $shortModel }}), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
-	INSERT INTO {{ schema .Schema .Table.TableName }} (` + strings.Join(c, ", ") + `)
-	VALUES (` + strings.Join(i, ", ") + `)
+	INSERT INTO {{ schema .Schema .Table.TableName }} (` + strings.Join(_c, ", ") + `)
+	VALUES (` + strings.Join(_i, ", ") + `)
 	RETURNING {{ fields .Columns }}`
 
-	DBLog(sqlstr, v...)
-	row := {{ $shortClass }}.DB.QueryRow(sqlstr, v...)
+	DBLog(sqlstr, _v...)
+	row := {{ $shortClass }}.DB.QueryRow(sqlstr, _v...)
 	err = row.Scan({{ gofields .Columns $return }})
 	if err != nil {
 	  return {{ $return }}, err
