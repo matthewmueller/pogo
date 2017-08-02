@@ -4,9 +4,9 @@ import "github.com/matthewmueller/pogo/db"
 
 // Table represents table info.
 type Table struct {
-	Type      string // type
-	TableName string // table_name
-	ManualPk  bool   // manual_pk
+	Type      *string // type
+	TableName *string // table_name
+	ManualPk  *bool   // manual_pk
 }
 
 // Tables get all the postgres tables
