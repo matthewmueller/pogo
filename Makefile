@@ -1,5 +1,5 @@
 run: bin
-	go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable -schema jack -path model
+	go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable -schema jack -path jack
 .PHONY: run
 
 examples:  bin

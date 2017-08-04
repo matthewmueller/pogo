@@ -123,17 +123,17 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 		// 	continue
 		// }
 
-		columns, err1 := postgres.Columns(db, schema, table.TableName)
+		columns, err1 := postgres.Columns(db, schema, *table.TableName)
 		if err1 != nil {
 			return output, errors.Wrap(err1, "unable to lookup columns")
 		}
 
-		fks, err1 := postgres.ForeignKeys(db, schema, table.TableName)
+		fks, err1 := postgres.ForeignKeys(db, schema, *table.TableName)
 		if err1 != nil {
 			return output, errors.Wrap(err1, "unable to lookup foreign keys")
 		}
 
-		indexes, err1 := postgres.Indexes(db, schema, table.TableName)
+		indexes, err1 := postgres.Indexes(db, schema, *table.TableName)
 		if err != nil {
 			return output, errors.Wrap(err1, "unable to lookup the indexes")
 		}
@@ -141,7 +141,7 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 		var indices []*Index
 		for _, index := range indexes {
 
-			cols, err2 := postgres.IndexColumns(db, schema, table.TableName, index.IndexName)
+			cols, err2 := postgres.IndexColumns(db, schema, *table.TableName, index.IndexName)
 			if err2 != nil {
 				return output, errors.Wrap(err2, "unable to get the columns")
 			}
@@ -169,9 +169,9 @@ func Generate(db db.DB, schema string, pkg string) (output map[string]string, er
 			// 	continue
 			// }
 
-			outputFile := path.Join(table.TableName + "." + method + ".go")
+			outputFile := path.Join(*table.TableName + "." + method + ".go")
 			if method == "table" {
-				outputFile = path.Join(table.TableName + ".go")
+				outputFile = path.Join(*table.TableName + ".go")
 			}
 
 			buf, err1 := loadTemplate(templatePath(method, tableType), templatePath(method, ""))
