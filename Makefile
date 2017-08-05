@@ -1,17 +1,17 @@
-run: bin
-	go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable -schema jack -path jack
+run: templates
+	@go run cmd/pogo/pogo.go -db postgres://localhost:5432/pogo?sslmode=disable -schema jack -path jack
 .PHONY: run
 
-examples:  bin
+examples:  templates
 	# go run cmd/pogo/pogo.go -db postgres://localhost:5432/tempo_dev?sslmode=disable -path tempo
 	# go run cmd/pogo/pogo.go -db postgres://localhost:5432/bot-ii?sslmode=disable -path jack
 .PHONY: tempo
 
-bin:
-	@go-bindata -o bin/bin.go -pkg bin templates/
-.PHONY: bin
+templates:
+	@go-bindata -o templates/templates.go -pkg templates -ignore=templates.go templates/
+.PHONY: templates
 
-install: bin
+install: templates
 	@go install ./...
 
 migrate:

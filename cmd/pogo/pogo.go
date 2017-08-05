@@ -7,13 +7,13 @@ import (
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/text"
-	"github.com/matthewmueller/pgx"
+	"github.com/jackc/pgx"
 	"github.com/matthewmueller/pogo/pogo"
 )
 
 var dburl = flag.String("db", "", "database")
 var schema = flag.String("schema", "public", "schema name")
-var pathdir = flag.String("path", "model", "path to output")
+var pathdir = flag.String("path", "pogo", "path to output")
 
 func main() {
 	log.SetHandler(text.New(os.Stderr))
@@ -43,13 +43,17 @@ func main() {
 	}
 	*pathdir = path.Join(cwd, *pathdir)
 
-	output, err := pogo.Generate(db, *schema, path.Base(*pathdir))
+	output, err := pogo.Generate(db, &pogo.Settings{
+		Schema:  *schema,
+		Package: path.Base(*pathdir),
+	})
 	if err != nil {
 		log.WithError(err).Fatal("unable to generate models")
 	}
+	_ = output
 
-	err = pogo.Write(output, *pathdir)
-	if err != nil {
-		log.WithError(err).Fatal("unable to write out models")
-	}
+	// err = pogo.Write(output, *pathdir)
+	// if err != nil {
+	// 	log.WithError(err).Fatal("unable to write out models")
+	// }
 }
