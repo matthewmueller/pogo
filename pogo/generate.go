@@ -88,7 +88,7 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 	// build each model file from the tables
 	// files := map[string]string{}
 	for _, table := range schema.Tables {
-		if table.Name != "standups_teammates" {
+		if table.Name != "teams" {
 			continue
 		}
 

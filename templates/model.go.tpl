@@ -138,6 +138,74 @@ func ({{ $cv }} *{{ $c }}) FindBy{{ $idxmethod }}({{ $idxparams }}) ({{ $mv }} {
 {{ end }}
 
 {{/*************************************************************************/}}
+{{/* pogo.$TABLE.FindMany(): find many rows by a condition */}}
+{{/*************************************************************************/}}
+
+// FindMany find many `{{ $mv }}`s by a given condition
+func ({{ $cv }} *{{ $c }}) FindMany(condition string, params... interface{}) ([]*{{ $m }}, error) {
+	var _o []*{{ $m }}
+	
+	// sql select query, primary key provided by sequence
+	sqlstr := `
+	SELECT {{ $cof }}
+	FROM {{ $t }}
+	WHERE ` + condition
+
+	Log(sqlstr, params...)
+  rows, err := {{ $cv }}.db.Query(sqlstr, params...)
+  if err != nil {
+    return _o, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+		var {{ $mv }} *{{ $m }}
+    if e := rows.Scan({{ $cog }}); e != nil {
+			if e == pgx.ErrNoRows {
+				return _o, Err{{ $m }}NotFound
+			}
+			return _o, err
+		}
+    _o = append(_o, {{ $mv }})
+  }
+  if rows.Err() != nil {
+    return _o, rows.Err()
+  }
+
+	// ensure we return an empty array
+	// rather than nil when we marshal
+	if len(_o) == 0 {
+		return make([]*{{ $m }}, 0), nil
+	}
+
+  return _o, nil
+}
+
+{{/*************************************************************************/}}
+{{/* pogo.$TABLE.FindOne(): find exactly one row by a condition */}}
+{{/*************************************************************************/}}
+
+// FindOne find one {{ $mv }} by a condition
+func ({{ $cv }} *{{ $c }}) FindOne(condition string, params... interface{}) (*{{ $m }}, error) {
+	// sql select query, primary key provided by sequence
+	sqlstr := `
+	SELECT {{ $cof }}
+	FROM {{ $t }}
+	WHERE ` + condition
+
+	Log(sqlstr, params...)
+  row := {{ $cv }}.DB.QueryRow(sqlstr, params...)
+  if e := row.Scan({{ $cog }}); e != nil {
+		if e == pgx.ErrNoRows {
+      return nil,  Err{{ $m }}NotFound
+    }
+		return nil, e
+	}
+
+  return {{ $mv }}, nil
+}
+
+{{/*************************************************************************/}}
 {{/* pogo.$TABLE.Insert(): insert a new row into the table */}}
 {{/*************************************************************************/}}
 
@@ -255,6 +323,62 @@ func ({{ $cv }} *{{ $c }}) UpdateBy{{ $idxmethod }}({{ $mv }} {{ $m }}, {{ $idxp
 {{ end }}
 
 {{/*****************************************************************************/}}
+{{/* pogo.$TABLE.UpdateMany(): update many rows by the given condition */}}
+{{/*****************************************************************************/}}
+
+// UpdateMany rows in `{{ $t }}` by a given condition
+func ({{ $cv }} *{{ $c }}) UpdateMany({{ $mv }} *{{ $m }}, condition string, params... interface{}) ([]*{{ $m }}, error) {
+	var _o []*{{ $m }}
+	
+	// get the non-nil fields
+	fieldset := fields({{ $mv }})
+
+	// prepare the slices
+	_c, _i, _v := slice(fieldset, len(params))
+
+	// sql query
+	sqlstr := `UPDATE {{ $t }} SET (` +
+		strings.Join(_c, ", ") + `) = (` +
+		strings.Join(_i, ", ") + `) ` +
+		`WHERE ` + condition + ` ` +
+		`RETURNING {{ $cof }}`
+
+  values := []interface{}{}
+  values = append(values, params...)
+  values = append(values, _v...)
+
+	// run query
+	Log(sqlstr, values...)
+  rows, err := {{ $cv }}.db.Query(sqlstr, values...)
+  if err != nil {
+    return _o, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+    var {{ $mv }} *{{ $m }}
+    if e := rows.Scan({{ $cog }}); e != nil {
+			if e == pgx.ErrNoRows {
+				return _o, Err{{ $m }}NotFound
+			}
+      return _o, err
+    }
+    _o = append(_o, {{ $mv }})
+  }
+  if rows.Err() != nil {
+    return _o, rows.Err()
+  }
+
+	// ensure we return an empty array
+	// rather than nil when we marshal
+	if len(_o) == 0 {
+		return make([]{{ $m }}, 0), nil
+	}
+
+  return _o, nil
+}
+
+{{/*****************************************************************************/}}
 {{/* pogo.$TABLE.Delete(): delete a row using its primary index */}}
 {{/*****************************************************************************/}}
 
@@ -300,6 +424,24 @@ func ({{ $cv }} *{{ $c }}) DeleteBy{{ $idxmethod }}({{ $idxparams }}) error {
 	return nil
 }
 {{ end }}
+
+{{/*****************************************************************************/}}
+{{/* pogo.$TABLE.DeleteMany(): delete many rows by the given condition */}}
+{{/*****************************************************************************/}}
+
+// DeleteMany delete many `{{ $mv }}`'s by the given condition
+func ({{ $cv }} *{{ $c }}) DeleteMany(condition string, params... interface{}) error {
+	// sql select query, primary key provided by sequence
+	sqlstr := `DELETE FROM {{ $t }} WHERE ` + condition
+
+	Log(sqlstr, params...)
+  _, err = {{ $cv }}.db.Exec(sqlstr, params...)
+  if err != nil {
+    return err
+  }
+
+  return nil
+}
 
 {{/*****************************************************************************/}}
 {{/* pogo.$TABLE.Upsert(): upsert a row by its primary key */}}
