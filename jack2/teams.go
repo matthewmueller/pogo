@@ -1,4 +1,4 @@
-package jack
+package jack2
 
 import (
 	"errors"
@@ -39,12 +39,12 @@ type Team struct {
 }
 
 // team constructor
-func team(db *pgx.Conn) *Teams {
+func team(db DB) *Teams {
 	return &Teams{db}
 }
 
 // get all the non-nil fields
-func fields(team *Team) map[string]interface{} {
+func (teams *Teams) fields(team *Team) map[string]interface{} {
 	fields := make(map[string]interface{})
 
 	if team.ID != nil {
@@ -97,7 +97,7 @@ func fields(team *Team) map[string]interface{} {
 }
 
 // Find a team by "id"
-func (teams *Teams) Find(id *uuid.UUID) (*Team, error) {
+func (teams *Teams) Find(id *uuid.UUID) (team *Team, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -114,11 +114,11 @@ func (teams *Teams) Find(id *uuid.UUID) (*Team, error) {
 		return nil, e
 	}
 
-	return &team, nil
+	return team, nil
 }
 
 // FindByID find a team by `id`
-func (teams *Teams) FindByID(iD *uuid.UUID) (team Team, err error) {
+func (teams *Teams) FindByID(iD *uuid.UUID) (team *Team, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -140,7 +140,7 @@ func (teams *Teams) FindByID(iD *uuid.UUID) (team Team, err error) {
 }
 
 // FindBySlackBotAccessToken find a team by `slack_bot_access_token`
-func (teams *Teams) FindBySlackBotAccessToken(slackBotAccessToken *string) (team Team, err error) {
+func (teams *Teams) FindBySlackBotAccessToken(slackBotAccessToken *string) (team *Team, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -162,7 +162,7 @@ func (teams *Teams) FindBySlackBotAccessToken(slackBotAccessToken *string) (team
 }
 
 // FindBySlackTeamAccessToken find a team by `slack_team_access_token`
-func (teams *Teams) FindBySlackTeamAccessToken(slackTeamAccessToken *string) (team Team, err error) {
+func (teams *Teams) FindBySlackTeamAccessToken(slackTeamAccessToken *string) (team *Team, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -184,7 +184,7 @@ func (teams *Teams) FindBySlackTeamAccessToken(slackTeamAccessToken *string) (te
 }
 
 // FindBySlackTeamID find a team by `slack_team_id`
-func (teams *Teams) FindBySlackTeamID(slackTeamID *string) (team Team, err error) {
+func (teams *Teams) FindBySlackTeamID(slackTeamID *string) (team *Team, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -246,7 +246,7 @@ func (teams *Teams) FindMany(condition string, params ...interface{}) ([]*Team, 
 }
 
 // FindOne find one team by a condition
-func (teams *Teams) FindOne(condition string, params ...interface{}) (*Team, error) {
+func (teams *Teams) FindOne(condition string, params ...interface{}) (team *Team, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -254,7 +254,7 @@ func (teams *Teams) FindOne(condition string, params ...interface{}) (*Team, err
 	WHERE ` + condition
 
 	Log(sqlstr, params...)
-	row := teams.DB.QueryRow(sqlstr, params...)
+	row := teams.db.QueryRow(sqlstr, params...)
 	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -268,7 +268,7 @@ func (teams *Teams) FindOne(condition string, params ...interface{}) (*Team, err
 // Insert a `team` into the `jack.teams` table.
 func (teams *Teams) Insert(team Team) (*Team, error) {
 	// get all the non-nil fields and prepare them for the query
-	_c, _i, _v := slice(fields(team), 0)
+	_c, _i, _v := slice(teams.fields(&team), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -288,7 +288,7 @@ func (teams *Teams) Insert(team Team) (*Team, error) {
 
 // Update a team by its `id`
 func (teams *Teams) Update(team Team, id *uuid.UUID) (*Team, error) {
-	fieldset := fields(team)
+	fieldset := teams.fields(&team)
 
 	// first check if we have the primary key
 	if id == nil {
@@ -320,12 +320,12 @@ func (teams *Teams) Update(team Team, id *uuid.UUID) (*Team, error) {
 		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpdateByID find a Team
 func (teams *Teams) UpdateByID(team Team, iD *uuid.UUID) (*Team, error) {
-	fieldset := fields(team)
+	fieldset := teams.fields(&team)
 
 	// first check if we have all the keys we need
 	if iD == nil {
@@ -352,7 +352,7 @@ func (teams *Teams) UpdateByID(team Team, iD *uuid.UUID) (*Team, error) {
 	values = append(values, _v...)
 	Log(sqlstr, values...)
 
-	row := teams.DB.QueryRow(sqlstr, values...)
+	row := teams.db.QueryRow(sqlstr, values...)
 	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -360,12 +360,12 @@ func (teams *Teams) UpdateByID(team Team, iD *uuid.UUID) (*Team, error) {
 		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpdateBySlackBotAccessToken find a Team
 func (teams *Teams) UpdateBySlackBotAccessToken(team Team, slackBotAccessToken *string) (*Team, error) {
-	fieldset := fields(team)
+	fieldset := teams.fields(&team)
 
 	// first check if we have all the keys we need
 	if slackBotAccessToken == nil {
@@ -392,7 +392,7 @@ func (teams *Teams) UpdateBySlackBotAccessToken(team Team, slackBotAccessToken *
 	values = append(values, _v...)
 	Log(sqlstr, values...)
 
-	row := teams.DB.QueryRow(sqlstr, values...)
+	row := teams.db.QueryRow(sqlstr, values...)
 	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -400,12 +400,12 @@ func (teams *Teams) UpdateBySlackBotAccessToken(team Team, slackBotAccessToken *
 		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpdateBySlackTeamAccessToken find a Team
 func (teams *Teams) UpdateBySlackTeamAccessToken(team Team, slackTeamAccessToken *string) (*Team, error) {
-	fieldset := fields(team)
+	fieldset := teams.fields(&team)
 
 	// first check if we have all the keys we need
 	if slackTeamAccessToken == nil {
@@ -432,7 +432,7 @@ func (teams *Teams) UpdateBySlackTeamAccessToken(team Team, slackTeamAccessToken
 	values = append(values, _v...)
 	Log(sqlstr, values...)
 
-	row := teams.DB.QueryRow(sqlstr, values...)
+	row := teams.db.QueryRow(sqlstr, values...)
 	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -440,12 +440,12 @@ func (teams *Teams) UpdateBySlackTeamAccessToken(team Team, slackTeamAccessToken
 		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpdateBySlackTeamID find a Team
 func (teams *Teams) UpdateBySlackTeamID(team Team, slackTeamID *string) (*Team, error) {
-	fieldset := fields(team)
+	fieldset := teams.fields(&team)
 
 	// first check if we have all the keys we need
 	if slackTeamID == nil {
@@ -472,7 +472,7 @@ func (teams *Teams) UpdateBySlackTeamID(team Team, slackTeamID *string) (*Team, 
 	values = append(values, _v...)
 	Log(sqlstr, values...)
 
-	row := teams.DB.QueryRow(sqlstr, values...)
+	row := teams.db.QueryRow(sqlstr, values...)
 	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -480,7 +480,7 @@ func (teams *Teams) UpdateBySlackTeamID(team Team, slackTeamID *string) (*Team, 
 		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpdateMany rows in `jack.teams` by a given condition
@@ -488,7 +488,7 @@ func (teams *Teams) UpdateMany(team *Team, condition string, params ...interface
 	var _o []*Team
 
 	// get the non-nil fields
-	fieldset := fields(team)
+	fieldset := teams.fields(team)
 
 	// prepare the slices
 	_c, _i, _v := slice(fieldset, len(params))
@@ -529,7 +529,7 @@ func (teams *Teams) UpdateMany(team *Team, condition string, params ...interface
 	// ensure we return an empty array
 	// rather than nil when we marshal
 	if len(_o) == 0 {
-		return make([]Team, 0), nil
+		return make([]*Team, 0), nil
 	}
 
 	return _o, nil
@@ -558,7 +558,7 @@ func (teams *Teams) DeleteByID(iD *uuid.UUID) error {
 	sqlstr := `DELETE FROM jack.teams WHERE "id" = $1`
 
 	Log(sqlstr, iD)
-	if _, err := teams.DB.Exec(sqlstr, iD); e != nil {
+	if _, e := teams.db.Exec(sqlstr, iD); e != nil {
 		if e == pgx.ErrNoRows {
 			return ErrTeamNotFound
 		}
@@ -574,7 +574,7 @@ func (teams *Teams) DeleteBySlackBotAccessToken(slackBotAccessToken *string) err
 	sqlstr := `DELETE FROM jack.teams WHERE "slack_bot_access_token" = $1`
 
 	Log(sqlstr, slackBotAccessToken)
-	if _, err := teams.DB.Exec(sqlstr, slackBotAccessToken); e != nil {
+	if _, e := teams.db.Exec(sqlstr, slackBotAccessToken); e != nil {
 		if e == pgx.ErrNoRows {
 			return ErrTeamNotFound
 		}
@@ -590,7 +590,7 @@ func (teams *Teams) DeleteBySlackTeamAccessToken(slackTeamAccessToken *string) e
 	sqlstr := `DELETE FROM jack.teams WHERE "slack_team_access_token" = $1`
 
 	Log(sqlstr, slackTeamAccessToken)
-	if _, err := teams.DB.Exec(sqlstr, slackTeamAccessToken); e != nil {
+	if _, e := teams.db.Exec(sqlstr, slackTeamAccessToken); e != nil {
 		if e == pgx.ErrNoRows {
 			return ErrTeamNotFound
 		}
@@ -606,7 +606,7 @@ func (teams *Teams) DeleteBySlackTeamID(slackTeamID *string) error {
 	sqlstr := `DELETE FROM jack.teams WHERE "slack_team_id" = $1`
 
 	Log(sqlstr, slackTeamID)
-	if _, err := teams.DB.Exec(sqlstr, slackTeamID); e != nil {
+	if _, e := teams.db.Exec(sqlstr, slackTeamID); e != nil {
 		if e == pgx.ErrNoRows {
 			return ErrTeamNotFound
 		}
@@ -622,9 +622,8 @@ func (teams *Teams) DeleteMany(condition string, params ...interface{}) error {
 	sqlstr := `DELETE FROM jack.teams WHERE ` + condition
 
 	Log(sqlstr, params...)
-	_, err = teams.db.Exec(sqlstr, params...)
-	if err != nil {
-		return err
+	if _, e := teams.db.Exec(sqlstr, params...); e != nil {
+		return e
 	}
 
 	return nil
@@ -632,10 +631,10 @@ func (teams *Teams) DeleteMany(condition string, params ...interface{}) error {
 
 // Upsert the `team` by its `id`.
 func (teams *Teams) Upsert(team Team, action string) (*Team, error) {
-	fieldset := fields(team)
+	fieldset := teams.fields(&team)
 
 	// prepare the slices
-	_c, _i, _v := querySlices(fieldset, 0)
+	_c, _i, _v := slice(fieldset, 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -644,7 +643,7 @@ func (teams *Teams) Upsert(team Team, action string) (*Team, error) {
 	} else if action == UpsertDoNothing {
 		upsertAction = UpsertDoNothing
 	} else {
-		return team, errors.New("invalid upsert action")
+		return nil, errors.New("invalid upsert action")
 	}
 
 	// sql query
@@ -655,22 +654,19 @@ func (teams *Teams) Upsert(team Team, action string) (*Team, error) {
 		`RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"`
 
 		// run query
-	DBLog(sqlstr, _v...)
-	row := teams.DB.QueryRow(sqlstr, _v...)
-	err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
-	if err != nil && err != pgx.ErrNoRows {
-		return team, err
+	Log(sqlstr, _v...)
+	row := teams.db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpsertByID find a Team
-func (teams *Teams) UpsertByID(team *Team, action string) (Team, error) {
-	fieldset := fields(team)
-
-	// prepare the slices
-	_c, _i, _v := querySlices(fieldset, 0)
+func (teams *Teams) UpsertByID(team Team, action string) (*Team, error) {
+	// get all the non-nil fields and prepare them for the query
+	_c, _i, _v := slice(teams.fields(&team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -679,7 +675,7 @@ func (teams *Teams) UpsertByID(team *Team, action string) (Team, error) {
 	} else if action == UpsertDoNothing {
 		upsertAction = UpsertDoNothing
 	} else {
-		return team, errors.New("invalid upsert action")
+		return nil, errors.New("invalid upsert action")
 	}
 
 	// sql query
@@ -690,22 +686,19 @@ func (teams *Teams) UpsertByID(team *Team, action string) (Team, error) {
 		`RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"`
 
 		// run query
-	DBLog(sqlstr, _v...)
-	row := teams.DB.QueryRow(sqlstr, _v...)
-	err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
-	if err != nil && err != pgx.ErrNoRows {
-		return team, err
+	Log(sqlstr, _v...)
+	row := teams.db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpsertBySlackBotAccessToken find a Team
-func (teams *Teams) UpsertBySlackBotAccessToken(team *Team, action string) (Team, error) {
-	fieldset := fields(team)
-
-	// prepare the slices
-	_c, _i, _v := querySlices(fieldset, 0)
+func (teams *Teams) UpsertBySlackBotAccessToken(team Team, action string) (*Team, error) {
+	// get all the non-nil fields and prepare them for the query
+	_c, _i, _v := slice(teams.fields(&team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -714,7 +707,7 @@ func (teams *Teams) UpsertBySlackBotAccessToken(team *Team, action string) (Team
 	} else if action == UpsertDoNothing {
 		upsertAction = UpsertDoNothing
 	} else {
-		return team, errors.New("invalid upsert action")
+		return nil, errors.New("invalid upsert action")
 	}
 
 	// sql query
@@ -725,22 +718,19 @@ func (teams *Teams) UpsertBySlackBotAccessToken(team *Team, action string) (Team
 		`RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"`
 
 		// run query
-	DBLog(sqlstr, _v...)
-	row := teams.DB.QueryRow(sqlstr, _v...)
-	err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
-	if err != nil && err != pgx.ErrNoRows {
-		return team, err
+	Log(sqlstr, _v...)
+	row := teams.db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpsertBySlackTeamAccessToken find a Team
-func (teams *Teams) UpsertBySlackTeamAccessToken(team *Team, action string) (Team, error) {
-	fieldset := fields(team)
-
-	// prepare the slices
-	_c, _i, _v := querySlices(fieldset, 0)
+func (teams *Teams) UpsertBySlackTeamAccessToken(team Team, action string) (*Team, error) {
+	// get all the non-nil fields and prepare them for the query
+	_c, _i, _v := slice(teams.fields(&team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -749,7 +739,7 @@ func (teams *Teams) UpsertBySlackTeamAccessToken(team *Team, action string) (Tea
 	} else if action == UpsertDoNothing {
 		upsertAction = UpsertDoNothing
 	} else {
-		return team, errors.New("invalid upsert action")
+		return nil, errors.New("invalid upsert action")
 	}
 
 	// sql query
@@ -760,22 +750,19 @@ func (teams *Teams) UpsertBySlackTeamAccessToken(team *Team, action string) (Tea
 		`RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"`
 
 		// run query
-	DBLog(sqlstr, _v...)
-	row := teams.DB.QueryRow(sqlstr, _v...)
-	err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
-	if err != nil && err != pgx.ErrNoRows {
-		return team, err
+	Log(sqlstr, _v...)
+	row := teams.db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }
 
 // UpsertBySlackTeamID find a Team
-func (teams *Teams) UpsertBySlackTeamID(team *Team, action string) (Team, error) {
-	fieldset := fields(team)
-
-	// prepare the slices
-	_c, _i, _v := querySlices(fieldset, 0)
+func (teams *Teams) UpsertBySlackTeamID(team Team, action string) (*Team, error) {
+	// get all the non-nil fields and prepare them for the query
+	_c, _i, _v := slice(teams.fields(&team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -784,7 +771,7 @@ func (teams *Teams) UpsertBySlackTeamID(team *Team, action string) (Team, error)
 	} else if action == UpsertDoNothing {
 		upsertAction = UpsertDoNothing
 	} else {
-		return team, errors.New("invalid upsert action")
+		return nil, errors.New("invalid upsert action")
 	}
 
 	// sql query
@@ -795,12 +782,11 @@ func (teams *Teams) UpsertBySlackTeamID(team *Team, action string) (Team, error)
 		`RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"`
 
 		// run query
-	DBLog(sqlstr, _v...)
-	row := teams.DB.QueryRow(sqlstr, _v...)
-	err = row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
-	if err != nil && err != pgx.ErrNoRows {
-		return team, err
+	Log(sqlstr, _v...)
+	row := teams.db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+		return nil, e
 	}
 
-	return team, nil
+	return &team, nil
 }

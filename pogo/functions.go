@@ -200,6 +200,25 @@ var templateMap = template.FuncMap{
 
 		return s + t
 	},
+
+	"many2many": func(table *Table) bool {
+		hasPrimary := false
+		for _, c := range table.Columns {
+			if c.IsPrimaryKey {
+				hasPrimary = true
+				break
+			}
+		}
+		if hasPrimary {
+			return false
+		}
+
+		if len(table.ForeignKeys) == 2 {
+			return true
+		}
+
+		return false
+	},
 }
 
 func singular(s string) string {

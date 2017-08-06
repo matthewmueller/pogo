@@ -61,7 +61,7 @@ type {{ $m }} struct {
 {{/*************************************************************************/}}
 
 // {{ $mv }} constructor
-func {{ $mv }}(db *pgx.Conn) *{{ $c }} {
+func {{ $mv }}(db DB) *{{ $c }} {
   return &{{ $c }}{db}
 }
 
@@ -85,7 +85,7 @@ func fields({{ $mv }} *{{ $m }}) map[string]interface{} {
 {{/*************************************************************************/}}
 
 // Find a `{{ $mv }}` by its {{ $fks | join "`, `" | printf "`%s`"}}
-func ({{ $cv }} *{{ $c }}) Find({{ $fkparams }}) (*{{ $m }}, error) {
+func ({{ $cv }} *{{ $c }}) Find({{ $fkparams }}) ({{ $mv }} *{{ $m }}, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
@@ -102,7 +102,7 @@ func ({{ $cv }} *{{ $c }}) Find({{ $fkparams }}) (*{{ $m }}, error) {
     return nil, e
   }
 
-	return &  {{ $mv }}, nil
+	return {{ $mv }}, nil
 }
 
 {{/*************************************************************************/}}
@@ -112,7 +112,7 @@ func ({{ $cv }} *{{ $c }}) Find({{ $fkparams }}) (*{{ $m }}, error) {
 // Insert a `{{ $mv }}` into `{{ $t }}`
 func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 	// get all the non-nil fields and prepare them for the query
-	_c, _i, _v := slice(fields({{ $mv }}), 0)
+	_c, _i, _v := slice(fields(&{{ $mv }}), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -122,7 +122,7 @@ func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
   `
 
 	Log(sqlstr, _v...)
-	row := {{ $cv }}.DB.QueryRow(sqlstr, _v...)
+	row := {{ $cv }}.db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil {
     return nil, e
   }
@@ -136,7 +136,7 @@ func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 
 // Update a `{{ $m }}` by its {{ $fks | join "`, `" | printf "`%s`"}}
 func ({{ $cv }} *{{ $c }}) Update({{ $fkparams }}, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
-	fieldset := fields({{ $mv }})
+	fieldset := fields(&{{ $mv }})
 
 	// first check if we have the foreign keys
   {{ range .Table.ForeignKeys }}if {{ .Name | camelize }} == nil {
@@ -168,7 +168,7 @@ func ({{ $cv }} *{{ $c }}) Update({{ $fkparams }}, {{ $mv }} {{ $m }}) (*{{ $m }
 	row := {{ $cv }}.db.QueryRow(sqlstr, values...)
 	if e := row.Scan({{ $cog }}); e != nil {
     if e == pgx.ErrNoRows {
-      return nil,  Err{{ $m }}NotFound
+      return nil, Err{{ $m }}NotFound
     }
     return nil, e
   }
@@ -192,7 +192,7 @@ func ({{ $cv }} *{{ $c }}) Delete({{ $fkparams }}) error {
 	Log(sqlstr, {{ $fklist }})
 	if _, e := {{ $cv }}.db.Exec(sqlstr, {{ $fklist }}); e != nil {
     if e == pgx.ErrNoRows {
-      return nil,  Err{{ $m }}NotFound
+      return Err{{ $m }}NotFound
     }
     return e
   }

@@ -1,4 +1,4 @@
-package jack
+package jack2
 
 import (
 	"strconv"
@@ -20,21 +20,21 @@ type DB interface {
 
 // Client is the struct containing all our models
 type Client struct {
-	Report           *Report
-	Standup          *Standup
-	StandupsTeammate *StandupsTeammate
-	Teammate         *Teammate
-	Team             *Team
+	Report          *Reports
+	Standup         *Standups
+	StandupTeammate *StandupsTeammates
+	Teammate        *Teammates
+	Team            *Teams
 }
 
 // New database client
 func New(db DB) *Client {
 	return &Client{
-		Report:           report(db),
-		Standup:          standup(db),
-		StandupsTeammate: standupsteammate(db),
-		Teammate:         teammate(db),
-		Team:             team(db),
+		Report:          report(db),
+		Standup:         standup(db),
+		StandupTeammate: standupteammate(db),
+		Teammate:        teammate(db),
+		Team:            team(db),
 	}
 }
 
