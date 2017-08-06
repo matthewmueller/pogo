@@ -1,5 +1,5 @@
 run: templates
-	@go run cmd/pogo/pogo.go --db postgres://localhost:5432/pogo?sslmode=disable --schema jack --path jack2
+	@go run cmd/pogo/pogo.go --db postgres://localhost:5432/pogo?sslmode=disable --schema jack --path jack
 .PHONY: run
 
 examples:  templates
