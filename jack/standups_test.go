@@ -54,7 +54,9 @@ func TestStandupsInsert(t *testing.T) {
 		UpdatedAt:      &_updatedat,
 	}
 
-	standup2, err := model.Standup.Insert(standup1)
+	standup2, err := model.Standup.Insert(
+		model.Standup.ID(),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
