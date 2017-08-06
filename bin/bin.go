@@ -179,7 +179,7 @@ func templatesFindManyGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/find-many.go.tpl", size: 1373, mode: os.FileMode(420), modTime: time.Unix(1492854890, 0)}
+	info := bindataFileInfo{name: "templates/find-many.go.tpl", size: 1373, mode: os.FileMode(420), modTime: time.Unix(1501697174, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

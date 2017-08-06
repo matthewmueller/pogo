@@ -7,6 +7,10 @@ pogo -db postgres://localhost:5432/tempo?sslmode=disable -path tempo
 
 TODO:
 
-  - [ ] migrate to pgx@3
-  - [ ] make api more like cdp
-  - [ ] warn about skipped files, but don't error out
+  - [x] migrate to pgx@3
+  - [x] warn about skipped files, but don't error out
+  - ~~[ ] make api more like cdp~~
+    - Need to use this more to figure out if there are any API improvements to make
+  - [ ] Finish generated tests using a pogo sql script (not jack)
+  - [ ] Create many-to-many generated tests
+  - [ ] Implement fake data generator

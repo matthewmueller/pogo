@@ -1,27 +1,28 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"path"
 
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/text"
-	"github.com/matthewmueller/pgx"
+	"github.com/jackc/pgx"
 	"github.com/matthewmueller/pogo/pogo"
 )
 
-var dburl = flag.String("db", "", "database")
-var schema = flag.String("schema", "public", "schema name")
-var pathdir = flag.String("path", "model", "path to output")
+var (
+	cli = kingpin.New("pogo", "postgres model generator")
+
+	dburl   = cli.Flag("db", "database connection string").String()
+	schema  = cli.Flag("schema", "database schema").Default("public").String()
+	outpath = cli.Flag("path", "output path to write to").Default("pogo").String()
+)
 
 func main() {
 	log.SetHandler(text.New(os.Stderr))
-	flag.Parse()
-
-	if *dburl == "" {
-		log.Fatal("pogo needs a database connection string")
-	}
+	kingpin.MustParse(cli.Parse(os.Args[1:]))
 
 	config, err := pgx.ParseURI(*dburl)
 	if err != nil {
@@ -33,23 +34,23 @@ func main() {
 		log.WithError(err).Fatal("unable to connect to postgres")
 	}
 
-	if *schema == "" {
-		*schema = "public"
-	}
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.WithError(err).Fatal("unable to get the current working directory")
 	}
-	*pathdir = path.Join(cwd, *pathdir)
+	*outpath = path.Join(cwd, *outpath)
 
-	output, err := pogo.Generate(db, *schema, path.Base(*pathdir))
+	output, err := pogo.Generate(db, &pogo.Settings{
+		Schema:  *schema,
+		Package: path.Base(*outpath),
+		Address: *dburl,
+	})
 	if err != nil {
 		log.WithError(err).Fatal("unable to generate models")
+		return
 	}
 
-	err = pogo.Write(output, *pathdir)
-	if err != nil {
-		log.WithError(err).Fatal("unable to write out models")
+	if e := pogo.Write(output, *outpath); e != nil {
+		log.WithError(e).Fatal("unable to write out models")
 	}
 }
