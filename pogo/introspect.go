@@ -40,7 +40,7 @@ type Column struct {
 // ForeignKey represents a foreign key.
 type ForeignKey struct {
 	ForeignKeyName string // foreign_key_name
-	ColumnName     string // column_name
+	Name           string // column_name
 	RefIndexName   string // ref_index_name
 	RefTableName   string // ref_table_name
 	RefColumnName  string // ref_column_name
@@ -256,7 +256,7 @@ func getForeignKeys(db *pgx.Conn, schema string, table string) (fks []*ForeignKe
 		fk := ForeignKey{}
 
 		// scan
-		err = q.Scan(&fk.ForeignKeyName, &fk.ColumnName, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
+		err = q.Scan(&fk.ForeignKeyName, &fk.Name, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
 		if err != nil {
 			return fks, err
 		}

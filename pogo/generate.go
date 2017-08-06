@@ -56,6 +56,7 @@ type templateData struct {
 	Settings *Settings
 	Schema   *Schema
 	Table    *Table
+	Enum     *Enum
 }
 
 // Generate the models
@@ -87,43 +88,67 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 	// build each model file from the tables
 	// files := map[string]string{}
 	for _, table := range schema.Tables {
-		if table.Name != "teams" {
+		if table.Name != "standups_teammates" {
 			continue
 		}
 
+		// pick the template based on the type of relationship
+		template := templates.MustAsset("templates/model.go.tpl")
+		if isManyToMany(table) {
+			template = templates.MustAsset("templates/model-many-to-many.go.tpl")
+		}
+
 		// generate a model for each table
-		model, err := generate(templates.MustAsset("templates/model.go.tpl"), settings, schema, table)
+		code, err := generate(table.Name, template, &templateData{
+			Settings: settings,
+			Schema:   schema,
+			Table:    table,
+		})
 		if err != nil {
 			return files, err
 		}
 
-		code, err := format(model)
+		formatted, err := format(code)
 		if err != nil {
-			fmt.Println(model)
 			return files, err
 		}
-
-		fmt.Println(code)
+		_ = formatted
+		fmt.Println(formatted)
 	}
 
 	// build each enum file
+	for _, enum := range schema.Enums {
+		// generate each enum enum
+		code, err := generate(enum.Name, templates.MustAsset("templates/enum.go.tpl"), &templateData{
+			Settings: settings,
+			Schema:   schema,
+			Enum:     enum,
+		})
+		if err != nil {
+			return files, err
+		}
+
+		formatted, err := format(code)
+		if err != nil {
+			return files, err
+		}
+		_ = formatted
+
+		// fmt.Println(formatted)
+	}
 
 	return files, nil
 }
 
 // generate the model from a table
-func generate(raw []byte, settings *Settings, schema *Schema, table *Table) (string, error) {
-	tpl, err := template.New(table.Name).Funcs(templateMap).Parse(string(raw))
+func generate(name string, raw []byte, data *templateData) (string, error) {
+	tpl, err := template.New(name).Funcs(templateMap).Parse(string(raw))
 	if err != nil {
 		return "", err
 	}
 
 	var b bytes.Buffer
-	if e := tpl.Execute(&b, templateData{
-		Settings: settings,
-		Schema:   schema,
-		Table:    table,
-	}); e != nil {
+	if e := tpl.Execute(&b, data); e != nil {
 		return "", e
 	}
 
@@ -174,6 +199,26 @@ func format(input string) (output string, err error) {
 	}
 
 	return string(formatted), nil
+}
+
+// Check if the relationship is many-to-many
+func isManyToMany(table *Table) bool {
+	hasPrimary := false
+	for _, c := range table.Columns {
+		if c.IsPrimaryKey {
+			hasPrimary = true
+			break
+		}
+	}
+	if hasPrimary {
+		return false
+	}
+
+	if len(table.ForeignKeys) == 2 {
+		return true
+	}
+
+	return false
 }
 
 // EnumData is a template item for enums
@@ -401,25 +446,25 @@ func Write(models map[string]string, outpath string) (err error) {
 	return exec.Command("goimports", params...).Run()
 }
 
-// TableType get the table type
-func TableType(columns []*Column, fks []*ForeignKey) string {
-	hasPrimary := false
-	for _, c := range columns {
-		if c.IsPrimaryKey {
-			hasPrimary = true
-			break
-		}
-	}
-	if hasPrimary {
-		return ""
-	}
+// // TableType get the table type
+// func TableType(columns []*Column, fks []*ForeignKey) string {
+// 	hasPrimary := false
+// 	for _, c := range columns {
+// 		if c.IsPrimaryKey {
+// 			hasPrimary = true
+// 			break
+// 		}
+// 	}
+// 	if hasPrimary {
+// 		return ""
+// 	}
 
-	if len(fks) == 2 {
-		return "mm"
-	}
+// 	if len(fks) == 2 {
+// 		return "mm"
+// 	}
 
-	return ""
-}
+// 	return ""
+// }
 
 func templatePath(basename string, typ string) string {
 	if typ != "" {

@@ -50,6 +50,13 @@ var templateMap = template.FuncMap{
 		return singular(s)
 	},
 
+	// singularize as a mapping function
+	"msingular": func() func(string) string {
+		return func(s string) string {
+			return singular(s)
+		}
+	},
+
 	// coerce the Golang type to an SQL type
 	"coerce": func(schema *Schema, s string) string {
 		return Coerce(schema, s)
@@ -104,14 +111,43 @@ var templateMap = template.FuncMap{
 
 	"idxwhere": func(index *Index) string {
 		cols := []string{}
-		i := 1
 
-		for _, col := range index.Columns {
-			cols = append(cols, "\""+col.Name+"\" = $"+strconv.Itoa(i))
-			i++
+		for i, col := range index.Columns {
+			cols = append(cols, "\""+col.Name+"\" = $"+strconv.Itoa(i+1))
 		}
 
 		return strings.Join(cols, " AND ")
+	},
+
+	"fknames": func(fks []*ForeignKey) []string {
+		out := []string{}
+		for _, fk := range fks {
+			out = append(out, fk.Name)
+		}
+		return out
+	},
+
+	"fkparams": func(schema *Schema, table *Table) string {
+		out := []string{}
+		for _, fk := range table.ForeignKeys {
+			colname := fk.Name
+			for _, col := range table.Columns {
+				if colname == col.Name {
+					out = append(out, camelize(fk.Name)+" "+Coerce(schema, col.DataType))
+				}
+			}
+		}
+		return strings.Join(out, ", ")
+	},
+
+	"fkwhere": func(fks []*ForeignKey) string {
+		out := []string{}
+
+		for i, fk := range fks {
+			out = append(out, "\""+fk.Name+"\" = $"+strconv.Itoa(i+1))
+		}
+
+		return strings.Join(out, " AND ")
 	},
 
 	"map": func(cols []string, fns ...func(string) string) (out []string) {
@@ -126,6 +162,10 @@ var templateMap = template.FuncMap{
 
 	"join": func(sep string, a []string) string {
 		return strings.Join(a, sep)
+	},
+
+	"split": func(sep string, a string) []string {
+		return strings.Split(a, sep)
 	},
 
 	"mprefix": func(p string) func(string) string {
