@@ -43,6 +43,7 @@ func main() {
 	output, err := pogo.Generate(db, &pogo.Settings{
 		Schema:  *schema,
 		Package: path.Base(*outpath),
+		Address: *dburl,
 	})
 	if err != nil {
 		log.WithError(err).Fatal("unable to generate models")
@@ -50,6 +51,6 @@ func main() {
 	}
 
 	if e := pogo.Write(output, *outpath); e != nil {
-		log.WithError(err).Fatal("unable to write out models")
+		log.WithError(e).Fatal("unable to write out models")
 	}
 }

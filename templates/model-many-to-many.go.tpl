@@ -9,9 +9,9 @@
 {{ $m := map (split "_" $tn) msingular | join "" }}
 {{ $mv := $m | lower }}
 {{ $co := colnames .Table.Columns }}
-{{ $idxs := idxnames .Table.Indexes }}
+{{ $idxs := indexes .Table.Indexes }}
 {{ $cof := map $co (mprintf "\"%s\"") | join ", " }}
-{{ $mvg := print "&" $mv "." }}
+{{ $mvg := print $mv "." }}
 {{ $cog := map $co mcapitalize (mprefix $mvg) | join ", " }}
 {{ $fkparams := fkparams .Schema .Table }}
 {{ $fkwhere := fkwhere .Table.ForeignKeys }}
@@ -53,7 +53,7 @@ type {{ $c }} struct {
 // {{ $m }} model
 type {{ $m }} struct {
   {{ range .Table.Columns }}{{ $t := coerce $.Schema .DataType }}
-  {{ .Name | capitalize }} {{ $t }} `json:"{{ .Name }},omitempty"` {{ if .Comment }}// {{ .Comment }}{{ end }}{{ end }}
+  {{ .Name | capitalize }} *{{ $t }} `json:"{{ .Name }},omitempty"` {{ if .Comment }}// {{ .Comment }}{{ end }}{{ end }}
 }
 
 {{/*************************************************************************/}}

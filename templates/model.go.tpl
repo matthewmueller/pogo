@@ -8,11 +8,11 @@
 {{ $cv := $c | lower }}
 {{ $m := $tn | singular }}
 {{ $mv := $m | lower }}
-{{ $mvg := print "&" $mv "." }}
+{{ $mvg := print $mv "." }}
 {{ $p := primary .Table.Columns }}
 {{ $pt := coerce $.Schema $p.DataType }}
 {{ $co := colnames .Table.Columns }}
-{{ $idxs := idxnames .Table.Indexes }}
+{{ $idxs := indexes .Table.Indexes }}
 {{ $cof := map $co (mprintf "\"%s\"") | join ", " }}
 {{ $cog := map $co mcapitalize (mprefix $mvg) | join ", " }}
 
@@ -51,7 +51,7 @@ type {{ $c }} struct {
 // {{ $m }} model
 type {{ $m }} struct {
   {{ range .Table.Columns }}{{ $t := coerce $.Schema .DataType }}
-  {{ .Name | capitalize }} {{ $t }} `json:"{{ .Name }},omitempty"` {{ if .Comment }}// {{ .Comment }}{{ end }}{{ end }}
+  {{ .Name | capitalize }} *{{ $t }} `json:"{{ .Name }},omitempty"` {{ if .Comment }}// {{ .Comment }}{{ end }}{{ end }}
 }
 
 {{/*************************************************************************/}}
@@ -84,7 +84,7 @@ func ({{ $cv }} *{{ $c }}) fields({{ $mv }} *{{ $m }}) map[string]interface{} {
 
 {{ if $p }}
 // Find a {{ $mv }} by "{{ $p.Name }}"
-func ({{ $cv }} *{{ $c }}) Find({{ $p.Name }} {{ $pt }}) ({{ $mv }} *{{ $m }}, err error) {
+func ({{ $cv }} *{{ $c }}) Find({{ $p.Name }} *{{ $pt }}) ({{ $mv }} *{{ $m }}, err error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
@@ -109,7 +109,7 @@ func ({{ $cv }} *{{ $c }}) Find({{ $p.Name }} {{ $pt }}) ({{ $mv }} *{{ $m }}, e
 {{/* pogo.$TABLE.FindBy...(): find a row by its unique non-primary indexes */}}
 {{/*************************************************************************/}}
 
-{{ range $idx := .Table.Indexes }}
+{{ range $idx := $idxs }}
 {{ $cols := idxcolnames $idx }}
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}
@@ -235,7 +235,7 @@ func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 {{/*************************************************************************/}}
 
 // Update a {{ $mv }} by its `{{ $p.Name }}`
-func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} {{ $pt }}) (*{{ $m }}, error) {
+func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
 	fieldset := {{ $cv }}.fields(&{{ $mv }})
 
 	// first check if we have the primary key
@@ -275,7 +275,7 @@ func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} {{ $pt }}) (
 {{/* pogo.$TABLE.UpdateBy...(): update a row by its unique non-primary indexes */}}
 {{/*****************************************************************************/}}
 
-{{ range $idx := .Table.Indexes }}
+{{ range $idx := $idxs }}
 {{ $cols := idxcolnames $idx }}
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}
@@ -383,7 +383,7 @@ func ({{ $cv }} *{{ $c }}) UpdateMany({{ $mv }} *{{ $m }}, condition string, par
 {{/*****************************************************************************/}}
 
 // Delete a `{{ $mv }}` from the `{{ $t }}` table
-func ({{ $cv }} *{{ $c }}) Delete({{ $p.Name }} {{ $pt }}) error {
+func ({{ $cv }} *{{ $c }}) Delete({{ $p.Name }} *{{ $pt }}) error {
 	// sql query
 	sqlstr := `DELETE FROM {{ $t }} WHERE "{{ $p.Name }}" = $1`
 
@@ -403,7 +403,7 @@ func ({{ $cv }} *{{ $c }}) Delete({{ $p.Name }} {{ $pt }}) error {
 {{/* pogo.$TABLE.DeleteBy...(): delete a row by its unique non-primary indexes */}}
 {{/*****************************************************************************/}}
 
-{{ range $idx := .Table.Indexes }}
+{{ range $idx := $idxs }}
 {{ $cols := idxcolnames $idx }}
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}
@@ -484,7 +484,7 @@ func ({{ $cv }} *{{ $c }}) Upsert({{ $mv }} {{ $m }}, action string) (*{{ $m }},
 {{/* pogo.$TABLE.UpsertBy...(): upsert a row by its non-unique indexes */}}
 {{/*****************************************************************************/}}
 
-{{ range $idx := .Table.Indexes }}
+{{ range $idx := $idxs }}
 {{ $cols := idxcolnames $idx }}
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}

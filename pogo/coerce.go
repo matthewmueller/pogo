@@ -18,7 +18,7 @@ func Coerce(schema *Schema, dt string) (kind string) {
 	if strings.HasSuffix(dt, "[]") {
 		dt = dt[:len(dt)-2]
 		t := Coerce(schema, dt)
-		return "*[]" + strings.TrimPrefix(t, "*")
+		return "[]" + strings.TrimPrefix(t, "*")
 	}
 
 	// ignore the content of functions
@@ -34,23 +34,23 @@ func Coerce(schema *Schema, dt string) (kind string) {
 
 	switch dt {
 	case "uuid":
-		return "*uuid.UUID"
+		return "uuid.UUID"
 	case "text":
-		return "*string"
+		return "string"
 	case "boolean":
-		return "*bool"
+		return "bool"
 	case "integer", "smallint", "bigint":
-		return "*int"
+		return "int"
 	case "real":
-		return "*float32"
+		return "float32"
 	case "double", "float":
-		return "*float64"
+		return "float64"
 	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
-		return "*time.Time"
+		return "time.Time"
 	case "json":
-		return "*map[string]interface{}"
+		return "map[string]interface{}"
 	case "numeric", "decimal":
-		return "*decimal.Decimal"
+		return "decimal.Decimal"
 	default:
 		for _, enum := range schema.Enums {
 			name := enum.Name
@@ -59,7 +59,7 @@ func Coerce(schema *Schema, dt string) (kind string) {
 			}
 
 			if name == dt {
-				return "*" + snaker.SnakeToCamelIdentifier(enum.Name)
+				return "" + snaker.SnakeToCamelIdentifier(enum.Name)
 			}
 		}
 		panic("don't understand the data type `" + dt + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")

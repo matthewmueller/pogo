@@ -62,6 +62,11 @@ var templateMap = template.FuncMap{
 		return Coerce(schema, s)
 	},
 
+	// coerce the Golang type to an SQL type
+	"fake": func(settings *Settings, schema *Schema, name, dt string) string {
+		return Fake(settings, schema, name, dt)
+	},
+
 	"primary": func(columns []*Column) *Column {
 		for _, col := range columns {
 			if col.IsPrimaryKey {
@@ -78,10 +83,10 @@ var templateMap = template.FuncMap{
 		return cols
 	},
 
-	"idxnames": func(indexes []*Index) (idxs []string) {
+	"indexes": func(indexes []*Index) (idxs []*Index) {
 		for _, idx := range indexes {
 			if !idx.IsPrimary && idx.IsUnique {
-				idxs = append(idxs, idx.Name)
+				idxs = append(idxs, idx)
 			}
 		}
 		return idxs
@@ -102,7 +107,7 @@ var templateMap = template.FuncMap{
 		for _, col := range index.Columns {
 			name := camelize(col.Name)
 			kind := Coerce(schema, col.DataType)
-			cols = append(cols, name+" "+kind)
+			cols = append(cols, name+" *"+kind)
 		}
 
 		sort.Strings(cols)
@@ -133,7 +138,7 @@ var templateMap = template.FuncMap{
 			colname := fk.Name
 			for _, col := range table.Columns {
 				if colname == col.Name {
-					out = append(out, camelize(fk.Name)+" "+Coerce(schema, col.DataType))
+					out = append(out, camelize(fk.Name)+" *"+Coerce(schema, col.DataType))
 				}
 			}
 		}
@@ -232,11 +237,21 @@ func singular(s string) string {
 }
 
 func camelize(s string) string {
-	id := snaker.SnakeToCamelIdentifier(s)
-	if len(id) <= 0 {
-		return s
+	if len(s) <= 1 {
+		return strings.ToLower(s)
 	}
-	return strings.ToLower(string(id[0])) + id[1:]
+
+	parts := strings.Split(s, "_")
+	if len(parts) <= 1 {
+		return strings.ToLower(snaker.SnakeToCamelIdentifier(s))
+	}
+
+	for i, part := range parts {
+		parts[i] = snaker.SnakeToCamelIdentifier(part)
+	}
+
+	parts[0] = strings.ToLower(parts[0])
+	return strings.Join(parts, "")
 }
 
 // import (

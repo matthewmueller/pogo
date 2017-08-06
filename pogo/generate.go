@@ -44,6 +44,7 @@ import (
 
 // Settings struct
 type Settings struct {
+	Address string
 	Schema  string
 	Package string
 }
@@ -110,6 +111,34 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 		}
 
 		files[table.Name+".go"] = formatted
+	}
+
+	// build a test file for each model
+	for _, table := range schema.Tables {
+		// pick the template based on the type of relationship
+		template := templates.MustAsset("templates/model_test.go.tpl")
+		if isManyToMany(table) {
+			continue
+			// template = templates.MustAsset("templates/model-many-to-many.go.tpl")
+		}
+
+		// generate a test file for each table
+		code, err := generate(table.Name, template, &templateData{
+			Settings: settings,
+			Schema:   schema,
+			Table:    table,
+		})
+		if err != nil {
+			return files, err
+		}
+
+		formatted, err := format(code)
+		if err != nil {
+			return files, err
+		}
+
+		// fmt.Println(formatted)
+		files[table.Name+"_test.go"] = formatted
 	}
 
 	// build each enum file
