@@ -31,28 +31,6 @@ type DB interface {
 }
 
 {{/*************************************************************************/}}
-{{/* Our public client struct */}}
-{{/*************************************************************************/}}
-
-// Client is the struct containing all our models
-type Client struct {
-  {{ range .Schema.Tables }}{{ if many2many . }}{{ map (split "_" .Name) msingular | join "" }} *{{ .Name | capitalize }}{{ else }}{{ .Name | singular }} *{{ .Name | capitalize }}{{ end }}
-  {{ end }}
-}
-
-{{/*************************************************************************/}}
-{{/* Everything starts here */}}
-{{/*************************************************************************/}}
-
-// New database client
-func New(db DB) *Client {
-  return &Client{
-    {{ range .Schema.Tables }}{{ if many2many . }}{{ map (split "_" .Name) msingular | join "" }}: {{ map (split "_" .Name) msingular | join "" | lower }}(db){{ else }}{{ .Name | singular }}: {{ .Name | singular | lower }}(db){{ end }},
-    {{ end }}
-  }
-}
-
-{{/*************************************************************************/}}
 {{/* Public customizable logging interface */}}
 {{/*************************************************************************/}}
 
@@ -71,12 +49,13 @@ const (
 )
 
 {{/*************************************************************************/}}
-{{/* Private function to slice our fields into SQL friendly inputs */}}
+{{/* Public helper function to slice our fields into SQL friendly inputs */}}
 {{/*************************************************************************/}}
 
-func slice(fields map[string]interface{}, offset int) (c []string, i []string, v []interface{}) {
+// Slice converts our columns into something the sql driver can understand
+func Slice(columns map[string]interface{}, offset int) (c []string, i []string, v []interface{}) {
 	n := offset + 1
-	for col, val := range fields {
+	for col, val := range columns {
 		c = append(c, `"`+col+`"`)
 		i = append(i, "$"+strconv.Itoa(n))
 		v = append(v, val)

@@ -2,25 +2,25 @@
 {{/* Variables */}}
 {{/*************************************************************************/}}
 
+{{ $pkg := .Settings.Package }}
 {{ $t := tablename $.Schema .Table }}
 {{ $tn := .Table.Name }}
 {{ $c := $tn | capitalize }}
 {{ $cv := $c | lower }}
 {{ $m := $tn | singular }}
 {{ $mv := $m | lower }}
-{{ $mvg := print $mv "." }}
 {{ $p := primary .Table.Columns }}
 {{ $pt := coerce $.Schema $p.DataType }}
 {{ $co := colnames .Table.Columns }}
 {{ $idxs := indexes .Table.Indexes }}
 {{ $cof := map $co (mprintf "\"%s\"") | join ", " }}
-{{ $cog := map $co mcapitalize (mprefix $mvg) | join ", " }}
+{{ $cog := map $co mcapitalize (mprefix "cols.") | join ", " }}
 
 {{/*************************************************************************/}}
 {{/* Our Package */}}
 {{/*************************************************************************/}}
 
-package {{ .Settings.Package }}
+package {{ $cv }}
 
 {{/*************************************************************************/}}
 {{/* Pogo marker */}}
@@ -36,46 +36,85 @@ package {{ .Settings.Package }}
 var Err{{ $m }}NotFound = errors.New("{{ $mv }} not found")
 
 {{/*************************************************************************/}}
-{{/* The table we'll attach our CRUD methods onto */}}
+{{/* All the columns in our table */}}
 {{/*************************************************************************/}}
 
-// {{ $c }} class
-type {{ $c }} struct {
-  db DB
-}
-
-{{/*************************************************************************/}}
-{{/* The model that contains all our database fields */}}
-{{/*************************************************************************/}}
-
-// {{ $m }} model
-type {{ $m }} struct {
+// columns in `{{ $t }}`
+type columns struct {
   {{ range .Table.Columns }}{{ $t := coerce $.Schema .DataType }}
   {{ .Name | capitalize }} *{{ $t }} `json:"{{ .Name }},omitempty"` {{ if .Comment }}// {{ .Comment }}{{ end }}{{ end }}
 }
 
 {{/*************************************************************************/}}
-{{/* Private class constructor, accessed via pogo.$TABLE */}}
+{{/* This contains our fluent parameter container */}}
 {{/*************************************************************************/}}
 
-// {{ $mv }} constructor
-func {{ $mv }}(db DB) *{{ $c }} {
-  return &{{ $c }}{db}
+// {{ $m }} fluent API
+type {{ $m }} struct {
+	columns *columns
 }
 
 {{/*************************************************************************/}}
-{{/* Private helper to get all the non-nil fields on our model */}}
+{{/* Helper to create the fluent API */}}
 {{/*************************************************************************/}}
 
-// get all the non-nil fields
-func ({{ $cv }} *{{ $c }}) fields({{ $mv }} *{{ $m }}) map[string]interface{} {
-  fields := make(map[string]interface{})
-  {{ range .Table.Columns }}{{ $field := .Name | capitalize }}
-  if {{ $mv }}.{{ $field }} != nil {
-    fields["{{ .Name }}"] = {{ $mv }}.{{ $field }}
+// New `{{ $t }}` API
+func New() *{{ $m }} {
+	return &{{ $m }}{&columns{}}
+}
+
+{{/*************************************************************************/}}
+{{/* Generate each of the fluent methods for the fluent parameter API */}}
+{{/*************************************************************************/}}
+
+{{ range .Table.Columns }}{{ $t := coerce $.Schema .DataType }}
+// {{ .Name | capitalize }} sets the `{{ .Name }}`
+func ({{ $mv }} *{{ $m }}) {{ .Name | capitalize }}({{ .Name | camelize }} {{ $t }}) *{{ $m }} {
+	{{ $mv }}.columns.{{ .Name | capitalize }} = &{{ .Name | camelize }}
+	return {{ $mv }}
+}
+
+// Get{{ .Name | capitalize }} returns the `{{ .Name }}` if set
+func ({{ $mv }} *{{ $m }}) Get{{ .Name | capitalize }}() ({{ .Name | camelize }} *{{ $t }}) {
+	return {{ $mv }}.columns.{{ .Name | capitalize }}
+}
+{{ end }}
+
+{{/*************************************************************************/}}
+{{/* Implement the Marshaler & Unmarshaler interfaces */}}
+{{/*************************************************************************/}}
+
+// MarshalJSON marshals the `{{ $mv }}` into JSON
+func ({{ $mv }} *{{ $m }}) MarshalJSON() ([]byte, error) {
+	return json.Marshal({{ $mv }}.columns)
+}
+
+// UnmarshalJSON unmarshals json to a `{{ $mv }}`
+func ({{ $mv }} *{{ $m }}) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, {{ $mv }}.columns)
+}
+
+{{/*************************************************************************/}}
+{{/* Implement the Stringer interface */}}
+{{/*************************************************************************/}}
+
+func ({{ $mv }} *{{ $m }}) String() string {
+	return "{{ $mv}} TODO"
+}
+
+{{/*************************************************************************/}}
+{{/* Private helper to get all the non-nil columns in our table */}}
+{{/*************************************************************************/}}
+
+// get all the non-nil columns
+func getColumns({{ $mv }} *{{ $m }}) map[string]interface{} {
+  columns := make(map[string]interface{})
+  {{ range .Table.Columns }}{{ $col := .Name | capitalize }}
+  if {{ $mv }}.columns.{{ $col }} != nil {
+    columns["{{ .Name }}"] = {{ $mv }}.{{ $col }}
   }{{ end }}
   
-  return fields
+  return columns
 }
 
 {{/*************************************************************************/}}
@@ -84,16 +123,17 @@ func ({{ $cv }} *{{ $c }}) fields({{ $mv }} *{{ $m }}) map[string]interface{} {
 
 {{ if $p }}
 // Find a {{ $mv }} by "{{ $p.Name }}"
-func ({{ $cv }} *{{ $c }}) Find({{ $p.Name }} *{{ $pt }}) ({{ $mv }} *{{ $m }}, err error) {
+func Find(db {{ $pkg }}.DB, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
 	FROM {{ $t }}
 	WHERE "{{ $p.Name }}" = $1
 	`
+	{{$pkg}}.Log(sqlstr, {{ $p.Name }})
 
-	Log(sqlstr, {{ $p.Name }})
-	row := {{ $cv }}.db.QueryRow(sqlstr, {{ $p.Name }})
+	var cols *columns
+	row := db.QueryRow(sqlstr, {{ $p.Name }})
   if e := row.Scan({{ $cog }}); e != nil {
     if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound
@@ -101,7 +141,7 @@ func ({{ $cv }} *{{ $c }}) Find({{ $p.Name }} *{{ $pt }}) ({{ $mv }} *{{ $m }}, 
     return nil, e
   }
 
-	return {{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 {{ end }}
 
@@ -115,25 +155,26 @@ func ({{ $cv }} *{{ $c }}) Find({{ $p.Name }} *{{ $pt }}) ({{ $mv }} *{{ $m }}, 
 {{ $idxparams := idxparams $.Schema $idx }}
 {{ $indexvars := map $cols mcamelize | join ", " }}
 // FindBy{{ $idxmethod }} find a {{ $mv }} by {{ $cols | join "` and `" | printf "`%s`"}}
-func ({{ $cv }} *{{ $c }}) FindBy{{ $idxmethod }}({{ $idxparams }}) ({{ $mv }} *{{ $m }}, err error) {
+func FindBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}) (*{{ $m }}, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
 	FROM {{ $t }}
 	WHERE {{ idxwhere $idx }}
 	`
+	{{ $pkg }}.Log(sqlstr, {{ $indexvars }})
 
-	Log(sqlstr, {{ $indexvars }})
-	row := {{ $cv }}.db.QueryRow(sqlstr, {{ $indexvars }})
-	err = row.Scan({{ $cog }})
+	var cols *columns
+	row := db.QueryRow(sqlstr, {{ $indexvars }})
+	err := row.Scan({{ $cog }})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return {{ $mv }},  Err{{ $m }}NotFound
+			return nil,  Err{{ $m }}NotFound
 		}
-		return {{ $mv }}, err
+		return nil, err
 	}
 
-	return {{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 {{ end }}
 
@@ -142,7 +183,7 @@ func ({{ $cv }} *{{ $c }}) FindBy{{ $idxmethod }}({{ $idxparams }}) ({{ $mv }} *
 {{/*************************************************************************/}}
 
 // FindMany find many `{{ $mv }}`s by a given condition
-func ({{ $cv }} *{{ $c }}) FindMany(condition string, params... interface{}) ([]*{{ $m }}, error) {
+func FindMany(db {{ $pkg }}.DB, condition string, params... interface{}) ([]*{{ $m }}, error) {
 	var _o []*{{ $m }}
 	
 	// sql select query, primary key provided by sequence
@@ -150,23 +191,23 @@ func ({{ $cv }} *{{ $c }}) FindMany(condition string, params... interface{}) ([]
 	SELECT {{ $cof }}
 	FROM {{ $t }}
 	WHERE ` + condition
+	{{ $pkg }}.Log(sqlstr, params...)
 
-	Log(sqlstr, params...)
-  rows, err := {{ $cv }}.db.Query(sqlstr, params...)
+  rows, err := db.Query(sqlstr, params...)
   if err != nil {
     return _o, err
   }
   defer rows.Close()
 
   for rows.Next() {
-		var {{ $mv }} *{{ $m }}
+		var cols *columns
     if e := rows.Scan({{ $cog }}); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, Err{{ $m }}NotFound
 			}
 			return _o, err
 		}
-    _o = append(_o, {{ $mv }})
+    _o = append(_o, &{{ $m }}{cols})
   }
   if rows.Err() != nil {
     return _o, rows.Err()
@@ -186,15 +227,16 @@ func ({{ $cv }} *{{ $c }}) FindMany(condition string, params... interface{}) ([]
 {{/*************************************************************************/}}
 
 // FindOne find one {{ $mv }} by a condition
-func ({{ $cv }} *{{ $c }}) FindOne(condition string, params... interface{}) ({{ $mv }} *{{ $m }}, err error) {
+func FindOne(db {{ $pkg }}.DB, condition string, params... interface{}) (*{{ $m }}, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
 	FROM {{ $t }}
 	WHERE ` + condition
+	{{ $pkg }}.Log(sqlstr, params...)
 
-	Log(sqlstr, params...)
-  row := {{ $cv }}.db.QueryRow(sqlstr, params...)
+	var cols *columns
+  row := db.QueryRow(sqlstr, params...)
   if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound
@@ -202,7 +244,7 @@ func ({{ $cv }} *{{ $c }}) FindOne(condition string, params... interface{}) ({{ 
 		return nil, e
 	}
 
-  return {{ $mv }}, nil
+  return &{{ $m }}{cols}, nil
 }
 
 {{/*************************************************************************/}}
@@ -210,9 +252,9 @@ func ({{ $cv }} *{{ $c }}) FindOne(condition string, params... interface{}) ({{ 
 {{/*************************************************************************/}}
 
 // Insert a `{{ $mv }}` into the `{{ $t }}` table.
-func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
-	// get all the non-nil fields and prepare them for the query
-	_c, _i, _v := slice({{ $cv }}.fields(&{{ $mv }}), 0)
+func Insert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
+	// get all the non-nil columns and prepare them for the query
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -220,14 +262,15 @@ func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 	VALUES (` + strings.Join(_i, ", ") + `)
 	RETURNING {{ $cof }}
 	`
+	{{ $pkg }}.Log(sqlstr, _v...)
 
-	Log(sqlstr, _v...)
-	row := {{ $cv }}.db.QueryRow(sqlstr, _v...)
+	var cols *columns
+	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil {
     return nil, e
   }
 
-	return &{{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 
 {{/*************************************************************************/}}
@@ -235,8 +278,8 @@ func ({{ $cv }} *{{ $c }}) Insert({{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 {{/*************************************************************************/}}
 
 // Update a {{ $mv }} by its `{{ $p.Name }}`
-func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
-	fieldset := {{ $cv }}.fields(&{{ $mv }})
+func Update(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
+	fields := getColumns(&{{ $mv }})
 
 	// first check if we have the primary key
 	if {{ $p.Name }} == nil {
@@ -244,10 +287,10 @@ func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) 
 	}
 
 	// don't update the primary key
-	delete(fieldset, "{{ $p.Name }}")
+	delete(fields, "{{ $p.Name }}")
 
 	// prepare the slices
-	_c, _i, _v := slice(fieldset, 1)
+	_c, _i, _v := {{ $pkg }}.Slice(fields, 1)
 
 	// sql query
 	sqlstr := `UPDATE {{ $t }} SET (` +
@@ -256,11 +299,13 @@ func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) 
 		WHERE "{{ $p.Name }}" = $1
 		RETURNING {{ $cof }}`
 
-	// run query
+	// setup query
 	values := append([]interface{}{ {{ $p.Name }} }, _v...)
-	Log(sqlstr, values...)
+	{{ $pkg }}.Log(sqlstr, values...)
 
-	row := {{ $cv }}.db.QueryRow(sqlstr, values...)
+	// run the query
+	var cols *columns
+	row := db.QueryRow(sqlstr, values...)
 	if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound
@@ -268,7 +313,7 @@ func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) 
     return nil, e
   }
 
-	return &{{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 
 {{/*****************************************************************************/}}
@@ -280,8 +325,8 @@ func ({{ $cv }} *{{ $c }}) Update({{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) 
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}
 // UpdateBy{{ $idxmethod }} find a {{ $m }}
-func ({{ $cv }} *{{ $c }}) UpdateBy{{ $idxmethod }}({{ $mv }} {{ $m }}, {{ $idxparams }}) (*{{ $m }}, error) {
-	fieldset := {{ $cv }}.fields(&{{ $mv }})
+func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, {{ $idxparams }}) (*{{ $m }}, error) {
+	fields := getColumns(&{{ $mv }})
 
 	// first check if we have all the keys we need
 	{{ range $idx.Columns }}if {{ .Name | camelize }} == nil {
@@ -290,11 +335,11 @@ func ({{ $cv }} *{{ $c }}) UpdateBy{{ $idxmethod }}({{ $mv }} {{ $m }}, {{ $idxp
 	{{ end }}
 
 	// don't update the keys
-	{{ range $idx.Columns }}delete(fieldset, "{{ .Name | camelize }}")
+	{{ range $idx.Columns }}delete(fields, "{{ .Name | camelize }}")
 	{{ end }}
 
 	// prepare the slices
-	_c, _i, _v := slice(fieldset, {{ len $cols }})
+	_c, _i, _v := {{ $pkg }}.Slice(fields, {{ len $cols }})
 
 	// sql query
 	sqlstr := `UPDATE {{ $t }} SET (` +
@@ -303,14 +348,16 @@ func ({{ $cv }} *{{ $c }}) UpdateBy{{ $idxmethod }}({{ $mv }} {{ $m }}, {{ $idxp
 		`WHERE {{ idxwhere $idx }} ` +
 		`RETURNING {{ $cof }}`
 
-	// run query
+	// setup the query
 	values := []interface{}{}
 	{{ range .Columns }}values = append(values, {{ .Name | camelize }})
 	{{ end }}
 	values = append(values, _v...)
-	Log(sqlstr, values...)
+	{{ $pkg }}.Log(sqlstr, values...)
 
-	row := {{ $cv }}.db.QueryRow(sqlstr, values...)
+	// run the query
+	var cols *columns
+	row := db.QueryRow(sqlstr, values...)
 	if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
       return nil, Err{{ $m }}NotFound
@@ -318,7 +365,7 @@ func ({{ $cv }} *{{ $c }}) UpdateBy{{ $idxmethod }}({{ $mv }} {{ $m }}, {{ $idxp
 		return nil, e
 	}
 
-	return &{{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 {{ end }}
 
@@ -327,14 +374,11 @@ func ({{ $cv }} *{{ $c }}) UpdateBy{{ $idxmethod }}({{ $mv }} {{ $m }}, {{ $idxp
 {{/*****************************************************************************/}}
 
 // UpdateMany rows in `{{ $t }}` by a given condition
-func ({{ $cv }} *{{ $c }}) UpdateMany({{ $mv }} *{{ $m }}, condition string, params... interface{}) ([]*{{ $m }}, error) {
+func UpdateMany(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, condition string, params... interface{}) ([]*{{ $m }}, error) {
 	var _o []*{{ $m }}
 	
-	// get the non-nil fields
-	fieldset := {{ $cv }}.fields({{ $mv }})
-
 	// prepare the slices
-	_c, _i, _v := slice(fieldset, len(params))
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), len(params))
 
 	// sql query
 	sqlstr := `UPDATE {{ $t }} SET (` +
@@ -343,27 +387,28 @@ func ({{ $cv }} *{{ $c }}) UpdateMany({{ $mv }} *{{ $m }}, condition string, par
 		`WHERE ` + condition + ` ` +
 		`RETURNING {{ $cof }}`
 
+	// setup the query
   values := []interface{}{}
   values = append(values, params...)
   values = append(values, _v...)
+	{{ $pkg }}.Log(sqlstr, values...)
 
 	// run query
-	Log(sqlstr, values...)
-  rows, err := {{ $cv }}.db.Query(sqlstr, values...)
+  rows, err := db.Query(sqlstr, values...)
   if err != nil {
     return _o, err
   }
   defer rows.Close()
 
   for rows.Next() {
-    var {{ $mv }} *{{ $m }}
+    var cols *columns
     if e := rows.Scan({{ $cog }}); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, Err{{ $m }}NotFound
 			}
       return _o, err
     }
-    _o = append(_o, {{ $mv }})
+    _o = append(_o, &{{ $m }}{cols})
   }
   if rows.Err() != nil {
     return _o, rows.Err()
@@ -383,13 +428,13 @@ func ({{ $cv }} *{{ $c }}) UpdateMany({{ $mv }} *{{ $m }}, condition string, par
 {{/*****************************************************************************/}}
 
 // Delete a `{{ $mv }}` from the `{{ $t }}` table
-func ({{ $cv }} *{{ $c }}) Delete({{ $p.Name }} *{{ $pt }}) error {
+func Delete(db {{ $pkg }}.DB, {{ $p.Name }} *{{ $pt }}) error {
 	// sql query
 	sqlstr := `DELETE FROM {{ $t }} WHERE "{{ $p.Name }}" = $1`
+	{{ $pkg }}.Log(sqlstr, {{ $p.Name }})
 
 	// run query
-	Log(sqlstr, {{ $p.Name }})
-	if _, e := {{ $cv }}.db.Exec(sqlstr, {{ $p.Name }}); e != nil {
+	if _, e := db.Exec(sqlstr, {{ $p.Name }}); e != nil {
     if e == pgx.ErrNoRows {
       return Err{{ $m }}NotFound
     }
@@ -409,12 +454,12 @@ func ({{ $cv }} *{{ $c }}) Delete({{ $p.Name }} *{{ $pt }}) error {
 {{ $idxparams := idxparams $.Schema $idx }}
 {{ $indexvars := map $cols mcamelize | join ", " }}
 // DeleteBy{{ $idxmethod }} find a {{ $m }}
-func ({{ $cv }} *{{ $c }}) DeleteBy{{ $idxmethod }}({{ $idxparams }}) error {
+func DeleteBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}) error {
 	// sql delete query
 	sqlstr := `DELETE FROM {{ $t }} WHERE {{ idxwhere $idx }}`
+	{{ $pkg }}.Log(sqlstr, {{ $indexvars }})
 
-	Log(sqlstr, {{ $indexvars }})
-	if _, e := {{ $cv }}.db.Exec(sqlstr, {{ $indexvars }}); e != nil {
+	if _, e := db.Exec(sqlstr, {{ $indexvars }}); e != nil {
     if e == pgx.ErrNoRows {
       return Err{{ $m }}NotFound
     }
@@ -430,12 +475,12 @@ func ({{ $cv }} *{{ $c }}) DeleteBy{{ $idxmethod }}({{ $idxparams }}) error {
 {{/*****************************************************************************/}}
 
 // DeleteMany delete many `{{ $mv }}`'s by the given condition
-func ({{ $cv }} *{{ $c }}) DeleteMany(condition string, params... interface{}) error {
+func DeleteMany(db {{ $pkg }}.DB, condition string, params... interface{}) error {
 	// sql select query, primary key provided by sequence
 	sqlstr := `DELETE FROM {{ $t }} WHERE ` + condition
+	{{ $pkg }}.Log(sqlstr, params...)
 
-	Log(sqlstr, params...)
-  if _, e := {{ $cv }}.db.Exec(sqlstr, params...); e != nil {
+  if _, e := db.Exec(sqlstr, params...); e != nil {
     return e
 	}
 
@@ -447,18 +492,16 @@ func ({{ $cv }} *{{ $c }}) DeleteMany(condition string, params... interface{}) e
 {{/*****************************************************************************/}}
 
 // Upsert the `{{ $mv }}` by its `{{ $p.Name }}`.
-func ({{ $cv }} *{{ $c }}) Upsert({{ $mv }} {{ $m }}, action string) (*{{ $m }}, error) {
-	fieldset := {{ $cv }}.fields(&{{ $mv }})
-
+func Upsert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, action string) (*{{ $m }}, error) {
 	// prepare the slices
-	_c, _i, _v := slice(fieldset, 0)
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
 
   // determine on conflict action
   var upsertAction string
-  if action == UpsertDoUpdate {
+  if action == {{ $pkg }}.UpsertDoUpdate {
     upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-  } else if action == UpsertDoNothing {
-    upsertAction = UpsertDoNothing
+  } else if action == {{ $pkg }}.UpsertDoNothing {
+    upsertAction = {{ $pkg }}.UpsertDoNothing
   } else {
     return nil, errors.New("invalid upsert action")
   }
@@ -469,15 +512,16 @@ func ({{ $cv }} *{{ $c }}) Upsert({{ $mv }} {{ $m }}, action string) (*{{ $m }},
   `ON CONFLICT ("{{ $p.Name }}") ` +
   upsertAction + ` ` +
   `RETURNING {{ $cof }}`
+  {{ $pkg }}.Log(sqlstr, _v...)
 
 	// run query
-  Log(sqlstr, _v...)
-	row := {{ $cv }}.db.QueryRow(sqlstr, _v...)
+	var cols *columns
+	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
-	return &{{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 
 {{/*****************************************************************************/}}
@@ -490,16 +534,16 @@ func ({{ $cv }} *{{ $c }}) Upsert({{ $mv }} {{ $m }}, action string) (*{{ $m }},
 {{ $idxparams := idxparams $.Schema $idx }}
 {{ $idxparamlist := map $cols (mprintf "\"%s\"") | join ", " }}
 // UpsertBy{{ $idxmethod }} find a {{ $m }}
-func ({{ $cv }} *{{ $c }}) UpsertBy{{ $idxmethod }}({{ $mv }} {{ $m }}, action string) (*{{ $m }}, error) {
-	// get all the non-nil fields and prepare them for the query
-  _c, _i, _v := slice({{ $cv }}.fields(&{{ $mv }}), 0)
+func UpsertBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, action string) (*{{ $m }}, error) {
+	// get all the non-nil columns and prepare them for the query
+  _c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
 
   // determine on conflict action
   var upsertAction string
-  if action == UpsertDoUpdate {
+  if action == {{ $pkg }}.UpsertDoUpdate {
     upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-  } else if action == UpsertDoNothing {
-    upsertAction = UpsertDoNothing
+  } else if action == {{ $pkg }}.UpsertDoNothing {
+    upsertAction = {{ $pkg }}.UpsertDoNothing
   } else {
     return nil, errors.New("invalid upsert action")
   }
@@ -510,14 +554,15 @@ func ({{ $cv }} *{{ $c }}) UpsertBy{{ $idxmethod }}({{ $mv }} {{ $m }}, action s
   `ON CONFLICT ({{ $idxparamlist }}) ` +
   upsertAction + ` ` +
   `RETURNING {{ $cof }}`
+  {{ $pkg }}.Log(sqlstr, _v...)
 
 	// run query
-  Log(sqlstr, _v...)
-	row := {{ $cv }}.db.QueryRow(sqlstr, _v...)
+	var cols *columns
+	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
-	return &{{ $mv }}, nil
+	return &{{ $m }}{cols}, nil
 }
 {{ end }}

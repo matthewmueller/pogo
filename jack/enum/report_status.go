@@ -1,4 +1,4 @@
-package jack
+package enum
 
 import (
 	"database/sql/driver"

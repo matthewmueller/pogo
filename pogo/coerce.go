@@ -59,7 +59,7 @@ func Coerce(schema *Schema, dt string) (kind string) {
 			}
 
 			if name == dt {
-				return "" + snaker.SnakeToCamelIdentifier(enum.Name)
+				return "enum." + snaker.SnakeToCamelIdentifier(enum.Name)
 			}
 		}
 		panic("don't understand the data type `" + dt + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")

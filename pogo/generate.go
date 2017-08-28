@@ -2,6 +2,7 @@ package pogo
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -89,6 +90,10 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 
 	// build each model file from the tables
 	for _, table := range schema.Tables {
+		// if table.Name != "teams" {
+		// 	continue
+		// }
+
 		// pick the template based on the type of relationship
 		template := templates.MustAsset("templates/model.go.tpl")
 		if isManyToMany(table) {
@@ -110,36 +115,37 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 			return files, err
 		}
 
-		files[table.Name+".go"] = formatted
+		fmt.Println(formatted)
+		files[table.Name+"/"+table.Name+".go"] = formatted
 	}
 
 	// build a test file for each model
-	for _, table := range schema.Tables {
-		// pick the template based on the type of relationship
-		template := templates.MustAsset("templates/model_test.go.tpl")
-		if isManyToMany(table) {
-			continue
-			// template = templates.MustAsset("templates/model-many-to-many.go.tpl")
-		}
+	// for _, table := range schema.Tables {
+	// 	// pick the template based on the type of relationship
+	// 	template := templates.MustAsset("templates/model_test.go.tpl")
+	// 	if isManyToMany(table) {
+	// 		continue
+	// 		// template = templates.MustAsset("templates/model-many-to-many.go.tpl")
+	// 	}
 
-		// generate a test file for each table
-		code, err := generate(table.Name, template, &templateData{
-			Settings: settings,
-			Schema:   schema,
-			Table:    table,
-		})
-		if err != nil {
-			return files, err
-		}
+	// 	// generate a test file for each table
+	// 	code, err := generate(table.Name, template, &templateData{
+	// 		Settings: settings,
+	// 		Schema:   schema,
+	// 		Table:    table,
+	// 	})
+	// 	if err != nil {
+	// 		return files, err
+	// 	}
 
-		formatted, err := format(code)
-		if err != nil {
-			return files, err
-		}
+	// 	formatted, err := format(code)
+	// 	if err != nil {
+	// 		return files, err
+	// 	}
 
-		// fmt.Println(formatted)
-		files[table.Name+"_test.go"] = formatted
-	}
+	// 	// fmt.Println(formatted)
+	// 	files[table.Name+"_test.go"] = formatted
+	// }
 
 	// build each enum file
 	for _, enum := range schema.Enums {
@@ -158,7 +164,7 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 			return files, err
 		}
 
-		files["enum."+enum.Name+".go"] = formatted
+		files["enum/"+enum.Name+".go"] = formatted
 	}
 
 	return files, nil

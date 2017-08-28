@@ -30,6 +30,10 @@ func Write(models map[string]string, outpath string) error {
 			}
 		}
 
+		if e := os.MkdirAll(path.Dir(filepath), os.ModePerm); e != nil {
+			return errors.Wrapf(e, "unable to make dir for `%s`", filepath)
+		}
+
 		if e := ioutil.WriteFile(filepath, []byte(model), os.ModePerm); e != nil {
 			return errors.Wrapf(e, "unable to write out `%s`", filepath)
 		}
