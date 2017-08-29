@@ -37,24 +37,42 @@ func New() *StandupTeammate {
 
 // StandupID sets the `standup_id`
 func (standupteammate *StandupTeammate) StandupID(standupID uuid.UUID) *StandupTeammate {
-	standupteammate.columns.StandupID = &standupID
+	*standupteammate.columns.StandupID = standupID.String()
 	return standupteammate
 }
 
 // GetStandupID returns the `standup_id` if set
 func (standupteammate *StandupTeammate) GetStandupID() (standupID *uuid.UUID) {
-	return standupteammate.columns.StandupID
+	if standupteammate.columns.StandupID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*standupteammate.columns.StandupID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // TeammateID sets the `teammate_id`
 func (standupteammate *StandupTeammate) TeammateID(teammateID uuid.UUID) *StandupTeammate {
-	standupteammate.columns.TeammateID = &teammateID
+	*standupteammate.columns.TeammateID = teammateID.String()
 	return standupteammate
 }
 
 // GetTeammateID returns the `teammate_id` if set
 func (standupteammate *StandupTeammate) GetTeammateID() (teammateID *uuid.UUID) {
-	return standupteammate.columns.TeammateID
+	if standupteammate.columns.TeammateID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*standupteammate.columns.TeammateID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // TeamOwner sets the `team_owner`
