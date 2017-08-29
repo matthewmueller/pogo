@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/matthewmueller/pogo/jack"
 	"github.com/matthewmueller/pogo/jack/teams"
+	uuid "github.com/satori/go.uuid"
 )
 
 func DB(t *testing.T) (jack.DB, func()) {
@@ -33,12 +34,12 @@ func TestInsert(t *testing.T) {
 	defer close()
 
 	team := teams.New().
-		TeamName("matt").
-		Email("matt@gmail.com").
-		SlackTeamID("whatever").
-		SlackTeamAccessToken("cool").
-		SlackBotAccessToken("ohhai").
-		SlackBotID("lol").
+		TeamName(uuid.NewV4().String()).
+		Email(uuid.NewV4().String()).
+		SlackTeamID(uuid.NewV4().String()).
+		SlackTeamAccessToken(uuid.NewV4().String()).
+		SlackBotAccessToken(uuid.NewV4().String()).
+		SlackBotID(uuid.NewV4().String()).
 		Active(true).
 		CostPerUser(1)
 

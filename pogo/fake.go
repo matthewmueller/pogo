@@ -14,7 +14,7 @@ import (
 func Fake(settings *Settings, schema *Schema, name string, dt string) (kind string) {
 	// determine if it's a slice
 	if strings.HasSuffix(dt, "[]") {
-		kind = Coerce(schema, dt[:len(dt)-2])
+		kind = coerce(schema, dt[:len(dt)-2])
 		// TODO: random number
 		t := Fake(settings, schema, name, dt[:len(dt)-2])
 		return "[]" + kind + "{" + t + "}"
@@ -41,7 +41,7 @@ func Fake(settings *Settings, schema *Schema, name string, dt string) (kind stri
 			}
 
 			if name == dt {
-				return fmt.Sprintf(`%s.%s%s`, settings.Package, Coerce(schema, dt), snaker.SnakeToCamelIdentifier(enum.Values[0].Label))
+				return fmt.Sprintf(`%s.%s%s`, settings.Package, coerce(schema, dt), snaker.SnakeToCamelIdentifier(enum.Values[0].Label))
 			}
 		}
 		panic("don't understand the data type `" + dt + "` for `" + name + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")

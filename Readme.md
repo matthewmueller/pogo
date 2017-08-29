@@ -9,9 +9,14 @@ TODO:
 
   - [x] migrate to pgx@3
   - [x] warn about skipped files, but don't error out
-  - ~~[ ] make api more like cdp~~
+  - ~~[x] make api more like cdp~~
     - Need to use this more to figure out if there are any API improvements to make
-  - [ ] Test out API. Probably return non-pointers.
-  - [ ] Finish generated tests using a pogo sql script (not jack)
-  - [ ] Create many-to-many generated tests
+  - [x] Test out API. Probably return non-pointers.
+  - [x] Finish generated tests using a pogo sql script (not jack)
+  - [x] Create many-to-many generated tests
+
+
+LATER:
+
+  - [ ] Investigate type aliases to simplify accessor coercion  
   - [ ] Implement fake data generator

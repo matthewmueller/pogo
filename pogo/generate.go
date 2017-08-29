@@ -2,7 +2,6 @@ package pogo
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -115,7 +114,6 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 			return files, err
 		}
 
-		fmt.Println(formatted)
 		files[table.Name+"/"+table.Name+".go"] = formatted
 	}
 

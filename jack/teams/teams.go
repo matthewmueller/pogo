@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/jackc/pgx"
 	"github.com/matthewmueller/pogo/jack"
 	uuid "github.com/satori/go.uuid"
@@ -19,7 +18,7 @@ var ErrTeamNotFound = errors.New("team not found")
 
 // columns in `jack.teams`
 type columns struct {
-	ID                   *uuid.UUID `json:"id,omitempty"`
+	ID                   *string    `json:"id,omitempty"`
 	SlackTeamID          *string    `json:"slack_team_id,omitempty"`
 	SlackTeamAccessToken *string    `json:"slack_team_access_token,omitempty"`
 	SlackBotAccessToken  *string    `json:"slack_bot_access_token,omitempty"`
@@ -48,13 +47,22 @@ func New() *Team {
 
 // ID sets the `id`
 func (team *Team) ID(id uuid.UUID) *Team {
-	team.columns.ID = &id
+	*team.columns.ID = id.String()
 	return team
 }
 
 // GetID returns the `id` if set
 func (team *Team) GetID() (id *uuid.UUID) {
-	return team.columns.ID
+	if team.columns.ID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*team.columns.ID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // SlackTeamID sets the `slack_team_id`
@@ -213,7 +221,6 @@ func (team *Team) GetUpdatedAt() (updatedAt *time.Time) {
 
 // MarshalJSON marshals the `team` into JSON
 func (team *Team) MarshalJSON() ([]byte, error) {
-	log.Infof("marshalling!")
 	return json.Marshal(team.columns)
 }
 
@@ -280,7 +287,7 @@ func getColumns(team *Team) map[string]interface{} {
 }
 
 // Find a team by "id"
-func Find(db jack.DB, id *uuid.UUID) (*Team, error) {
+func Find(db jack.DB, id *string) (*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
@@ -291,7 +298,7 @@ func Find(db jack.DB, id *uuid.UUID) (*Team, error) {
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, id)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
@@ -313,7 +320,7 @@ func FindBySlackBotAccessToken(db jack.DB, slackBotAccessToken *string) (*Team, 
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, slackBotAccessToken)
-	err := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt)
+	err := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -336,7 +343,7 @@ func FindBySlackTeamAccessToken(db jack.DB, slackTeamAccessToken *string) (*Team
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, slackTeamAccessToken)
-	err := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt)
+	err := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -359,7 +366,7 @@ func FindBySlackTeamID(db jack.DB, slackTeamID *string) (*Team, error) {
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, slackTeamID)
-	err := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt)
+	err := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -389,7 +396,7 @@ func FindMany(db jack.DB, condition string, params ...interface{}) ([]*Team, err
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrTeamNotFound
 			}
@@ -421,7 +428,7 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Team, error)
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, params...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
@@ -444,18 +451,17 @@ func Insert(db jack.DB, team *Team) (*Team, error) {
 	`
 	jack.Log(sqlstr, _v...)
 
-	cols := columns{}
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
-		log.Infof("error?")
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 
-	return &Team{&cols}, nil
+	return &Team{cols}, nil
 }
 
 // Update a team by its `id`
-func Update(db jack.DB, team *Team, id *uuid.UUID) (*Team, error) {
+func Update(db jack.DB, team *Team, id *string) (*Team, error) {
 	fields := getColumns(team)
 
 	// first check if we have the primary key
@@ -483,7 +489,7 @@ func Update(db jack.DB, team *Team, id *uuid.UUID) (*Team, error) {
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
@@ -525,7 +531,7 @@ func UpdateBySlackBotAccessToken(db jack.DB, team *Team, slackBotAccessToken *st
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
@@ -567,7 +573,7 @@ func UpdateBySlackTeamAccessToken(db jack.DB, team *Team, slackTeamAccessToken *
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
@@ -609,7 +615,7 @@ func UpdateBySlackTeamID(db jack.DB, team *Team, slackTeamID *string) (*Team, er
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
@@ -648,7 +654,7 @@ func UpdateMany(db jack.DB, team *Team, condition string, params ...interface{})
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrTeamNotFound
 			}
@@ -670,7 +676,7 @@ func UpdateMany(db jack.DB, team *Team, condition string, params ...interface{})
 }
 
 // Delete a `team` from the `jack.teams` table
-func Delete(db jack.DB, id *uuid.UUID) error {
+func Delete(db jack.DB, id *string) error {
 	// sql query
 	sqlstr := `DELETE FROM jack.teams WHERE "id" = $1`
 	jack.Log(sqlstr, id)
@@ -773,7 +779,7 @@ func Upsert(db jack.DB, team *Team, action string) (*Team, error) {
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
@@ -806,7 +812,7 @@ func UpsertBySlackBotAccessToken(db jack.DB, team *Team, action string) (*Team, 
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
@@ -839,7 +845,7 @@ func UpsertBySlackTeamAccessToken(db jack.DB, team *Team, action string) (*Team,
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
@@ -872,7 +878,7 @@ func UpsertBySlackTeamID(db jack.DB, team *Team, action string) (*Team, error) {
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 

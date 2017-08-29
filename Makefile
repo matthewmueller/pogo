@@ -8,7 +8,7 @@ examples:  templates
 .PHONY: tempo
 
 templates:
-	@go-bindata -o templates/templates.go -pkg templates -ignore=templates.go templates/
+	@go-bindata -o templates/templates.go -pkg templates -ignore=templates.go templates/...
 .PHONY: templates
 
 install: templates

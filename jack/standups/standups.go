@@ -18,13 +18,13 @@ var ErrStandupNotFound = errors.New("standup not found")
 
 // columns in `jack.standups`
 type columns struct {
-	ID             *uuid.UUID              `json:"id,omitempty"`
+	ID             *string                 `json:"id,omitempty"`
 	Name           *string                 `json:"name,omitempty"`
 	SlackChannelID *string                 `json:"slack_channel_id,omitempty"`
 	Time           *string                 `json:"time,omitempty"`
 	Timezone       *string                 `json:"timezone,omitempty"`
 	Questions      *map[string]interface{} `json:"questions,omitempty"`
-	TeamID         *uuid.UUID              `json:"team_id,omitempty"`
+	TeamID         *string                 `json:"team_id,omitempty"`
 	CreatedAt      *time.Time              `json:"created_at,omitempty"`
 	UpdatedAt      *time.Time              `json:"updated_at,omitempty"`
 }
@@ -41,13 +41,22 @@ func New() *Standup {
 
 // ID sets the `id`
 func (standup *Standup) ID(id uuid.UUID) *Standup {
-	standup.columns.ID = &id
+	*standup.columns.ID = id.String()
 	return standup
 }
 
 // GetID returns the `id` if set
 func (standup *Standup) GetID() (id *uuid.UUID) {
-	return standup.columns.ID
+	if standup.columns.ID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*standup.columns.ID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // Name sets the `name`
@@ -107,13 +116,22 @@ func (standup *Standup) GetQuestions() (questions *map[string]interface{}) {
 
 // TeamID sets the `team_id`
 func (standup *Standup) TeamID(teamID uuid.UUID) *Standup {
-	standup.columns.TeamID = &teamID
+	*standup.columns.TeamID = teamID.String()
 	return standup
 }
 
 // GetTeamID returns the `team_id` if set
 func (standup *Standup) GetTeamID() (teamID *uuid.UUID) {
-	return standup.columns.TeamID
+	if standup.columns.TeamID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*standup.columns.TeamID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // CreatedAt sets the `created_at`
@@ -188,7 +206,7 @@ func getColumns(standup *Standup) map[string]interface{} {
 }
 
 // Find a standup by "id"
-func Find(db jack.DB, id *uuid.UUID) (*Standup, error) {
+func Find(db jack.DB, id *string) (*Standup, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
@@ -199,7 +217,7 @@ func Find(db jack.DB, id *uuid.UUID) (*Standup, error) {
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, id)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupNotFound
 		}
@@ -221,7 +239,7 @@ func FindBySlackChannelID(db jack.DB, slackChannelID *string) (*Standup, error) 
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, slackChannelID)
-	err := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt)
+	err := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrStandupNotFound
@@ -251,7 +269,7 @@ func FindMany(db jack.DB, condition string, params ...interface{}) ([]*Standup, 
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrStandupNotFound
 			}
@@ -283,7 +301,7 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Standup, err
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, params...)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupNotFound
 		}
@@ -308,7 +326,7 @@ func Insert(db jack.DB, standup *Standup) (*Standup, error) {
 
 	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 
@@ -316,7 +334,7 @@ func Insert(db jack.DB, standup *Standup) (*Standup, error) {
 }
 
 // Update a standup by its `id`
-func Update(db jack.DB, standup *Standup, id *uuid.UUID) (*Standup, error) {
+func Update(db jack.DB, standup *Standup, id *string) (*Standup, error) {
 	fields := getColumns(standup)
 
 	// first check if we have the primary key
@@ -344,7 +362,7 @@ func Update(db jack.DB, standup *Standup, id *uuid.UUID) (*Standup, error) {
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupNotFound
 		}
@@ -386,7 +404,7 @@ func UpdateBySlackChannelID(db jack.DB, standup *Standup, slackChannelID *string
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupNotFound
 		}
@@ -425,7 +443,7 @@ func UpdateMany(db jack.DB, standup *Standup, condition string, params ...interf
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrStandupNotFound
 			}
@@ -447,7 +465,7 @@ func UpdateMany(db jack.DB, standup *Standup, condition string, params ...interf
 }
 
 // Delete a `standup` from the `jack.standups` table
-func Delete(db jack.DB, id *uuid.UUID) error {
+func Delete(db jack.DB, id *string) error {
 	// sql query
 	sqlstr := `DELETE FROM jack.standups WHERE "id" = $1`
 	jack.Log(sqlstr, id)
@@ -518,7 +536,7 @@ func Upsert(db jack.DB, standup *Standup, action string) (*Standup, error) {
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
@@ -551,7 +569,7 @@ func UpsertBySlackChannelID(db jack.DB, standup *Standup, action string) (*Stand
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 

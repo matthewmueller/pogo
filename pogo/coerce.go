@@ -7,17 +7,17 @@ import (
 )
 
 // Coerce a postgres type into a Go type based on the column definition.
-func Coerce(schema *Schema, dt string) (kind string) {
+func coerce(schema *Schema, dt string) (kind string) {
 	// handle SETOF
 	if strings.HasPrefix(dt, "SETOF ") {
-		t := Coerce(schema, dt[len("SETOF "):])
+		t := coerce(schema, dt[len("SETOF "):])
 		return "[]" + t
 	}
 
 	// determine if it's a slice
 	if strings.HasSuffix(dt, "[]") {
 		dt = dt[:len(dt)-2]
-		t := Coerce(schema, dt)
+		t := coerce(schema, dt)
 		return "[]" + strings.TrimPrefix(t, "*")
 	}
 
@@ -34,7 +34,7 @@ func Coerce(schema *Schema, dt string) (kind string) {
 
 	switch dt {
 	case "uuid":
-		return "uuid.UUID"
+		return "string"
 	case "text":
 		return "string"
 	case "boolean":
@@ -63,6 +63,16 @@ func Coerce(schema *Schema, dt string) (kind string) {
 			}
 		}
 		panic("don't understand the data type `" + dt + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")
+	}
+}
+
+// CoerceAccessor gives a way to treat our accessors different from the underlying data type
+func coerceAccessor(schema *Schema, dt string) string {
+	switch dt {
+	case "uuid":
+		return "uuid.UUID"
+	default:
+		return coerce(schema, dt)
 	}
 }
 

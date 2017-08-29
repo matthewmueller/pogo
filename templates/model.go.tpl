@@ -14,7 +14,7 @@
 {{ $co := colnames .Table.Columns }}
 {{ $idxs := indexes .Table.Indexes }}
 {{ $cof := map $co (mprintf "\"%s\"") | join ", " }}
-{{ $cog := map $co mcapitalize (mprefix "cols.") | join ", " }}
+{{ $cog := map $co mcapitalize (mprefix "&cols.") | join ", " }}
 
 {{/*************************************************************************/}}
 {{/* Our Package */}}
@@ -64,19 +64,34 @@ func New() *{{ $m }} {
 }
 
 {{/*************************************************************************/}}
-{{/* Generate each of the fluent methods for the fluent parameter API */}}
+{{/* Generate each of the fluent methods for the fluent parameter API      */}}
+{{/* This is very messy right now because we have some custom accessors    */}}
+{{/* for uuid.                                                             */}}
+{{/*                                                                       */}}
+{{/* NOTE: This would probably be better solved at pgx level, but I spent  */}}
+{{/* far too long trying to get that working with scanning nil *uuid.UUID  */}}
+{{/* Fortunately, this isn't a big deal, because the API can remain stable */}}
 {{/*************************************************************************/}}
 
-{{ range .Table.Columns }}{{ $t := coerce $.Schema .DataType }}
+{{ range .Table.Columns }}{{ $dt := coerceaccessor $.Schema .DataType }}
 // {{ .Name | capitalize }} sets the `{{ .Name }}`
-func ({{ $mv }} *{{ $m }}) {{ .Name | capitalize }}({{ .Name | camelize }} {{ $t }}) *{{ $m }} {
-	{{ $mv }}.columns.{{ .Name | capitalize }} = &{{ .Name | camelize }}
+func ({{ $mv }} *{{ $m }}) {{ .Name | capitalize }}({{ .Name | camelize }} {{ $dt }}) *{{ $m }} {
+	{{ if eq .DataType "uuid" }}*{{ $mv }}.columns.{{ .Name | capitalize }} = {{ .Name | camelize }}.String(){{ else }}{{ $mv }}.columns.{{ .Name | capitalize }} = &{{ .Name | camelize }}{{ end }}
 	return {{ $mv }}
 }
 
 // Get{{ .Name | capitalize }} returns the `{{ .Name }}` if set
-func ({{ $mv }} *{{ $m }}) Get{{ .Name | capitalize }}() ({{ .Name | camelize }} *{{ $t }}) {
-	return {{ $mv }}.columns.{{ .Name | capitalize }}
+func ({{ $mv }} *{{ $m }}) Get{{ .Name | capitalize }}() ({{ .Name | camelize }} *{{ $dt }}) {
+	{{ if eq .DataType "uuid" }}if {{ $mv }}.columns.{{ .Name | capitalize }} == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*{{ $mv }}.columns.{{ .Name | capitalize }})
+	if err != nil {
+		return nil
+	}
+
+	return &_u{{ else }}return {{ $mv }}.columns.{{ .Name | capitalize }}{{ end }}
 }
 {{ end }}
 

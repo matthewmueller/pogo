@@ -19,11 +19,11 @@ var ErrReportNotFound = errors.New("report not found")
 
 // columns in `jack.reports`
 type columns struct {
-	ID        *uuid.UUID              `json:"id,omitempty"`
-	UserID    *uuid.UUID              `json:"user_id,omitempty"`
+	ID        *string                 `json:"id,omitempty"`
+	UserID    *string                 `json:"user_id,omitempty"`
 	Timestamp *time.Time              `json:"timestamp,omitempty"`
 	Questions *map[string]interface{} `json:"questions,omitempty"`
-	StandupID *uuid.UUID              `json:"standup_id,omitempty"`
+	StandupID *string                 `json:"standup_id,omitempty"`
 	Status    *enum.ReportStatus      `json:"status,omitempty"`
 	CreatedAt *time.Time              `json:"created_at,omitempty"`
 	UpdatedAt *time.Time              `json:"updated_at,omitempty"`
@@ -41,24 +41,42 @@ func New() *Report {
 
 // ID sets the `id`
 func (report *Report) ID(id uuid.UUID) *Report {
-	report.columns.ID = &id
+	*report.columns.ID = id.String()
 	return report
 }
 
 // GetID returns the `id` if set
 func (report *Report) GetID() (id *uuid.UUID) {
-	return report.columns.ID
+	if report.columns.ID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*report.columns.ID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // UserID sets the `user_id`
 func (report *Report) UserID(userID uuid.UUID) *Report {
-	report.columns.UserID = &userID
+	*report.columns.UserID = userID.String()
 	return report
 }
 
 // GetUserID returns the `user_id` if set
 func (report *Report) GetUserID() (userID *uuid.UUID) {
-	return report.columns.UserID
+	if report.columns.UserID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*report.columns.UserID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // Timestamp sets the `timestamp`
@@ -85,13 +103,22 @@ func (report *Report) GetQuestions() (questions *map[string]interface{}) {
 
 // StandupID sets the `standup_id`
 func (report *Report) StandupID(standupID uuid.UUID) *Report {
-	report.columns.StandupID = &standupID
+	*report.columns.StandupID = standupID.String()
 	return report
 }
 
 // GetStandupID returns the `standup_id` if set
 func (report *Report) GetStandupID() (standupID *uuid.UUID) {
-	return report.columns.StandupID
+	if report.columns.StandupID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*report.columns.StandupID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // Status sets the `status`
@@ -174,7 +201,7 @@ func getColumns(report *Report) map[string]interface{} {
 }
 
 // Find a report by "id"
-func Find(db jack.DB, id *uuid.UUID) (*Report, error) {
+func Find(db jack.DB, id *string) (*Report, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
@@ -185,7 +212,7 @@ func Find(db jack.DB, id *uuid.UUID) (*Report, error) {
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, id)
-	if e := row.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrReportNotFound
 		}
@@ -214,7 +241,7 @@ func FindMany(db jack.DB, condition string, params ...interface{}) ([]*Report, e
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrReportNotFound
 			}
@@ -246,7 +273,7 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Report, erro
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, params...)
-	if e := row.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrReportNotFound
 		}
@@ -271,7 +298,7 @@ func Insert(db jack.DB, report *Report) (*Report, error) {
 
 	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 
@@ -279,7 +306,7 @@ func Insert(db jack.DB, report *Report) (*Report, error) {
 }
 
 // Update a report by its `id`
-func Update(db jack.DB, report *Report, id *uuid.UUID) (*Report, error) {
+func Update(db jack.DB, report *Report, id *string) (*Report, error) {
 	fields := getColumns(report)
 
 	// first check if we have the primary key
@@ -307,7 +334,7 @@ func Update(db jack.DB, report *Report, id *uuid.UUID) (*Report, error) {
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrReportNotFound
 		}
@@ -346,7 +373,7 @@ func UpdateMany(db jack.DB, report *Report, condition string, params ...interfac
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrReportNotFound
 			}
@@ -368,7 +395,7 @@ func UpdateMany(db jack.DB, report *Report, condition string, params ...interfac
 }
 
 // Delete a `report` from the `jack.reports` table
-func Delete(db jack.DB, id *uuid.UUID) error {
+func Delete(db jack.DB, id *string) error {
 	// sql query
 	sqlstr := `DELETE FROM jack.reports WHERE "id" = $1`
 	jack.Log(sqlstr, id)
@@ -423,7 +450,7 @@ func Upsert(db jack.DB, report *Report, action string) (*Report, error) {
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 

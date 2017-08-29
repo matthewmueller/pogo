@@ -18,8 +18,8 @@ var ErrStandupTeammateNotFound = errors.New("standupteammate not found")
 
 // columns in `jack.standups_teammates`
 type columns struct {
-	StandupID  *uuid.UUID `json:"standup_id,omitempty"`
-	TeammateID *uuid.UUID `json:"teammate_id,omitempty"`
+	StandupID  *string    `json:"standup_id,omitempty"`
+	TeammateID *string    `json:"teammate_id,omitempty"`
 	TeamOwner  *bool      `json:"team_owner,omitempty"`
 	CreatedAt  *time.Time `json:"created_at,omitempty"`
 	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
@@ -128,7 +128,7 @@ func getColumns(standupteammate *StandupTeammate) map[string]interface{} {
 }
 
 // Find a `standupteammate` by its `standup_id`, `teammate_id`
-func Find(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID) (*StandupTeammate, error) {
+func Find(db jack.DB, standupID *string, teammateID *string) (*StandupTeammate, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "standup_id", "teammate_id", "team_owner", "created_at", "updated_at"
@@ -174,7 +174,7 @@ func Insert(db jack.DB, standupteammate *StandupTeammate) (*StandupTeammate, err
 }
 
 // Update a `StandupTeammate` by its `standup_id`, `teammate_id`
-func Update(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID, standupteammate *StandupTeammate) (*StandupTeammate, error) {
+func Update(db jack.DB, standupID *string, teammateID *string, standupteammate *StandupTeammate) (*StandupTeammate, error) {
 	fields := getColumns(standupteammate)
 
 	// first check if we have the foreign keys
@@ -221,7 +221,7 @@ func Update(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID, standupteam
 }
 
 // Delete a `StandupTeammate` by its `standup_id`, `teammate_id`
-func Delete(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID) error {
+func Delete(db jack.DB, standupID *string, teammateID *string) error {
 	// sql query
 	const sqlstr = `
 	DELETE FROM jack.standups_teammates

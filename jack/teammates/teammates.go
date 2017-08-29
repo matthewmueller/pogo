@@ -18,7 +18,7 @@ var ErrTeammateNotFound = errors.New("teammate not found")
 
 // columns in `jack.teammates`
 type columns struct {
-	ID        *uuid.UUID `json:"id,omitempty"`
+	ID        *string    `json:"id,omitempty"`
 	SlackID   *string    `json:"slack_id,omitempty"`
 	Username  *string    `json:"username,omitempty"`
 	FirstName *string    `json:"first_name,omitempty"`
@@ -42,13 +42,22 @@ func New() *Teammate {
 
 // ID sets the `id`
 func (teammate *Teammate) ID(id uuid.UUID) *Teammate {
-	teammate.columns.ID = &id
+	*teammate.columns.ID = id.String()
 	return teammate
 }
 
 // GetID returns the `id` if set
 func (teammate *Teammate) GetID() (id *uuid.UUID) {
-	return teammate.columns.ID
+	if teammate.columns.ID == nil {
+		return nil
+	}
+
+	_u, err := uuid.FromString(*teammate.columns.ID)
+	if err != nil {
+		return nil
+	}
+
+	return &_u
 }
 
 // SlackID sets the `slack_id`
@@ -203,7 +212,7 @@ func getColumns(teammate *Teammate) map[string]interface{} {
 }
 
 // Find a teammate by "id"
-func Find(db jack.DB, id *uuid.UUID) (*Teammate, error) {
+func Find(db jack.DB, id *string) (*Teammate, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"
@@ -214,7 +223,7 @@ func Find(db jack.DB, id *uuid.UUID) (*Teammate, error) {
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, id)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
 		}
@@ -236,7 +245,7 @@ func FindBySlackID(db jack.DB, slackID *string) (*Teammate, error) {
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, slackID)
-	err := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt)
+	err := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
@@ -266,7 +275,7 @@ func FindMany(db jack.DB, condition string, params ...interface{}) ([]*Teammate,
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrTeammateNotFound
 			}
@@ -298,7 +307,7 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Teammate, er
 
 	var cols *columns
 	row := db.QueryRow(sqlstr, params...)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
 		}
@@ -323,7 +332,7 @@ func Insert(db jack.DB, teammate *Teammate) (*Teammate, error) {
 
 	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 
@@ -331,7 +340,7 @@ func Insert(db jack.DB, teammate *Teammate) (*Teammate, error) {
 }
 
 // Update a teammate by its `id`
-func Update(db jack.DB, teammate *Teammate, id *uuid.UUID) (*Teammate, error) {
+func Update(db jack.DB, teammate *Teammate, id *string) (*Teammate, error) {
 	fields := getColumns(teammate)
 
 	// first check if we have the primary key
@@ -359,7 +368,7 @@ func Update(db jack.DB, teammate *Teammate, id *uuid.UUID) (*Teammate, error) {
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
 		}
@@ -401,7 +410,7 @@ func UpdateBySlackID(db jack.DB, teammate *Teammate, slackID *string) (*Teammate
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
 		}
@@ -440,7 +449,7 @@ func UpdateMany(db jack.DB, teammate *Teammate, condition string, params ...inte
 
 	for rows.Next() {
 		var cols *columns
-		if e := rows.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		if e := rows.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, ErrTeammateNotFound
 			}
@@ -462,7 +471,7 @@ func UpdateMany(db jack.DB, teammate *Teammate, condition string, params ...inte
 }
 
 // Delete a `teammate` from the `jack.teammates` table
-func Delete(db jack.DB, id *uuid.UUID) error {
+func Delete(db jack.DB, id *string) error {
 	// sql query
 	sqlstr := `DELETE FROM jack.teammates WHERE "id" = $1`
 	jack.Log(sqlstr, id)
@@ -533,7 +542,7 @@ func Upsert(db jack.DB, teammate *Teammate, action string) (*Teammate, error) {
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
@@ -566,7 +575,7 @@ func UpsertBySlackID(db jack.DB, teammate *Teammate, action string) (*Teammate, 
 	// run query
 	var cols *columns
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 

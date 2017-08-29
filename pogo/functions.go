@@ -57,9 +57,14 @@ var templateMap = template.FuncMap{
 		}
 	},
 
-	// coerce the Golang type to an SQL type
+	// coerce the sql type to a golang type
 	"coerce": func(schema *Schema, s string) string {
-		return Coerce(schema, s)
+		return coerce(schema, s)
+	},
+
+	// coerceaccessor converts the SQL type to an accessor type
+	"coerceaccessor": func(schema *Schema, s string) string {
+		return coerceAccessor(schema, s)
 	},
 
 	// coerce the Golang type to an SQL type
@@ -106,7 +111,7 @@ var templateMap = template.FuncMap{
 
 		for _, col := range index.Columns {
 			name := camelize(col.Name)
-			kind := Coerce(schema, col.DataType)
+			kind := coerce(schema, col.DataType)
 			cols = append(cols, name+" *"+kind)
 		}
 
@@ -138,7 +143,7 @@ var templateMap = template.FuncMap{
 			colname := fk.Name
 			for _, col := range table.Columns {
 				if colname == col.Name {
-					out = append(out, camelize(fk.Name)+" *"+Coerce(schema, col.DataType))
+					out = append(out, camelize(fk.Name)+" *"+coerce(schema, col.DataType))
 				}
 			}
 		}
