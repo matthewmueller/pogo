@@ -517,32 +517,28 @@ func DeleteMany(db testjack.DB, where *WhereClause) error {
 }
 
 // Upsert the `teammate` by its `id`.
-func Upsert(db testjack.DB, teammate *Teammate, action string) (*Teammate, error) {
-	// prepare the slices
-	_c, _i, _v := testjack.Slice(getColumns(teammate), 0)
+func Upsert(db testjack.DB, teammate *Teammate) (*Teammate, error) {
+	fields := getColumns(teammate)
 
-	// determine on conflict action
-	var upsertAction string
-	if action == testjack.UpsertDoUpdate {
-		upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-	} else if action == testjack.UpsertDoNothing {
-		upsertAction = testjack.UpsertDoNothing
-	} else {
-		return nil, errors.New("invalid upsert action")
-	}
+	// prepare the slices for the insert
+	_c, _i, _v := testjack.Slice(fields, 0)
+
+	// prepare the slices for the upsert
+	delete(fields, "id")
+	_u, _, _ := testjack.Slice(fields, 0)
 
 	// sql query
 	sqlstr := `INSERT INTO jack.teammates (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("id") ` +
-		upsertAction + ` ` +
+		`DO UPDATE SET (` + strings.Join(_u, ", ") + `) = ( EXCLUDED.` + strings.Join(_u, ", EXCLUDED.") + `) ` +
 		`RETURNING "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"`
 	testjack.Log(sqlstr, _v...)
 
 	// run query
 	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 
@@ -550,25 +546,15 @@ func Upsert(db testjack.DB, teammate *Teammate, action string) (*Teammate, error
 }
 
 // UpsertBySlackID find a Teammate
-func UpsertBySlackID(db testjack.DB, teammate *Teammate, action string) (*Teammate, error) {
+func UpsertBySlackID(db testjack.DB, teammate *Teammate) (*Teammate, error) {
 	// get all the non-nil columns and prepare them for the query
 	_c, _i, _v := testjack.Slice(getColumns(teammate), 0)
-
-	// determine on conflict action
-	var upsertAction string
-	if action == testjack.UpsertDoUpdate {
-		upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-	} else if action == testjack.UpsertDoNothing {
-		upsertAction = testjack.UpsertDoNothing
-	} else {
-		return nil, errors.New("invalid upsert action")
-	}
 
 	// sql query
 	sqlstr := `INSERT INTO jack.teammates (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("slack_id") ` +
-		upsertAction + ` ` +
+		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
 		`RETURNING "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"`
 	testjack.Log(sqlstr, _v...)
 

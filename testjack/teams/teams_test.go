@@ -661,3 +661,126 @@ func TestDeleteMany(t *testing.T) {
 
 	assert.Equal(t, 0, len(tms))
 }
+
+func TestUpsert(t *testing.T) {
+	db, close := DB(t)
+	defer close()
+
+	id := uuid.NewV4()
+	teamname := uuid.NewV4().String()
+	email := uuid.NewV4().String()
+	teamID := uuid.NewV4().String()
+	teamAccessToken := uuid.NewV4().String()
+	botAccessToken := uuid.NewV4().String()
+	botID := uuid.NewV4().String()
+
+	team := teams.New().
+		ID(id).
+		TeamName(teamname).
+		Email(email).
+		SlackTeamID(teamID).
+		SlackTeamAccessToken(teamAccessToken).
+		SlackBotAccessToken(botAccessToken).
+		SlackBotID(botID).
+		Active(true).
+		CostPerUser(16)
+
+	tm, err := teams.Upsert(db, team)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, teamname, *tm.GetTeamName())
+	assert.Equal(t, email, *tm.GetEmail())
+	assert.Equal(t, teamID, *tm.GetSlackTeamID())
+	assert.Equal(t, teamAccessToken, *tm.GetSlackTeamAccessToken())
+	assert.Equal(t, botAccessToken, *tm.GetSlackBotAccessToken())
+	assert.Equal(t, botID, *tm.GetSlackBotID())
+
+	email2 := uuid.NewV4().String()
+
+	team2 := teams.New().
+		ID(id).
+		Email(email2).
+		TeamName(teamname).
+		SlackTeamID(teamID).
+		SlackTeamAccessToken(teamAccessToken).
+		SlackBotAccessToken(botAccessToken).
+		SlackBotID(botID).
+		Active(false).
+		CostPerUser(21)
+
+	tm2, err := teams.Upsert(db, team2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, teamname, *tm2.GetTeamName())
+	assert.Equal(t, email2, *tm2.GetEmail())
+	assert.Equal(t, teamID, *tm2.GetSlackTeamID())
+	assert.Equal(t, teamAccessToken, *tm2.GetSlackTeamAccessToken())
+	assert.Equal(t, botAccessToken, *tm2.GetSlackBotAccessToken())
+	assert.Equal(t, botID, *tm2.GetSlackBotID())
+	assert.Equal(t, false, *tm2.GetActive())
+	assert.Equal(t, 21, *tm2.GetCostPerUser())
+}
+
+func TestUpsertBy(t *testing.T) {
+	db, close := DB(t)
+	defer close()
+
+	id := uuid.NewV4()
+	teamname := uuid.NewV4().String()
+	email := uuid.NewV4().String()
+	teamID := uuid.NewV4().String()
+	teamAccessToken := uuid.NewV4().String()
+	botAccessToken := uuid.NewV4().String()
+	botID := uuid.NewV4().String()
+
+	team := teams.New().
+		ID(id).
+		TeamName(teamname).
+		Email(email).
+		SlackTeamID(teamID).
+		SlackTeamAccessToken(teamAccessToken).
+		SlackBotAccessToken(botAccessToken).
+		SlackBotID(botID).
+		Active(true).
+		CostPerUser(16)
+
+	tm, err := teams.UpsertBySlackTeamID(db, team)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, teamname, *tm.GetTeamName())
+	assert.Equal(t, email, *tm.GetEmail())
+	assert.Equal(t, teamID, *tm.GetSlackTeamID())
+	assert.Equal(t, teamAccessToken, *tm.GetSlackTeamAccessToken())
+	assert.Equal(t, botAccessToken, *tm.GetSlackBotAccessToken())
+	assert.Equal(t, botID, *tm.GetSlackBotID())
+
+	email2 := uuid.NewV4().String()
+
+	team2 := teams.New().
+		Email(email2).
+		TeamName(teamname).
+		SlackTeamID(teamID).
+		SlackTeamAccessToken(teamAccessToken).
+		SlackBotAccessToken(botAccessToken).
+		SlackBotID(botID)
+
+	tm2, err := teams.UpsertBySlackTeamID(db, team2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, teamname, *tm2.GetTeamName())
+	assert.Equal(t, email2, *tm2.GetEmail())
+	assert.Equal(t, teamID, *tm2.GetSlackTeamID())
+	assert.Equal(t, teamAccessToken, *tm2.GetSlackTeamAccessToken())
+	assert.Equal(t, botAccessToken, *tm2.GetSlackBotAccessToken())
+	assert.Equal(t, botID, *tm2.GetSlackBotID())
+	assert.Equal(t, true, *tm2.GetActive())
+	assert.Equal(t, 16, *tm2.GetCostPerUser())
+}

@@ -412,32 +412,28 @@ func DeleteMany(db testjack.DB, where *WhereClause) error {
 }
 
 // Upsert the `report` by its `id`.
-func Upsert(db testjack.DB, report *Report, action string) (*Report, error) {
-	// prepare the slices
-	_c, _i, _v := testjack.Slice(getColumns(report), 0)
+func Upsert(db testjack.DB, report *Report) (*Report, error) {
+	fields := getColumns(report)
 
-	// determine on conflict action
-	var upsertAction string
-	if action == testjack.UpsertDoUpdate {
-		upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-	} else if action == testjack.UpsertDoNothing {
-		upsertAction = testjack.UpsertDoNothing
-	} else {
-		return nil, errors.New("invalid upsert action")
-	}
+	// prepare the slices for the insert
+	_c, _i, _v := testjack.Slice(fields, 0)
+
+	// prepare the slices for the upsert
+	delete(fields, "id")
+	_u, _, _ := testjack.Slice(fields, 0)
 
 	// sql query
 	sqlstr := `INSERT INTO jack.reports (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("id") ` +
-		upsertAction + ` ` +
+		`DO UPDATE SET (` + strings.Join(_u, ", ") + `) = ( EXCLUDED.` + strings.Join(_u, ", EXCLUDED.") + `) ` +
 		`RETURNING "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"`
 	testjack.Log(sqlstr, _v...)
 
 	// run query
 	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 

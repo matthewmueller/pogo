@@ -514,32 +514,28 @@ func DeleteMany(db {{ $pkg }}.DB, where *WhereClause) error {
 {{/*****************************************************************************/}}
 
 // Upsert the `{{ $mv }}` by its `{{ $p.Name }}`.
-func Upsert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action string) (*{{ $m }}, error) {
-	// prepare the slices
-	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
+func Upsert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
+	fields := getColumns({{ $mv }})
 
-  // determine on conflict action
-  var upsertAction string
-  if action == {{ $pkg }}.UpsertDoUpdate {
-    upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-  } else if action == {{ $pkg }}.UpsertDoNothing {
-    upsertAction = {{ $pkg }}.UpsertDoNothing
-  } else {
-    return nil, errors.New("invalid upsert action")
-  }
+	// prepare the slices for the insert
+	_c, _i, _v := {{ $pkg }}.Slice(fields, 0)
+
+	// prepare the slices for the upsert
+	delete(fields, "{{ $p.Name }}")
+	_u, _, _ := {{ $pkg }}.Slice(fields, 0)
 
 	// sql query
   sqlstr := `INSERT INTO {{ $t }} (` + strings.Join(_c, ", ") + `) ` +
 	`VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ("{{ $p.Name }}") ` +
-  upsertAction + ` ` +
+  `DO UPDATE SET (` + strings.Join(_u, ", ") + `) = ( EXCLUDED.` + strings.Join(_u, ", EXCLUDED.") + `) ` +
   `RETURNING {{ $cof }}`
   {{ $pkg }}.Log(sqlstr, _v...)
 
 	// run query
 	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan({{ $cog }}); e != nil && e != pgx.ErrNoRows {
+	if e := row.Scan({{ $cog }}); e != nil {
 		return nil, e
 	}
 
@@ -556,25 +552,15 @@ func Upsert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action string) (*{{ $m }}, er
 {{ $idxparams := idxparams $.Schema $idx }}
 {{ $idxparamlist := map $cols (mprintf "\"%s\"") | join ", " }}
 // UpsertBy{{ $idxmethod }} find a {{ $m }}
-func UpsertBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action string) (*{{ $m }}, error) {
+func UpsertBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 	// get all the non-nil columns and prepare them for the query
   _c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
-
-  // determine on conflict action
-  var upsertAction string
-  if action == {{ $pkg }}.UpsertDoUpdate {
-    upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `)`
-  } else if action == {{ $pkg }}.UpsertDoNothing {
-    upsertAction = {{ $pkg }}.UpsertDoNothing
-  } else {
-    return nil, errors.New("invalid upsert action")
-  }
 
   // sql query
   sqlstr := `INSERT INTO {{ $t }} (` + strings.Join(_c, ", ") + `) ` +
 	`VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ({{ $idxparamlist }}) ` +
-  upsertAction + ` ` +
+  `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
   `RETURNING {{ $cof }}`
   {{ $pkg }}.Log(sqlstr, _v...)
 
