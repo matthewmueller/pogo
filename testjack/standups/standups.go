@@ -187,6 +187,20 @@ func getColumns(standup *Standup) map[string]interface{} {
 	return columns
 }
 
+// WhereClause is a struct to handle where clauses
+type WhereClause struct {
+	condition string
+	params    []interface{}
+}
+
+// Where specifies the conditions
+func Where(condition string, params ...interface{}) *WhereClause {
+	return &WhereClause{
+		condition: condition,
+		params:    params,
+	}
+}
+
 // Find a standup by "id"
 func Find(db testjack.DB, id uuid.UUID) (*Standup, error) {
 	_id := testjack.DecodeUUID(id)
@@ -235,17 +249,17 @@ func FindBySlackChannelID(db testjack.DB, slackChannelID string) (*Standup, erro
 }
 
 // FindMany find many `standup`s by a given condition
-func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Standup, error) {
+func FindMany(db testjack.DB, where *WhereClause) ([]*Standup, error) {
 	var _o []*Standup
 
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
 	FROM jack.standups
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	rows, err := db.Query(sqlstr, params...)
+	rows, err := db.Query(sqlstr, where.params...)
 	if err != nil {
 		return _o, err
 	}
@@ -275,16 +289,16 @@ func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Stand
 }
 
 // FindOne find one standup by a condition
-func FindOne(db testjack.DB, condition string, params ...interface{}) (*Standup, error) {
+func FindOne(db testjack.DB, where *WhereClause) (*Standup, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
 	FROM jack.standups
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
 	cols := &columns{}
-	row := db.QueryRow(sqlstr, params...)
+	row := db.QueryRow(sqlstr, where.params...)
 	if e := row.Scan(&cols.ID, &cols.Name, &cols.SlackChannelID, &cols.Time, &cols.Timezone, &cols.Questions, &cols.TeamID, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupNotFound
@@ -390,22 +404,22 @@ func UpdateBySlackChannelID(db testjack.DB, slackChannelID string, standup *Stan
 }
 
 // UpdateMany rows in `jack.standups` by a given condition
-func UpdateMany(db testjack.DB, standup *Standup, condition string, params ...interface{}) ([]*Standup, error) {
+func UpdateMany(db testjack.DB, where *WhereClause, standup *Standup) ([]*Standup, error) {
 	var _o []*Standup
 
 	// prepare the slices
-	_c, _i, _v := testjack.Slice(getColumns(standup), len(params))
+	_c, _i, _v := testjack.Slice(getColumns(standup), len(where.params))
 
 	// sql query
 	sqlstr := `UPDATE jack.standups SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
-		`WHERE ` + condition + ` ` +
+		`WHERE ` + where.condition + ` ` +
 		`RETURNING "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"`
 
 		// setup the query
 	values := []interface{}{}
-	values = append(values, params...)
+	values = append(values, where.params...)
 	values = append(values, _v...)
 	testjack.Log(sqlstr, values...)
 
@@ -475,12 +489,12 @@ func DeleteBySlackChannelID(db testjack.DB, slackChannelID string) error {
 }
 
 // DeleteMany delete many `standup`'s by the given condition
-func DeleteMany(db testjack.DB, condition string, params ...interface{}) error {
+func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.standups WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	sqlstr := `DELETE FROM jack.standups WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	if _, e := db.Exec(sqlstr, params...); e != nil {
+	if _, e := db.Exec(sqlstr, where.params...); e != nil {
 		return e
 	}
 

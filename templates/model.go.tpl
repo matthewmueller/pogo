@@ -126,6 +126,24 @@ func getColumns({{ $mv }} *{{ $m }}) map[string]interface{} {
   return columns
 }
 
+{{/*****************************************************************************/}}
+{{/* Public where helper for a couple of the methods */}}
+{{/*****************************************************************************/}}
+
+// WhereClause is a struct to handle where clauses
+type WhereClause struct {
+	condition string
+	params    []interface{}
+}
+
+// Where specifies the conditions
+func Where(condition string, params ...interface{}) *WhereClause {
+	return &WhereClause{
+		condition: condition,
+		params:    params,
+	}
+}
+
 {{/*************************************************************************/}}
 {{/* pogo.$TABLE.Find(): find one row by it's primary key */}}
 {{/*************************************************************************/}}
@@ -194,17 +212,17 @@ func FindBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}) (*{{ $m }}, erro
 {{/*************************************************************************/}}
 
 // FindMany find many `{{ $mv }}`s by a given condition
-func FindMany(db {{ $pkg }}.DB, condition string, params... interface{}) ([]*{{ $m }}, error) {
+func FindMany(db {{ $pkg }}.DB, where *WhereClause) ([]*{{ $m }}, error) {
 	var _o []*{{ $m }}
 	
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
 	FROM {{ $t }}
-	WHERE ` + condition
-	{{ $pkg }}.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	{{ $pkg }}.Log(sqlstr, where.params...)
 
-  rows, err := db.Query(sqlstr, params...)
+  rows, err := db.Query(sqlstr, where.params...)
   if err != nil {
     return _o, err
   }
@@ -238,16 +256,16 @@ func FindMany(db {{ $pkg }}.DB, condition string, params... interface{}) ([]*{{ 
 {{/*************************************************************************/}}
 
 // FindOne find one {{ $mv }} by a condition
-func FindOne(db {{ $pkg }}.DB, condition string, params... interface{}) (*{{ $m }}, error) {
+func FindOne(db {{ $pkg }}.DB, where *WhereClause) (*{{ $m }}, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
 	FROM {{ $t }}
-	WHERE ` + condition
-	{{ $pkg }}.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	{{ $pkg }}.Log(sqlstr, where.params...)
 
 	cols := &columns{}
-  row := db.QueryRow(sqlstr, params...)
+  row := db.QueryRow(sqlstr, where.params...)
   if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound
@@ -376,22 +394,22 @@ func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}, {{ $mv }} *{{ 
 {{/*****************************************************************************/}}
 
 // UpdateMany rows in `{{ $t }}` by a given condition
-func UpdateMany(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, condition string, params... interface{}) ([]*{{ $m }}, error) {
+func UpdateMany(db {{ $pkg }}.DB, where *WhereClause, {{ $mv }} *{{ $m }}) ([]*{{ $m }}, error) {
 	var _o []*{{ $m }}
 	
 	// prepare the slices
-	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), len(params))
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), len(where.params))
 
 	// sql query
 	sqlstr := `UPDATE {{ $t }} SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
-		`WHERE ` + condition + ` ` +
+		`WHERE ` + where.condition + ` ` +
 		`RETURNING {{ $cof }}`
 
 	// setup the query
   values := []interface{}{}
-  values = append(values, params...)
+  values = append(values, where.params...)
   values = append(values, _v...)
 	{{ $pkg }}.Log(sqlstr, values...)
 
@@ -479,12 +497,12 @@ func DeleteBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}) error {
 {{/*****************************************************************************/}}
 
 // DeleteMany delete many `{{ $mv }}`'s by the given condition
-func DeleteMany(db {{ $pkg }}.DB, condition string, params... interface{}) error {
+func DeleteMany(db {{ $pkg }}.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM {{ $t }} WHERE ` + condition
-	{{ $pkg }}.Log(sqlstr, params...)
+	sqlstr := `DELETE FROM {{ $t }} WHERE ` + where.condition
+	{{ $pkg }}.Log(sqlstr, where.params...)
 
-  if _, e := db.Exec(sqlstr, params...); e != nil {
+  if _, e := db.Exec(sqlstr, where.params...); e != nil {
     return e
 	}
 

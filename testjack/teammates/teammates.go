@@ -202,6 +202,20 @@ func getColumns(teammate *Teammate) map[string]interface{} {
 	return columns
 }
 
+// WhereClause is a struct to handle where clauses
+type WhereClause struct {
+	condition string
+	params    []interface{}
+}
+
+// Where specifies the conditions
+func Where(condition string, params ...interface{}) *WhereClause {
+	return &WhereClause{
+		condition: condition,
+		params:    params,
+	}
+}
+
 // Find a teammate by "id"
 func Find(db testjack.DB, id uuid.UUID) (*Teammate, error) {
 	_id := testjack.DecodeUUID(id)
@@ -250,17 +264,17 @@ func FindBySlackID(db testjack.DB, slackID string) (*Teammate, error) {
 }
 
 // FindMany find many `teammate`s by a given condition
-func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Teammate, error) {
+func FindMany(db testjack.DB, where *WhereClause) ([]*Teammate, error) {
 	var _o []*Teammate
 
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"
 	FROM jack.teammates
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	rows, err := db.Query(sqlstr, params...)
+	rows, err := db.Query(sqlstr, where.params...)
 	if err != nil {
 		return _o, err
 	}
@@ -290,16 +304,16 @@ func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Teamm
 }
 
 // FindOne find one teammate by a condition
-func FindOne(db testjack.DB, condition string, params ...interface{}) (*Teammate, error) {
+func FindOne(db testjack.DB, where *WhereClause) (*Teammate, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"
 	FROM jack.teammates
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
 	cols := &columns{}
-	row := db.QueryRow(sqlstr, params...)
+	row := db.QueryRow(sqlstr, where.params...)
 	if e := row.Scan(&cols.ID, &cols.SlackID, &cols.Username, &cols.FirstName, &cols.LastName, &cols.Email, &cols.Avatar, &cols.Timezone, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
@@ -405,22 +419,22 @@ func UpdateBySlackID(db testjack.DB, slackID string, teammate *Teammate) (*Teamm
 }
 
 // UpdateMany rows in `jack.teammates` by a given condition
-func UpdateMany(db testjack.DB, teammate *Teammate, condition string, params ...interface{}) ([]*Teammate, error) {
+func UpdateMany(db testjack.DB, where *WhereClause, teammate *Teammate) ([]*Teammate, error) {
 	var _o []*Teammate
 
 	// prepare the slices
-	_c, _i, _v := testjack.Slice(getColumns(teammate), len(params))
+	_c, _i, _v := testjack.Slice(getColumns(teammate), len(where.params))
 
 	// sql query
 	sqlstr := `UPDATE jack.teammates SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
-		`WHERE ` + condition + ` ` +
+		`WHERE ` + where.condition + ` ` +
 		`RETURNING "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"`
 
 		// setup the query
 	values := []interface{}{}
-	values = append(values, params...)
+	values = append(values, where.params...)
 	values = append(values, _v...)
 	testjack.Log(sqlstr, values...)
 
@@ -490,12 +504,12 @@ func DeleteBySlackID(db testjack.DB, slackID string) error {
 }
 
 // DeleteMany delete many `teammate`'s by the given condition
-func DeleteMany(db testjack.DB, condition string, params ...interface{}) error {
+func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.teammates WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	sqlstr := `DELETE FROM jack.teammates WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	if _, e := db.Exec(sqlstr, params...); e != nil {
+	if _, e := db.Exec(sqlstr, where.params...); e != nil {
 		return e
 	}
 

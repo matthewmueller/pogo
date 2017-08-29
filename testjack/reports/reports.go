@@ -173,6 +173,20 @@ func getColumns(report *Report) map[string]interface{} {
 	return columns
 }
 
+// WhereClause is a struct to handle where clauses
+type WhereClause struct {
+	condition string
+	params    []interface{}
+}
+
+// Where specifies the conditions
+func Where(condition string, params ...interface{}) *WhereClause {
+	return &WhereClause{
+		condition: condition,
+		params:    params,
+	}
+}
+
 // Find a report by "id"
 func Find(db testjack.DB, id uuid.UUID) (*Report, error) {
 	_id := testjack.DecodeUUID(id)
@@ -198,17 +212,17 @@ func Find(db testjack.DB, id uuid.UUID) (*Report, error) {
 }
 
 // FindMany find many `report`s by a given condition
-func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Report, error) {
+func FindMany(db testjack.DB, where *WhereClause) ([]*Report, error) {
 	var _o []*Report
 
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
 	FROM jack.reports
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	rows, err := db.Query(sqlstr, params...)
+	rows, err := db.Query(sqlstr, where.params...)
 	if err != nil {
 		return _o, err
 	}
@@ -238,16 +252,16 @@ func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Repor
 }
 
 // FindOne find one report by a condition
-func FindOne(db testjack.DB, condition string, params ...interface{}) (*Report, error) {
+func FindOne(db testjack.DB, where *WhereClause) (*Report, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
 	FROM jack.reports
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
 	cols := &columns{}
-	row := db.QueryRow(sqlstr, params...)
+	row := db.QueryRow(sqlstr, where.params...)
 	if e := row.Scan(&cols.ID, &cols.UserID, &cols.Timestamp, &cols.Questions, &cols.StandupID, &cols.Status, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrReportNotFound
@@ -316,22 +330,22 @@ func Update(db testjack.DB, id uuid.UUID, report *Report) (*Report, error) {
 }
 
 // UpdateMany rows in `jack.reports` by a given condition
-func UpdateMany(db testjack.DB, report *Report, condition string, params ...interface{}) ([]*Report, error) {
+func UpdateMany(db testjack.DB, where *WhereClause, report *Report) ([]*Report, error) {
 	var _o []*Report
 
 	// prepare the slices
-	_c, _i, _v := testjack.Slice(getColumns(report), len(params))
+	_c, _i, _v := testjack.Slice(getColumns(report), len(where.params))
 
 	// sql query
 	sqlstr := `UPDATE jack.reports SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
-		`WHERE ` + condition + ` ` +
+		`WHERE ` + where.condition + ` ` +
 		`RETURNING "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"`
 
 		// setup the query
 	values := []interface{}{}
-	values = append(values, params...)
+	values = append(values, where.params...)
 	values = append(values, _v...)
 	testjack.Log(sqlstr, values...)
 
@@ -385,12 +399,12 @@ func Delete(db testjack.DB, id uuid.UUID) error {
 }
 
 // DeleteMany delete many `report`'s by the given condition
-func DeleteMany(db testjack.DB, condition string, params ...interface{}) error {
+func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.reports WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	sqlstr := `DELETE FROM jack.reports WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	if _, e := db.Exec(sqlstr, params...); e != nil {
+	if _, e := db.Exec(sqlstr, where.params...); e != nil {
 		return e
 	}
 

@@ -277,6 +277,20 @@ func getColumns(team *Team) map[string]interface{} {
 	return columns
 }
 
+// WhereClause is a struct to handle where clauses
+type WhereClause struct {
+	condition string
+	params    []interface{}
+}
+
+// Where specifies the conditions
+func Where(condition string, params ...interface{}) *WhereClause {
+	return &WhereClause{
+		condition: condition,
+		params:    params,
+	}
+}
+
 // Find a team by "id"
 func Find(db testjack.DB, id uuid.UUID) (*Team, error) {
 	_id := testjack.DecodeUUID(id)
@@ -371,17 +385,17 @@ func FindBySlackTeamID(db testjack.DB, slackTeamID string) (*Team, error) {
 }
 
 // FindMany find many `team`s by a given condition
-func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Team, error) {
+func FindMany(db testjack.DB, where *WhereClause) ([]*Team, error) {
 	var _o []*Team
 
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
 	FROM jack.teams
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	rows, err := db.Query(sqlstr, params...)
+	rows, err := db.Query(sqlstr, where.params...)
 	if err != nil {
 		return _o, err
 	}
@@ -411,16 +425,16 @@ func FindMany(db testjack.DB, condition string, params ...interface{}) ([]*Team,
 }
 
 // FindOne find one team by a condition
-func FindOne(db testjack.DB, condition string, params ...interface{}) (*Team, error) {
+func FindOne(db testjack.DB, where *WhereClause) (*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
 	FROM jack.teams
-	WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
 	cols := &columns{}
-	row := db.QueryRow(sqlstr, params...)
+	row := db.QueryRow(sqlstr, where.params...)
 	if e := row.Scan(&cols.ID, &cols.SlackTeamID, &cols.SlackTeamAccessToken, &cols.SlackBotAccessToken, &cols.SlackBotID, &cols.TeamName, &cols.Scope, &cols.Email, &cols.StripeID, &cols.Active, &cols.FreeTeammates, &cols.CostPerUser, &cols.TrialEnds, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
@@ -600,22 +614,22 @@ func UpdateBySlackTeamID(db testjack.DB, slackTeamID string, team *Team) (*Team,
 }
 
 // UpdateMany rows in `jack.teams` by a given condition
-func UpdateMany(db testjack.DB, team *Team, condition string, params ...interface{}) ([]*Team, error) {
+func UpdateMany(db testjack.DB, where *WhereClause, team *Team) ([]*Team, error) {
 	var _o []*Team
 
 	// prepare the slices
-	_c, _i, _v := testjack.Slice(getColumns(team), len(params))
+	_c, _i, _v := testjack.Slice(getColumns(team), len(where.params))
 
 	// sql query
 	sqlstr := `UPDATE jack.teams SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
-		`WHERE ` + condition + ` ` +
+		`WHERE ` + where.condition + ` ` +
 		`RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"`
 
 		// setup the query
 	values := []interface{}{}
-	values = append(values, params...)
+	values = append(values, where.params...)
 	values = append(values, _v...)
 	testjack.Log(sqlstr, values...)
 
@@ -717,12 +731,12 @@ func DeleteBySlackTeamID(db testjack.DB, slackTeamID string) error {
 }
 
 // DeleteMany delete many `team`'s by the given condition
-func DeleteMany(db testjack.DB, condition string, params ...interface{}) error {
+func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.teams WHERE ` + condition
-	testjack.Log(sqlstr, params...)
+	sqlstr := `DELETE FROM jack.teams WHERE ` + where.condition
+	testjack.Log(sqlstr, where.params...)
 
-	if _, e := db.Exec(sqlstr, params...); e != nil {
+	if _, e := db.Exec(sqlstr, where.params...); e != nil {
 		return e
 	}
 
