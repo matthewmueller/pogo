@@ -503,20 +503,14 @@ func DeleteMany(db testjack.DB, where *WhereClause) error {
 
 // Upsert the `standup` by its `id`.
 func Upsert(db testjack.DB, standup *Standup) (*Standup, error) {
-	fields := getColumns(standup)
-
-	// prepare the slices for the insert
-	_c, _i, _v := testjack.Slice(fields, 0)
-
-	// prepare the slices for the upsert
-	delete(fields, "id")
-	_u, _, _ := testjack.Slice(fields, 0)
+	// get all the non-nil columns and prepare them for the query
+	_c, _i, _v := testjack.Slice(getColumns(standup), 0)
 
 	// sql query
 	sqlstr := `INSERT INTO jack.standups (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("id") ` +
-		`DO UPDATE SET (` + strings.Join(_u, ", ") + `) = ( EXCLUDED.` + strings.Join(_u, ", EXCLUDED.") + `) ` +
+		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
 		`RETURNING "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"`
 	testjack.Log(sqlstr, _v...)
 

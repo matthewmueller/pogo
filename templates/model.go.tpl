@@ -515,20 +515,14 @@ func DeleteMany(db {{ $pkg }}.DB, where *WhereClause) error {
 
 // Upsert the `{{ $mv }}` by its `{{ $p.Name }}`.
 func Upsert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
-	fields := getColumns({{ $mv }})
-
-	// prepare the slices for the insert
-	_c, _i, _v := {{ $pkg }}.Slice(fields, 0)
-
-	// prepare the slices for the upsert
-	delete(fields, "{{ $p.Name }}")
-	_u, _, _ := {{ $pkg }}.Slice(fields, 0)
+	// get all the non-nil columns and prepare them for the query
+  _c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
 
 	// sql query
   sqlstr := `INSERT INTO {{ $t }} (` + strings.Join(_c, ", ") + `) ` +
 	`VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ("{{ $p.Name }}") ` +
-  `DO UPDATE SET (` + strings.Join(_u, ", ") + `) = ( EXCLUDED.` + strings.Join(_u, ", EXCLUDED.") + `) ` +
+  `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
   `RETURNING {{ $cof }}`
   {{ $pkg }}.Log(sqlstr, _v...)
 
