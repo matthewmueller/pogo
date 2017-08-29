@@ -151,9 +151,9 @@ func Find(db {{ $pkg }}.DB, {{ $fkparams }}) (*{{ $m }}, error) {
 {{/*************************************************************************/}}
 
 // Insert a `{{ $mv }}` into `{{ $t }}`
-func Insert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
+func Insert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 	// get all the non-nil fields and prepare them for the query
-	_c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -178,8 +178,8 @@ func Insert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 {{/*************************************************************************/}}
 
 // Update a `{{ $m }}` by its {{ $fks | join "`, `" | printf "`%s`"}}
-func Update(db {{ $pkg }}.DB, {{ $fkparams }}, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
-	fields := getColumns(&{{ $mv }})
+func Update(db {{ $pkg }}.DB, {{ $fkparams }}, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
+	fields := getColumns({{ $mv }})
 
 	// first check if we have the foreign keys
   {{ range .Table.ForeignKeys }}if {{ .Name | camelize }} == nil {

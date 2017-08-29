@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pogo/jack"
+	"github.com/matthewmueller/pogo/jack/enum"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -144,28 +146,28 @@ func getColumns(report *Report) map[string]interface{} {
 	columns := make(map[string]interface{})
 
 	if report.columns.ID != nil {
-		columns["id"] = report.ID
+		columns["id"] = *report.columns.ID
 	}
 	if report.columns.UserID != nil {
-		columns["user_id"] = report.UserID
+		columns["user_id"] = *report.columns.UserID
 	}
 	if report.columns.Timestamp != nil {
-		columns["timestamp"] = report.Timestamp
+		columns["timestamp"] = *report.columns.Timestamp
 	}
 	if report.columns.Questions != nil {
-		columns["questions"] = report.Questions
+		columns["questions"] = *report.columns.Questions
 	}
 	if report.columns.StandupID != nil {
-		columns["standup_id"] = report.StandupID
+		columns["standup_id"] = *report.columns.StandupID
 	}
 	if report.columns.Status != nil {
-		columns["status"] = report.Status
+		columns["status"] = *report.columns.Status
 	}
 	if report.columns.CreatedAt != nil {
-		columns["created_at"] = report.CreatedAt
+		columns["created_at"] = *report.columns.CreatedAt
 	}
 	if report.columns.UpdatedAt != nil {
-		columns["updated_at"] = report.UpdatedAt
+		columns["updated_at"] = *report.columns.UpdatedAt
 	}
 
 	return columns
@@ -255,9 +257,9 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Report, erro
 }
 
 // Insert a `report` into the `jack.reports` table.
-func Insert(db jack.DB, report Report) (*Report, error) {
+func Insert(db jack.DB, report *Report) (*Report, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&report), 0)
+	_c, _i, _v := jack.Slice(getColumns(report), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -267,7 +269,7 @@ func Insert(db jack.DB, report Report) (*Report, error) {
 	`
 	jack.Log(sqlstr, _v...)
 
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan(cols.ID, cols.UserID, cols.Timestamp, cols.Questions, cols.StandupID, cols.Status, cols.CreatedAt, cols.UpdatedAt); e != nil {
 		return nil, e
@@ -277,8 +279,8 @@ func Insert(db jack.DB, report Report) (*Report, error) {
 }
 
 // Update a report by its `id`
-func Update(db jack.DB, report Report, id *uuid.UUID) (*Report, error) {
-	fields := getColumns(&report)
+func Update(db jack.DB, report *Report, id *uuid.UUID) (*Report, error) {
+	fields := getColumns(report)
 
 	// first check if we have the primary key
 	if id == nil {
@@ -396,9 +398,9 @@ func DeleteMany(db jack.DB, condition string, params ...interface{}) error {
 }
 
 // Upsert the `report` by its `id`.
-func Upsert(db jack.DB, report Report, action string) (*Report, error) {
+func Upsert(db jack.DB, report *Report, action string) (*Report, error) {
 	// prepare the slices
-	_c, _i, _v := jack.Slice(getColumns(&report), 0)
+	_c, _i, _v := jack.Slice(getColumns(report), 0)
 
 	// determine on conflict action
 	var upsertAction string

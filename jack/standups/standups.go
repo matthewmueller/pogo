@@ -157,31 +157,31 @@ func getColumns(standup *Standup) map[string]interface{} {
 	columns := make(map[string]interface{})
 
 	if standup.columns.ID != nil {
-		columns["id"] = standup.ID
+		columns["id"] = *standup.columns.ID
 	}
 	if standup.columns.Name != nil {
-		columns["name"] = standup.Name
+		columns["name"] = *standup.columns.Name
 	}
 	if standup.columns.SlackChannelID != nil {
-		columns["slack_channel_id"] = standup.SlackChannelID
+		columns["slack_channel_id"] = *standup.columns.SlackChannelID
 	}
 	if standup.columns.Time != nil {
-		columns["time"] = standup.Time
+		columns["time"] = *standup.columns.Time
 	}
 	if standup.columns.Timezone != nil {
-		columns["timezone"] = standup.Timezone
+		columns["timezone"] = *standup.columns.Timezone
 	}
 	if standup.columns.Questions != nil {
-		columns["questions"] = standup.Questions
+		columns["questions"] = *standup.columns.Questions
 	}
 	if standup.columns.TeamID != nil {
-		columns["team_id"] = standup.TeamID
+		columns["team_id"] = *standup.columns.TeamID
 	}
 	if standup.columns.CreatedAt != nil {
-		columns["created_at"] = standup.CreatedAt
+		columns["created_at"] = *standup.columns.CreatedAt
 	}
 	if standup.columns.UpdatedAt != nil {
-		columns["updated_at"] = standup.UpdatedAt
+		columns["updated_at"] = *standup.columns.UpdatedAt
 	}
 
 	return columns
@@ -294,9 +294,9 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Standup, err
 }
 
 // Insert a `standup` into the `jack.standups` table.
-func Insert(db jack.DB, standup Standup) (*Standup, error) {
+func Insert(db jack.DB, standup *Standup) (*Standup, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&standup), 0)
+	_c, _i, _v := jack.Slice(getColumns(standup), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -306,7 +306,7 @@ func Insert(db jack.DB, standup Standup) (*Standup, error) {
 	`
 	jack.Log(sqlstr, _v...)
 
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan(cols.ID, cols.Name, cols.SlackChannelID, cols.Time, cols.Timezone, cols.Questions, cols.TeamID, cols.CreatedAt, cols.UpdatedAt); e != nil {
 		return nil, e
@@ -316,8 +316,8 @@ func Insert(db jack.DB, standup Standup) (*Standup, error) {
 }
 
 // Update a standup by its `id`
-func Update(db jack.DB, standup Standup, id *uuid.UUID) (*Standup, error) {
-	fields := getColumns(&standup)
+func Update(db jack.DB, standup *Standup, id *uuid.UUID) (*Standup, error) {
+	fields := getColumns(standup)
 
 	// first check if we have the primary key
 	if id == nil {
@@ -355,8 +355,8 @@ func Update(db jack.DB, standup Standup, id *uuid.UUID) (*Standup, error) {
 }
 
 // UpdateBySlackChannelID find a Standup
-func UpdateBySlackChannelID(db jack.DB, standup Standup, slackChannelID *string) (*Standup, error) {
-	fields := getColumns(&standup)
+func UpdateBySlackChannelID(db jack.DB, standup *Standup, slackChannelID *string) (*Standup, error) {
+	fields := getColumns(standup)
 
 	// first check if we have all the keys we need
 	if slackChannelID == nil {
@@ -493,9 +493,9 @@ func DeleteMany(db jack.DB, condition string, params ...interface{}) error {
 }
 
 // Upsert the `standup` by its `id`.
-func Upsert(db jack.DB, standup Standup, action string) (*Standup, error) {
+func Upsert(db jack.DB, standup *Standup, action string) (*Standup, error) {
 	// prepare the slices
-	_c, _i, _v := jack.Slice(getColumns(&standup), 0)
+	_c, _i, _v := jack.Slice(getColumns(standup), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -526,9 +526,9 @@ func Upsert(db jack.DB, standup Standup, action string) (*Standup, error) {
 }
 
 // UpsertBySlackChannelID find a Standup
-func UpsertBySlackChannelID(db jack.DB, standup Standup, action string) (*Standup, error) {
+func UpsertBySlackChannelID(db jack.DB, standup *Standup, action string) (*Standup, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&standup), 0)
+	_c, _i, _v := jack.Slice(getColumns(standup), 0)
 
 	// determine on conflict action
 	var upsertAction string

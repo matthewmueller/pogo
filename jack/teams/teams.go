@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pogo/jack"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -211,6 +213,7 @@ func (team *Team) GetUpdatedAt() (updatedAt *time.Time) {
 
 // MarshalJSON marshals the `team` into JSON
 func (team *Team) MarshalJSON() ([]byte, error) {
+	log.Infof("marshalling!")
 	return json.Marshal(team.columns)
 }
 
@@ -228,49 +231,49 @@ func getColumns(team *Team) map[string]interface{} {
 	columns := make(map[string]interface{})
 
 	if team.columns.ID != nil {
-		columns["id"] = team.ID
+		columns["id"] = *team.columns.ID
 	}
 	if team.columns.SlackTeamID != nil {
-		columns["slack_team_id"] = team.SlackTeamID
+		columns["slack_team_id"] = *team.columns.SlackTeamID
 	}
 	if team.columns.SlackTeamAccessToken != nil {
-		columns["slack_team_access_token"] = team.SlackTeamAccessToken
+		columns["slack_team_access_token"] = *team.columns.SlackTeamAccessToken
 	}
 	if team.columns.SlackBotAccessToken != nil {
-		columns["slack_bot_access_token"] = team.SlackBotAccessToken
+		columns["slack_bot_access_token"] = *team.columns.SlackBotAccessToken
 	}
 	if team.columns.SlackBotID != nil {
-		columns["slack_bot_id"] = team.SlackBotID
+		columns["slack_bot_id"] = *team.columns.SlackBotID
 	}
 	if team.columns.TeamName != nil {
-		columns["team_name"] = team.TeamName
+		columns["team_name"] = *team.columns.TeamName
 	}
 	if team.columns.Scope != nil {
-		columns["scope"] = team.Scope
+		columns["scope"] = *team.columns.Scope
 	}
 	if team.columns.Email != nil {
-		columns["email"] = team.Email
+		columns["email"] = *team.columns.Email
 	}
 	if team.columns.StripeID != nil {
-		columns["stripe_id"] = team.StripeID
+		columns["stripe_id"] = *team.columns.StripeID
 	}
 	if team.columns.Active != nil {
-		columns["active"] = team.Active
+		columns["active"] = *team.columns.Active
 	}
 	if team.columns.FreeTeammates != nil {
-		columns["free_teammates"] = team.FreeTeammates
+		columns["free_teammates"] = *team.columns.FreeTeammates
 	}
 	if team.columns.CostPerUser != nil {
-		columns["cost_per_user"] = team.CostPerUser
+		columns["cost_per_user"] = *team.columns.CostPerUser
 	}
 	if team.columns.TrialEnds != nil {
-		columns["trial_ends"] = team.TrialEnds
+		columns["trial_ends"] = *team.columns.TrialEnds
 	}
 	if team.columns.CreatedAt != nil {
-		columns["created_at"] = team.CreatedAt
+		columns["created_at"] = *team.columns.CreatedAt
 	}
 	if team.columns.UpdatedAt != nil {
-		columns["updated_at"] = team.UpdatedAt
+		columns["updated_at"] = *team.columns.UpdatedAt
 	}
 
 	return columns
@@ -429,9 +432,9 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Team, error)
 }
 
 // Insert a `team` into the `jack.teams` table.
-func Insert(db jack.DB, team Team) (*Team, error) {
+func Insert(db jack.DB, team *Team) (*Team, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&team), 0)
+	_c, _i, _v := jack.Slice(getColumns(team), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -441,18 +444,19 @@ func Insert(db jack.DB, team Team) (*Team, error) {
 	`
 	jack.Log(sqlstr, _v...)
 
-	var cols *columns
+	cols := columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan(cols.ID, cols.SlackTeamID, cols.SlackTeamAccessToken, cols.SlackBotAccessToken, cols.SlackBotID, cols.TeamName, cols.Scope, cols.Email, cols.StripeID, cols.Active, cols.FreeTeammates, cols.CostPerUser, cols.TrialEnds, cols.CreatedAt, cols.UpdatedAt); e != nil {
+		log.Infof("error?")
 		return nil, e
 	}
 
-	return &Team{cols}, nil
+	return &Team{&cols}, nil
 }
 
 // Update a team by its `id`
-func Update(db jack.DB, team Team, id *uuid.UUID) (*Team, error) {
-	fields := getColumns(&team)
+func Update(db jack.DB, team *Team, id *uuid.UUID) (*Team, error) {
+	fields := getColumns(team)
 
 	// first check if we have the primary key
 	if id == nil {
@@ -490,8 +494,8 @@ func Update(db jack.DB, team Team, id *uuid.UUID) (*Team, error) {
 }
 
 // UpdateBySlackBotAccessToken find a Team
-func UpdateBySlackBotAccessToken(db jack.DB, team Team, slackBotAccessToken *string) (*Team, error) {
-	fields := getColumns(&team)
+func UpdateBySlackBotAccessToken(db jack.DB, team *Team, slackBotAccessToken *string) (*Team, error) {
+	fields := getColumns(team)
 
 	// first check if we have all the keys we need
 	if slackBotAccessToken == nil {
@@ -532,8 +536,8 @@ func UpdateBySlackBotAccessToken(db jack.DB, team Team, slackBotAccessToken *str
 }
 
 // UpdateBySlackTeamAccessToken find a Team
-func UpdateBySlackTeamAccessToken(db jack.DB, team Team, slackTeamAccessToken *string) (*Team, error) {
-	fields := getColumns(&team)
+func UpdateBySlackTeamAccessToken(db jack.DB, team *Team, slackTeamAccessToken *string) (*Team, error) {
+	fields := getColumns(team)
 
 	// first check if we have all the keys we need
 	if slackTeamAccessToken == nil {
@@ -574,8 +578,8 @@ func UpdateBySlackTeamAccessToken(db jack.DB, team Team, slackTeamAccessToken *s
 }
 
 // UpdateBySlackTeamID find a Team
-func UpdateBySlackTeamID(db jack.DB, team Team, slackTeamID *string) (*Team, error) {
-	fields := getColumns(&team)
+func UpdateBySlackTeamID(db jack.DB, team *Team, slackTeamID *string) (*Team, error) {
+	fields := getColumns(team)
 
 	// first check if we have all the keys we need
 	if slackTeamID == nil {
@@ -744,9 +748,9 @@ func DeleteMany(db jack.DB, condition string, params ...interface{}) error {
 }
 
 // Upsert the `team` by its `id`.
-func Upsert(db jack.DB, team Team, action string) (*Team, error) {
+func Upsert(db jack.DB, team *Team, action string) (*Team, error) {
 	// prepare the slices
-	_c, _i, _v := jack.Slice(getColumns(&team), 0)
+	_c, _i, _v := jack.Slice(getColumns(team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -777,9 +781,9 @@ func Upsert(db jack.DB, team Team, action string) (*Team, error) {
 }
 
 // UpsertBySlackBotAccessToken find a Team
-func UpsertBySlackBotAccessToken(db jack.DB, team Team, action string) (*Team, error) {
+func UpsertBySlackBotAccessToken(db jack.DB, team *Team, action string) (*Team, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&team), 0)
+	_c, _i, _v := jack.Slice(getColumns(team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -810,9 +814,9 @@ func UpsertBySlackBotAccessToken(db jack.DB, team Team, action string) (*Team, e
 }
 
 // UpsertBySlackTeamAccessToken find a Team
-func UpsertBySlackTeamAccessToken(db jack.DB, team Team, action string) (*Team, error) {
+func UpsertBySlackTeamAccessToken(db jack.DB, team *Team, action string) (*Team, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&team), 0)
+	_c, _i, _v := jack.Slice(getColumns(team), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -843,9 +847,9 @@ func UpsertBySlackTeamAccessToken(db jack.DB, team Team, action string) (*Team, 
 }
 
 // UpsertBySlackTeamID find a Team
-func UpsertBySlackTeamID(db jack.DB, team Team, action string) (*Team, error) {
+func UpsertBySlackTeamID(db jack.DB, team *Team, action string) (*Team, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&team), 0)
+	_c, _i, _v := jack.Slice(getColumns(team), 0)
 
 	// determine on conflict action
 	var upsertAction string

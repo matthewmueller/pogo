@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pogo/jack"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -168,34 +169,34 @@ func getColumns(teammate *Teammate) map[string]interface{} {
 	columns := make(map[string]interface{})
 
 	if teammate.columns.ID != nil {
-		columns["id"] = teammate.ID
+		columns["id"] = *teammate.columns.ID
 	}
 	if teammate.columns.SlackID != nil {
-		columns["slack_id"] = teammate.SlackID
+		columns["slack_id"] = *teammate.columns.SlackID
 	}
 	if teammate.columns.Username != nil {
-		columns["username"] = teammate.Username
+		columns["username"] = *teammate.columns.Username
 	}
 	if teammate.columns.FirstName != nil {
-		columns["first_name"] = teammate.FirstName
+		columns["first_name"] = *teammate.columns.FirstName
 	}
 	if teammate.columns.LastName != nil {
-		columns["last_name"] = teammate.LastName
+		columns["last_name"] = *teammate.columns.LastName
 	}
 	if teammate.columns.Email != nil {
-		columns["email"] = teammate.Email
+		columns["email"] = *teammate.columns.Email
 	}
 	if teammate.columns.Avatar != nil {
-		columns["avatar"] = teammate.Avatar
+		columns["avatar"] = *teammate.columns.Avatar
 	}
 	if teammate.columns.Timezone != nil {
-		columns["timezone"] = teammate.Timezone
+		columns["timezone"] = *teammate.columns.Timezone
 	}
 	if teammate.columns.CreatedAt != nil {
-		columns["created_at"] = teammate.CreatedAt
+		columns["created_at"] = *teammate.columns.CreatedAt
 	}
 	if teammate.columns.UpdatedAt != nil {
-		columns["updated_at"] = teammate.UpdatedAt
+		columns["updated_at"] = *teammate.columns.UpdatedAt
 	}
 
 	return columns
@@ -308,9 +309,9 @@ func FindOne(db jack.DB, condition string, params ...interface{}) (*Teammate, er
 }
 
 // Insert a `teammate` into the `jack.teammates` table.
-func Insert(db jack.DB, teammate Teammate) (*Teammate, error) {
+func Insert(db jack.DB, teammate *Teammate) (*Teammate, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&teammate), 0)
+	_c, _i, _v := jack.Slice(getColumns(teammate), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -320,7 +321,7 @@ func Insert(db jack.DB, teammate Teammate) (*Teammate, error) {
 	`
 	jack.Log(sqlstr, _v...)
 
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan(cols.ID, cols.SlackID, cols.Username, cols.FirstName, cols.LastName, cols.Email, cols.Avatar, cols.Timezone, cols.CreatedAt, cols.UpdatedAt); e != nil {
 		return nil, e
@@ -330,8 +331,8 @@ func Insert(db jack.DB, teammate Teammate) (*Teammate, error) {
 }
 
 // Update a teammate by its `id`
-func Update(db jack.DB, teammate Teammate, id *uuid.UUID) (*Teammate, error) {
-	fields := getColumns(&teammate)
+func Update(db jack.DB, teammate *Teammate, id *uuid.UUID) (*Teammate, error) {
+	fields := getColumns(teammate)
 
 	// first check if we have the primary key
 	if id == nil {
@@ -369,8 +370,8 @@ func Update(db jack.DB, teammate Teammate, id *uuid.UUID) (*Teammate, error) {
 }
 
 // UpdateBySlackID find a Teammate
-func UpdateBySlackID(db jack.DB, teammate Teammate, slackID *string) (*Teammate, error) {
-	fields := getColumns(&teammate)
+func UpdateBySlackID(db jack.DB, teammate *Teammate, slackID *string) (*Teammate, error) {
+	fields := getColumns(teammate)
 
 	// first check if we have all the keys we need
 	if slackID == nil {
@@ -507,9 +508,9 @@ func DeleteMany(db jack.DB, condition string, params ...interface{}) error {
 }
 
 // Upsert the `teammate` by its `id`.
-func Upsert(db jack.DB, teammate Teammate, action string) (*Teammate, error) {
+func Upsert(db jack.DB, teammate *Teammate, action string) (*Teammate, error) {
 	// prepare the slices
-	_c, _i, _v := jack.Slice(getColumns(&teammate), 0)
+	_c, _i, _v := jack.Slice(getColumns(teammate), 0)
 
 	// determine on conflict action
 	var upsertAction string
@@ -540,9 +541,9 @@ func Upsert(db jack.DB, teammate Teammate, action string) (*Teammate, error) {
 }
 
 // UpsertBySlackID find a Teammate
-func UpsertBySlackID(db jack.DB, teammate Teammate, action string) (*Teammate, error) {
+func UpsertBySlackID(db jack.DB, teammate *Teammate, action string) (*Teammate, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&teammate), 0)
+	_c, _i, _v := jack.Slice(getColumns(teammate), 0)
 
 	// determine on conflict action
 	var upsertAction string

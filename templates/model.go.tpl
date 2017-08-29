@@ -111,7 +111,7 @@ func getColumns({{ $mv }} *{{ $m }}) map[string]interface{} {
   columns := make(map[string]interface{})
   {{ range .Table.Columns }}{{ $col := .Name | capitalize }}
   if {{ $mv }}.columns.{{ $col }} != nil {
-    columns["{{ .Name }}"] = {{ $mv }}.{{ $col }}
+    columns["{{ .Name }}"] = *{{ $mv }}.columns.{{ $col }}
   }{{ end }}
   
   return columns
@@ -252,9 +252,9 @@ func FindOne(db {{ $pkg }}.DB, condition string, params... interface{}) (*{{ $m 
 {{/*************************************************************************/}}
 
 // Insert a `{{ $mv }}` into the `{{ $t }}` table.
-func Insert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
+func Insert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 	// get all the non-nil columns and prepare them for the query
-	_c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -264,7 +264,7 @@ func Insert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 	`
 	{{ $pkg }}.Log(sqlstr, _v...)
 
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil {
     return nil, e
@@ -278,8 +278,8 @@ func Insert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}) (*{{ $m }}, error) {
 {{/*************************************************************************/}}
 
 // Update a {{ $mv }} by its `{{ $p.Name }}`
-func Update(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
-	fields := getColumns(&{{ $mv }})
+func Update(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
+	fields := getColumns({{ $mv }})
 
 	// first check if we have the primary key
 	if {{ $p.Name }} == nil {
@@ -325,8 +325,8 @@ func Update(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}
 // UpdateBy{{ $idxmethod }} find a {{ $m }}
-func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, {{ $idxparams }}) (*{{ $m }}, error) {
-	fields := getColumns(&{{ $mv }})
+func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $idxparams }}) (*{{ $m }}, error) {
+	fields := getColumns({{ $mv }})
 
 	// first check if we have all the keys we need
 	{{ range $idx.Columns }}if {{ .Name | camelize }} == nil {
@@ -492,9 +492,9 @@ func DeleteMany(db {{ $pkg }}.DB, condition string, params... interface{}) error
 {{/*****************************************************************************/}}
 
 // Upsert the `{{ $mv }}` by its `{{ $p.Name }}`.
-func Upsert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, action string) (*{{ $m }}, error) {
+func Upsert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action string) (*{{ $m }}, error) {
 	// prepare the slices
-	_c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
+	_c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
 
   // determine on conflict action
   var upsertAction string
@@ -534,9 +534,9 @@ func Upsert(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, action string) (*{{ $m }}, err
 {{ $idxparams := idxparams $.Schema $idx }}
 {{ $idxparamlist := map $cols (mprintf "\"%s\"") | join ", " }}
 // UpsertBy{{ $idxmethod }} find a {{ $m }}
-func UpsertBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} {{ $m }}, action string) (*{{ $m }}, error) {
+func UpsertBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action string) (*{{ $m }}, error) {
 	// get all the non-nil columns and prepare them for the query
-  _c, _i, _v := {{ $pkg }}.Slice(getColumns(&{{ $mv }}), 0)
+  _c, _i, _v := {{ $pkg }}.Slice(getColumns({{ $mv }}), 0)
 
   // determine on conflict action
   var upsertAction string

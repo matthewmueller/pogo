@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx"
+	"github.com/matthewmueller/pogo/jack"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -150,9 +151,9 @@ func Find(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID) (*StandupTeam
 }
 
 // Insert a `standupteammate` into `jack.standups_teammates`
-func Insert(db jack.DB, standupteammate StandupTeammate) (*StandupTeammate, error) {
+func Insert(db jack.DB, standupteammate *StandupTeammate) (*StandupTeammate, error) {
 	// get all the non-nil fields and prepare them for the query
-	_c, _i, _v := jack.Slice(getColumns(&standupteammate), 0)
+	_c, _i, _v := jack.Slice(getColumns(standupteammate), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
@@ -173,8 +174,8 @@ func Insert(db jack.DB, standupteammate StandupTeammate) (*StandupTeammate, erro
 }
 
 // Update a `StandupTeammate` by its `standup_id`, `teammate_id`
-func Update(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID, standupteammate StandupTeammate) (*StandupTeammate, error) {
-	fields := getColumns(&standupteammate)
+func Update(db jack.DB, standupID *uuid.UUID, teammateID *uuid.UUID, standupteammate *StandupTeammate) (*StandupTeammate, error) {
+	fields := getColumns(standupteammate)
 
 	// first check if we have the foreign keys
 	if standupID == nil {
