@@ -15,6 +15,12 @@ TODO:
   - [x] Finish generated tests using a pogo sql script (not jack)
   - [x] Create many-to-many generated tests
 
+  - [ ] Upsert => InsertOrUpdate(...) & InsertOrNothing(...)
+  - [ ] Where condition
+  - [ ] Finish testjack tests
+    - [ ] teams
+    - [ ] standups_teammates
+    - [ ] UNIQUE(a, b) multi-column index tests
 
 LATER:
 

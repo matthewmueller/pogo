@@ -10,7 +10,7 @@
 {{ $m := $tn | singular }}
 {{ $mv := $m | lower }}
 {{ $p := primary .Table.Columns }}
-{{ $pt := coerce $.Schema $p.DataType }}
+{{ $pt := coerceaccessor $.Schema $p.DataType }}
 {{ $co := colnames .Table.Columns }}
 {{ $idxs := indexes .Table.Indexes }}
 {{ $cof := map $co (mprintf "\"%s\"") | join ", " }}
@@ -73,25 +73,19 @@ func New() *{{ $m }} {
 {{/* Fortunately, this isn't a big deal, because the API can remain stable */}}
 {{/*************************************************************************/}}
 
-{{ range .Table.Columns }}{{ $dt := coerceaccessor $.Schema .DataType }}
-// {{ .Name | capitalize }} sets the `{{ .Name }}`
-func ({{ $mv }} *{{ $m }}) {{ .Name | capitalize }}({{ .Name | camelize }} {{ $dt }}) *{{ $m }} {
-	{{ if eq .DataType "uuid" }}*{{ $mv }}.columns.{{ .Name | capitalize }} = {{ .Name | camelize }}.String(){{ else }}{{ $mv }}.columns.{{ .Name | capitalize }} = &{{ .Name | camelize }}{{ end }}
+{{ range .Table.Columns }}
+{{- $nu := .Name | capitalize -}}
+{{- $nc := .Name | camelize -}}
+{{- $dt := coerceaccessor $.Schema .DataType -}}
+// {{ $nu }} sets the `{{ .Name }}`
+func ({{ $mv }} *{{ $m }}) {{ $nu }}({{ $nc }} {{ $dt }}) *{{ $m }} {
+	{{ $mv }}.columns.{{ $nu }} = {{ decode $pkg $nc $dt }}
 	return {{ $mv }}
 }
 
-// Get{{ .Name | capitalize }} returns the `{{ .Name }}` if set
-func ({{ $mv }} *{{ $m }}) Get{{ .Name | capitalize }}() ({{ .Name | camelize }} *{{ $dt }}) {
-	{{ if eq .DataType "uuid" }}if {{ $mv }}.columns.{{ .Name | capitalize }} == nil {
-		return nil
-	}
-
-	_u, err := uuid.FromString(*{{ $mv }}.columns.{{ .Name | capitalize }})
-	if err != nil {
-		return nil
-	}
-
-	return &_u{{ else }}return {{ $mv }}.columns.{{ .Name | capitalize }}{{ end }}
+// Get{{ $nu }} returns the `{{ .Name }}` if set
+func ({{ $mv }} *{{ $m }}) Get{{ $nu }}() ({{ $nc }} *{{ $dt }}) {
+	return {{ encode $pkg $mv $nu $dt }}
 }
 {{ end }}
 
@@ -138,17 +132,19 @@ func getColumns({{ $mv }} *{{ $m }}) map[string]interface{} {
 
 {{ if $p }}
 // Find a {{ $mv }} by "{{ $p.Name }}"
-func Find(db {{ $pkg }}.DB, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
+func Find(db {{ $pkg }}.DB, {{ $p.Name }} {{ $pt }}) (*{{ $m }}, error) {
+	_{{ $p.Name }} := {{ decode .Settings.Package $p.Name $pt }}
+
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
 	FROM {{ $t }}
 	WHERE "{{ $p.Name }}" = $1
 	`
-	{{$pkg}}.Log(sqlstr, {{ $p.Name }})
+	{{$pkg}}.Log(sqlstr, _{{ $p.Name }})
 
-	var cols *columns
-	row := db.QueryRow(sqlstr, {{ $p.Name }})
+	cols := &columns{}
+	row := db.QueryRow(sqlstr, _{{ $p.Name }})
   if e := row.Scan({{ $cog }}); e != nil {
     if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound
@@ -179,7 +175,7 @@ func FindBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}) (*{{ $m }}, erro
 	`
 	{{ $pkg }}.Log(sqlstr, {{ $indexvars }})
 
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, {{ $indexvars }})
 	err := row.Scan({{ $cog }})
 	if err != nil {
@@ -215,7 +211,7 @@ func FindMany(db {{ $pkg }}.DB, condition string, params... interface{}) ([]*{{ 
   defer rows.Close()
 
   for rows.Next() {
-		var cols *columns
+		cols := &columns{}
     if e := rows.Scan({{ $cog }}); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, Err{{ $m }}NotFound
@@ -250,7 +246,7 @@ func FindOne(db {{ $pkg }}.DB, condition string, params... interface{}) (*{{ $m 
 	WHERE ` + condition
 	{{ $pkg }}.Log(sqlstr, params...)
 
-	var cols *columns
+	cols := &columns{}
   row := db.QueryRow(sqlstr, params...)
   if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
@@ -293,13 +289,9 @@ func Insert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 {{/*************************************************************************/}}
 
 // Update a {{ $mv }} by its `{{ $p.Name }}`
-func Update(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{{ $m }}, error) {
+func Update(db {{ $pkg }}.DB, {{ $p.Name }} {{ $pt }}, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
+	_{{ $p.Name }} := {{ decode .Settings.Package $p.Name $pt }}
 	fields := getColumns({{ $mv }})
-
-	// first check if we have the primary key
-	if {{ $p.Name }} == nil {
-		return nil, errors.New(`primary key "{{ $p.Name }}" must be non-nil`)
-	}
 
 	// don't update the primary key
 	delete(fields, "{{ $p.Name }}")
@@ -315,11 +307,11 @@ func Update(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{
 		RETURNING {{ $cof }}`
 
 	// setup query
-	values := append([]interface{}{ {{ $p.Name }} }, _v...)
+	values := append([]interface{}{ _{{ $p.Name }} }, _v...)
 	{{ $pkg }}.Log(sqlstr, values...)
 
 	// run the query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, values...)
 	if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
@@ -340,17 +332,12 @@ func Update(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $p.Name }} *{{ $pt }}) (*{
 {{ $idxmethod := map $cols mcapitalize | join "And" }}
 {{ $idxparams := idxparams $.Schema $idx }}
 // UpdateBy{{ $idxmethod }} find a {{ $m }}
-func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $idxparams }}) (*{{ $m }}, error) {
+func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $idxparams }}, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 	fields := getColumns({{ $mv }})
 
-	// first check if we have all the keys we need
-	{{ range $idx.Columns }}if {{ .Name | camelize }} == nil {
-		return nil, errors.New(`{{ .Name | camelize }} must be non-nil`)
-	}
-	{{ end }}
-
 	// don't update the keys
-	{{ range $idx.Columns }}delete(fields, "{{ .Name | camelize }}")
+	{{ range $idx.Columns -}}
+	delete(fields, "{{ .Name }}")
 	{{ end }}
 
 	// prepare the slices
@@ -371,7 +358,7 @@ func UpdateBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, {{ $idxpara
 	{{ $pkg }}.Log(sqlstr, values...)
 
 	// run the query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, values...)
 	if e := row.Scan({{ $cog }}); e != nil {
 		if e == pgx.ErrNoRows {
@@ -416,7 +403,7 @@ func UpdateMany(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, condition string, params.
   defer rows.Close()
 
   for rows.Next() {
-    var cols *columns
+    cols := &columns{}
     if e := rows.Scan({{ $cog }}); e != nil {
 			if e == pgx.ErrNoRows {
 				return _o, Err{{ $m }}NotFound
@@ -443,13 +430,15 @@ func UpdateMany(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, condition string, params.
 {{/*****************************************************************************/}}
 
 // Delete a `{{ $mv }}` from the `{{ $t }}` table
-func Delete(db {{ $pkg }}.DB, {{ $p.Name }} *{{ $pt }}) error {
+func Delete(db {{ $pkg }}.DB, {{ $p.Name }} {{ $pt }}) error {
+	_{{ $p.Name }} := {{ decode .Settings.Package $p.Name $pt }}
+
 	// sql query
 	sqlstr := `DELETE FROM {{ $t }} WHERE "{{ $p.Name }}" = $1`
-	{{ $pkg }}.Log(sqlstr, {{ $p.Name }})
+	{{ $pkg }}.Log(sqlstr, _{{ $p.Name }})
 
 	// run query
-	if _, e := db.Exec(sqlstr, {{ $p.Name }}); e != nil {
+	if _, e := db.Exec(sqlstr, _{{ $p.Name }}); e != nil {
     if e == pgx.ErrNoRows {
       return Err{{ $m }}NotFound
     }
@@ -530,7 +519,7 @@ func Upsert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action string) (*{{ $m }}, er
   {{ $pkg }}.Log(sqlstr, _v...)
 
 	// run query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil && e != pgx.ErrNoRows {
 		return nil, e
@@ -572,7 +561,7 @@ func UpsertBy{{ $idxmethod }}(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}, action stri
   {{ $pkg }}.Log(sqlstr, _v...)
 
 	// run query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil && e != pgx.ErrNoRows {
 		return nil, e

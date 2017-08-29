@@ -1,5 +1,8 @@
-run: templates
-	@go run cmd/pogo/pogo.go --db postgres://localhost:5432/pogo?sslmode=disable --schema jack --path jack
+generate: templates 
+	@go run cmd/pogo/pogo.go --db postgres://localhost:5432/pogo?sslmode=disable --schema jack --path testjack
+	
+test:
+	@go test -v ./...
 .PHONY: run
 
 examples:  templates
@@ -18,5 +21,5 @@ migrate:
 	@migrate -path migration -url $(POSTGRES_URL) down
 	@migrate -path migration -url $(POSTGRES_URL) up
 
-test:
-	@go test -v ./postgres/postgres_test.go
+# test:
+# 	@go test -v ./postgres/postgres_test.go

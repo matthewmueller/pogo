@@ -75,25 +75,19 @@ func New() *{{ $m }} {
 {{/* Fortunately, this isn't a big deal, because the API can remain stable */}}
 {{/*************************************************************************/}}
 
-{{ range .Table.Columns }}{{ $dt := coerceaccessor $.Schema .DataType }}
-// {{ .Name | capitalize }} sets the `{{ .Name }}`
-func ({{ $mv }} *{{ $m }}) {{ .Name | capitalize }}({{ .Name | camelize }} {{ $dt }}) *{{ $m }} {
-	{{ if eq .DataType "uuid" }}*{{ $mv }}.columns.{{ .Name | capitalize }} = {{ .Name | camelize }}.String(){{ else }}{{ $mv }}.columns.{{ .Name | capitalize }} = &{{ .Name | camelize }}{{ end }}
+{{ range .Table.Columns }}
+{{- $nu := .Name | capitalize -}}
+{{- $nc := .Name | camelize -}}
+{{- $dt := coerceaccessor $.Schema .DataType -}}
+// {{ $nu }} sets the `{{ .Name }}`
+func ({{ $mv }} *{{ $m }}) {{ $nu }}({{ $nc }} {{ $dt }}) *{{ $m }} {
+	{{ $mv }}.columns.{{ $nu }} = {{ decode $pkg $nc $dt }}
 	return {{ $mv }}
 }
 
-// Get{{ .Name | capitalize }} returns the `{{ .Name }}` if set
-func ({{ $mv }} *{{ $m }}) Get{{ .Name | capitalize }}() ({{ .Name | camelize }} *{{ $dt }}) {
-	{{ if eq .DataType "uuid" }}if {{ $mv }}.columns.{{ .Name | capitalize }} == nil {
-		return nil
-	}
-
-	_u, err := uuid.FromString(*{{ $mv }}.columns.{{ .Name | capitalize }})
-	if err != nil {
-		return nil
-	}
-
-	return &_u{{ else }}return {{ $mv }}.columns.{{ .Name | capitalize }}{{ end }}
+// Get{{ $nu }} returns the `{{ .Name }}` if set
+func ({{ $mv }} *{{ $m }}) Get{{ $nu }}() ({{ $nc }} *{{ $dt }}) {
+	return {{ encode $pkg $mv $nu $dt }}
 }
 {{ end }}
 
@@ -197,14 +191,16 @@ func Update(db {{ $pkg }}.DB, {{ $fkparams }}, {{ $mv }} *{{ $m }}) (*{{ $m }}, 
 	fields := getColumns({{ $mv }})
 
 	// first check if we have the foreign keys
-  {{ range .Table.ForeignKeys }}if {{ .Name | camelize }} == nil {
+  {{ range .Table.ForeignKeys }}
+	if {{ .Name | camelize }} == nil {
     return nil, errors.New(`"{{ .Name | camelize }}" must be non-nil`)
   }
-  {{ end }}
+  {{- end }}
 
 	// don't update the foreign keys
-	{{ range .Table.ForeignKeys }}delete(fields, "{{ .Name }}")
-  {{ end }}
+	{{ range .Table.ForeignKeys }}
+	delete(fields, "{{ .Name }}")
+  {{- end }}
 
 	// prepare the slices
 	_c, _i, _v := {{ $pkg }}.Slice(fields, {{ len .Table.ForeignKeys }})

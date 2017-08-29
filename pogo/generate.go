@@ -87,6 +87,20 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 	}
 	files[settings.Package+".go"] = formatted
 
+	// generate the codec file
+	code, err = generate(settings.Package, templates.MustAsset("templates/codec.go.tpl"), &templateData{
+		Settings: settings,
+		Schema:   schema,
+	})
+	if err != nil {
+		return files, err
+	}
+	formatted, err = format(code)
+	if err != nil {
+		return files, err
+	}
+	files["codec.go"] = formatted
+
 	// build each model file from the tables
 	for _, table := range schema.Tables {
 		// if table.Name != "teams" {

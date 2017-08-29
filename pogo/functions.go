@@ -67,6 +67,24 @@ var templateMap = template.FuncMap{
 		return coerceAccessor(schema, s)
 	},
 
+	"decode": func(pkg, name, kind string) string {
+		switch kind {
+		case "uuid.UUID":
+			return pkg + ".DecodeUUID(" + name + ")"
+		default:
+			return "&" + name
+		}
+	},
+
+	"encode": func(pkg, model, name, kind string) string {
+		switch kind {
+		case "uuid.UUID":
+			return pkg + ".EncodeUUID(" + model + ".columns." + name + ")"
+		default:
+			return model + ".columns." + name
+		}
+	},
+
 	// coerce the Golang type to an SQL type
 	"fake": func(settings *Settings, schema *Schema, name, dt string) string {
 		return Fake(settings, schema, name, dt)
@@ -112,7 +130,7 @@ var templateMap = template.FuncMap{
 		for _, col := range index.Columns {
 			name := camelize(col.Name)
 			kind := coerce(schema, col.DataType)
-			cols = append(cols, name+" *"+kind)
+			cols = append(cols, name+" "+kind)
 		}
 
 		sort.Strings(cols)
