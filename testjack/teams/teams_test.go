@@ -23,6 +23,15 @@ func DB(t *testing.T) (testjack.DB, func()) {
 	}
 
 	// clear out the DB before starting
+	if _, e := db.Exec("DELETE FROM jack.standups_teammates WHERE true"); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := db.Exec("DELETE FROM jack.standups WHERE true"); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := db.Exec("DELETE FROM jack.teammates WHERE true"); e != nil {
+		t.Fatal(e)
+	}
 	if _, e := db.Exec("DELETE FROM jack.teams WHERE true"); e != nil {
 		t.Fatal(e)
 	}

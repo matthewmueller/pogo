@@ -5,10 +5,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"strings"
 	"text/template"
 
 	"github.com/apex/log"
 	"github.com/jackc/pgx"
+	"github.com/knq/snaker"
 	"github.com/matthewmueller/pogo/templates"
 	"github.com/pkg/errors"
 )
@@ -128,7 +130,8 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 			return files, err
 		}
 
-		files[table.Name+"/"+table.Name+".go"] = formatted
+		name := strings.ToLower(snaker.SnakeToCamelIdentifier(table.Name))
+		files[name+"/"+name+".go"] = formatted
 	}
 
 	// build a test file for each model

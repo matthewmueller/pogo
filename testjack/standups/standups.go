@@ -18,15 +18,15 @@ var ErrStandupNotFound = errors.New("standup not found")
 
 // columns in `jack.standups`
 type columns struct {
-	ID             *string                 `json:"id,omitempty"`
-	Name           *string                 `json:"name,omitempty"`
-	SlackChannelID *string                 `json:"slack_channel_id,omitempty"`
-	Time           *string                 `json:"time,omitempty"`
-	Timezone       *string                 `json:"timezone,omitempty"`
-	Questions      *map[string]interface{} `json:"questions,omitempty"`
-	TeamID         *string                 `json:"team_id,omitempty"`
-	CreatedAt      *time.Time              `json:"created_at,omitempty"`
-	UpdatedAt      *time.Time              `json:"updated_at,omitempty"`
+	ID             *string          `json:"id,omitempty"`
+	Name           *string          `json:"name,omitempty"`
+	SlackChannelID *string          `json:"slack_channel_id,omitempty"`
+	Time           *string          `json:"time,omitempty"`
+	Timezone       *string          `json:"timezone,omitempty"`
+	Questions      *json.RawMessage `json:"questions,omitempty"`
+	TeamID         *string          `json:"team_id,omitempty"`
+	CreatedAt      *time.Time       `json:"created_at,omitempty"`
+	UpdatedAt      *time.Time       `json:"updated_at,omitempty"`
 }
 
 // Standup fluent API
@@ -95,13 +95,13 @@ func (standup *Standup) GetTimezone() (timezone *string) {
 }
 
 // Questions sets the `questions`
-func (standup *Standup) Questions(questions map[string]interface{}) *Standup {
+func (standup *Standup) Questions(questions json.RawMessage) *Standup {
 	standup.columns.Questions = &questions
 	return standup
 }
 
 // GetQuestions returns the `questions` if set
-func (standup *Standup) GetQuestions() (questions *map[string]interface{}) {
+func (standup *Standup) GetQuestions() (questions *json.RawMessage) {
 	return standup.columns.Questions
 }
 

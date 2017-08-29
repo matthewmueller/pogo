@@ -12,7 +12,7 @@
 {{ $co := colnames .Table.Columns }}
 {{ $idxs := indexes .Table.Indexes }}
 {{ $cof := map $co (mprintf "\"%s\"") | join ", " }}
-{{ $cog := map $co mcapitalize (mprefix "cols.") | join ", " }}
+{{ $cog := map $co mcapitalize (mprefix "&cols.") | join ", " }}
 {{ $fkparams := fkparams .Schema .Table }}
 {{ $fkwhere := fkwhere .Table.ForeignKeys }}
 {{ $fks := fknames .Table.ForeignKeys }}
@@ -122,7 +122,7 @@ func getColumns({{ $mv }} *{{ $m }}) map[string]interface{} {
   columns := make(map[string]interface{})
   {{ range .Table.Columns }}{{ $col := .Name | capitalize }}
   if {{ $mv }}.columns.{{ $col }} != nil {
-    columns["{{ .Name }}"] = {{ $mv }}.{{ $col }}
+    columns["{{ .Name }}"] = {{ $mv }}.columns.{{ $col }}
   }{{ end }}
   
   return columns
@@ -173,7 +173,7 @@ func Insert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 	{{ $pkg }}.Log(sqlstr, _v...)
 
 	// run the query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
 	if e := row.Scan({{ $cog }}); e != nil {
     return nil, e

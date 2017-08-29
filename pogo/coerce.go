@@ -48,7 +48,7 @@ func coerce(schema *Schema, dt string) (kind string) {
 	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
 		return "time.Time"
 	case "json":
-		return "map[string]interface{}"
+		return "json.RawMessage"
 	case "numeric", "decimal":
 		return "decimal.Decimal"
 	default:

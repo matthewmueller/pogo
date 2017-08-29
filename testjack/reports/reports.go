@@ -19,14 +19,14 @@ var ErrReportNotFound = errors.New("report not found")
 
 // columns in `jack.reports`
 type columns struct {
-	ID        *string                 `json:"id,omitempty"`
-	UserID    *string                 `json:"user_id,omitempty"`
-	Timestamp *time.Time              `json:"timestamp,omitempty"`
-	Questions *map[string]interface{} `json:"questions,omitempty"`
-	StandupID *string                 `json:"standup_id,omitempty"`
-	Status    *enum.ReportStatus      `json:"status,omitempty"`
-	CreatedAt *time.Time              `json:"created_at,omitempty"`
-	UpdatedAt *time.Time              `json:"updated_at,omitempty"`
+	ID        *string            `json:"id,omitempty"`
+	UserID    *string            `json:"user_id,omitempty"`
+	Timestamp *time.Time         `json:"timestamp,omitempty"`
+	Questions *json.RawMessage   `json:"questions,omitempty"`
+	StandupID *string            `json:"standup_id,omitempty"`
+	Status    *enum.ReportStatus `json:"status,omitempty"`
+	CreatedAt *time.Time         `json:"created_at,omitempty"`
+	UpdatedAt *time.Time         `json:"updated_at,omitempty"`
 }
 
 // Report fluent API
@@ -73,13 +73,13 @@ func (report *Report) GetTimestamp() (timestamp *time.Time) {
 }
 
 // Questions sets the `questions`
-func (report *Report) Questions(questions map[string]interface{}) *Report {
+func (report *Report) Questions(questions json.RawMessage) *Report {
 	report.columns.Questions = &questions
 	return report
 }
 
 // GetQuestions returns the `questions` if set
-func (report *Report) GetQuestions() (questions *map[string]interface{}) {
+func (report *Report) GetQuestions() (questions *json.RawMessage) {
 	return report.columns.Questions
 }
 

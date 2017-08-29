@@ -109,19 +109,19 @@ func getColumns(standupteammate *StandupTeammate) map[string]interface{} {
 	columns := make(map[string]interface{})
 
 	if standupteammate.columns.StandupID != nil {
-		columns["standup_id"] = standupteammate.StandupID
+		columns["standup_id"] = standupteammate.columns.StandupID
 	}
 	if standupteammate.columns.TeammateID != nil {
-		columns["teammate_id"] = standupteammate.TeammateID
+		columns["teammate_id"] = standupteammate.columns.TeammateID
 	}
 	if standupteammate.columns.TeamOwner != nil {
-		columns["team_owner"] = standupteammate.TeamOwner
+		columns["team_owner"] = standupteammate.columns.TeamOwner
 	}
 	if standupteammate.columns.CreatedAt != nil {
-		columns["created_at"] = standupteammate.CreatedAt
+		columns["created_at"] = standupteammate.columns.CreatedAt
 	}
 	if standupteammate.columns.UpdatedAt != nil {
-		columns["updated_at"] = standupteammate.UpdatedAt
+		columns["updated_at"] = standupteammate.columns.UpdatedAt
 	}
 
 	return columns
@@ -140,7 +140,7 @@ func Find(db testjack.DB, standupID *string, teammateID *string) (*StandupTeamma
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, standupID, teammateID)
-	if e := row.Scan(cols.StandupID, cols.TeammateID, cols.TeamOwner, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.StandupID, &cols.TeammateID, &cols.TeamOwner, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupTeammateNotFound
 		}
@@ -164,9 +164,9 @@ func Insert(db testjack.DB, standupteammate *StandupTeammate) (*StandupTeammate,
 	testjack.Log(sqlstr, _v...)
 
 	// run the query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, _v...)
-	if e := row.Scan(cols.StandupID, cols.TeammateID, cols.TeamOwner, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.StandupID, &cols.TeammateID, &cols.TeamOwner, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		return nil, e
 	}
 
@@ -212,7 +212,7 @@ func Update(db testjack.DB, standupID *string, teammateID *string, standupteamma
 	// run the query
 	var cols *columns
 	row := db.QueryRow(sqlstr, values...)
-	if e := row.Scan(cols.StandupID, cols.TeammateID, cols.TeamOwner, cols.CreatedAt, cols.UpdatedAt); e != nil {
+	if e := row.Scan(&cols.StandupID, &cols.TeammateID, &cols.TeamOwner, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupTeammateNotFound
 		}
