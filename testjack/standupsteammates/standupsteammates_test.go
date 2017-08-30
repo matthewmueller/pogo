@@ -49,7 +49,7 @@ func DB(t *testing.T) (testjack.DB, func()) {
 	}
 }
 
-func standup(t *testing.T, db testjack.DB) *standups.Standup {
+func team(t *testing.T, db testjack.DB) *teams.Team {
 	tm, err := teams.Insert(db, teams.New().
 		TeamName(id()).
 		Email(id()).
@@ -60,7 +60,10 @@ func standup(t *testing.T, db testjack.DB) *standups.Standup {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return tm
+}
 
+func standup(t *testing.T, db testjack.DB, tm *teams.Team) *standups.Standup {
 	s, err := standups.Insert(db, standups.New().
 		Name(id()).
 		SlackChannelID(id()).
@@ -83,7 +86,8 @@ func TestInsert(t *testing.T) {
 	db, close := DB(t)
 	defer close()
 
-	s := standup(t, db)
+	tm := team(t, db)
+	s := standup(t, db, tm)
 	te := teammate(t, db)
 
 	ts := standupsteammates.New().StandupID(*s.GetID()).TeammateID(*te.GetID())
@@ -94,194 +98,54 @@ func TestInsert(t *testing.T) {
 
 	assert.Equal(t, *s.GetID(), *st.GetStandupID())
 	assert.Equal(t, *te.GetID(), *st.GetTeammateID())
+	assert.Equal(t, false, *st.GetTeamOwner())
 }
 
-// func TestInsertWithID(t *testing.T) {
-// 	db, close := DB(t)
-// 	defer close()
+func TestFind(t *testing.T) {
+	db, close := DB(t)
+	defer close()
 
-// 	id := uuid.NewV4()
-// 	teamname := uuid.NewV4().String()
-// 	email := uuid.NewV4().String()
-// 	teamID := uuid.NewV4().String()
-// 	teamAccessToken := uuid.NewV4().String()
-// 	botAccessToken := uuid.NewV4().String()
-// 	botID := uuid.NewV4().String()
+	tm := team(t, db)
+	s := standup(t, db, tm)
+	te := teammate(t, db)
 
-// 	team := teams.New().
-// 		ID(id).
-// 		TeamName(teamname).
-// 		Email(email).
-// 		SlackTeamID(teamID).
-// 		SlackTeamAccessToken(teamAccessToken).
-// 		SlackBotAccessToken(botAccessToken).
-// 		SlackBotID(botID).
-// 		Active(true).
-// 		CostPerUser(1)
+	ts := standupsteammates.New().StandupID(*s.GetID()).TeammateID(*te.GetID())
+	_, err := standupsteammates.Insert(db, ts)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	tm, err := teams.Insert(db, team)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	st, err := standupsteammates.Find(db, *s.GetID(), *te.GetID())
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	assert.Equal(t, id, *tm.GetID())
-// 	assert.Equal(t, teamname, *tm.GetTeamName())
-// 	assert.Equal(t, email, *tm.GetEmail())
-// 	assert.Equal(t, teamID, *tm.GetSlackTeamID())
-// 	assert.Equal(t, teamAccessToken, *tm.GetSlackTeamAccessToken())
-// 	assert.Equal(t, botAccessToken, *tm.GetSlackBotAccessToken())
-// 	assert.Equal(t, botID, *tm.GetSlackBotID())
-// 	assert.Equal(t, true, *tm.GetActive())
-// 	assert.Equal(t, 1, *tm.GetCostPerUser())
-// }
+	assert.Equal(t, *s.GetID(), *st.GetStandupID())
+	assert.Equal(t, *te.GetID(), *st.GetTeammateID())
+	assert.Equal(t, false, *st.GetTeamOwner())
+}
 
-// func TestFind(t *testing.T) {
-// 	db, close := DB(t)
-// 	defer close()
+func TestUpdate(t *testing.T) {
+	db, close := DB(t)
+	defer close()
 
-// 	id := uuid.NewV4()
-// 	teamname := uuid.NewV4().String()
-// 	email := uuid.NewV4().String()
-// 	teamID := uuid.NewV4().String()
-// 	teamAccessToken := uuid.NewV4().String()
-// 	botAccessToken := uuid.NewV4().String()
-// 	botID := uuid.NewV4().String()
+	tm := team(t, db)
+	s := standup(t, db, tm)
+	te := teammate(t, db)
 
-// 	team := teams.New().
-// 		ID(id).
-// 		TeamName(teamname).
-// 		Email(email).
-// 		SlackTeamID(teamID).
-// 		SlackTeamAccessToken(teamAccessToken).
-// 		SlackBotAccessToken(botAccessToken).
-// 		SlackBotID(botID).
-// 		Active(true).
-// 		CostPerUser(1)
+	ts := standupsteammates.New().StandupID(*s.GetID()).TeammateID(*te.GetID())
+	ts1, err := standupsteammates.Insert(db, ts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, false, *ts1.GetTeamOwner())
 
-// 	_, err := teams.Insert(db, team)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	tm, err := teams.Find(db, id)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	assert.Equal(t, id, *tm.GetID())
-// 	assert.Equal(t, teamname, *tm.GetTeamName())
-// 	assert.Equal(t, email, *tm.GetEmail())
-// 	assert.Equal(t, teamID, *tm.GetSlackTeamID())
-// 	assert.Equal(t, teamAccessToken, *tm.GetSlackTeamAccessToken())
-// 	assert.Equal(t, botAccessToken, *tm.GetSlackBotAccessToken())
-// 	assert.Equal(t, botID, *tm.GetSlackBotID())
-// 	assert.Equal(t, true, *tm.GetActive())
-// 	assert.Equal(t, 1, *tm.GetCostPerUser())
-// }
-
-// func TestFindBy(t *testing.T) {
-// 	db, close := DB(t)
-// 	defer close()
-
-// 	id := uuid.NewV4()
-// 	teamname := uuid.NewV4().String()
-// 	email := uuid.NewV4().String()
-// 	teamID := uuid.NewV4().String()
-// 	teamAccessToken := uuid.NewV4().String()
-// 	botAccessToken := uuid.NewV4().String()
-// 	botID := uuid.NewV4().String()
-
-// 	team := teams.New().
-// 		ID(id).
-// 		TeamName(teamname).
-// 		Email(email).
-// 		SlackTeamID(teamID).
-// 		SlackTeamAccessToken(teamAccessToken).
-// 		SlackBotAccessToken(botAccessToken).
-// 		SlackBotID(botID).
-// 		Active(true).
-// 		CostPerUser(1)
-
-// 	_, err := teams.Insert(db, team)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	tm, err := teams.FindBySlackTeamID(db, teamID)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	assert.Equal(t, id, *tm.GetID())
-// 	assert.Equal(t, teamname, *tm.GetTeamName())
-// 	assert.Equal(t, email, *tm.GetEmail())
-// 	assert.Equal(t, teamID, *tm.GetSlackTeamID())
-// 	assert.Equal(t, teamAccessToken, *tm.GetSlackTeamAccessToken())
-// 	assert.Equal(t, botAccessToken, *tm.GetSlackBotAccessToken())
-// 	assert.Equal(t, botID, *tm.GetSlackBotID())
-// 	assert.Equal(t, true, *tm.GetActive())
-// 	assert.Equal(t, 1, *tm.GetCostPerUser())
-// }
-
-// func TestUpdate(t *testing.T) {
-// 	db, close := DB(t)
-// 	defer close()
-
-// 	id := uuid.NewV4()
-// 	teamname := uuid.NewV4().String()
-// 	email := uuid.NewV4().String()
-// 	teamID := uuid.NewV4().String()
-// 	teamAccessToken := uuid.NewV4().String()
-// 	botAccessToken := uuid.NewV4().String()
-// 	botID := uuid.NewV4().String()
-
-// 	team := teams.New().
-// 		ID(id).
-// 		TeamName(teamname).
-// 		Email(email).
-// 		SlackTeamID(teamID).
-// 		SlackTeamAccessToken(teamAccessToken).
-// 		SlackBotAccessToken(botAccessToken).
-// 		SlackBotID(botID).
-// 		Active(true).
-// 		CostPerUser(1)
-
-// 	_, err := teams.Insert(db, team)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	id2 := uuid.NewV4()
-// 	teamname2 := uuid.NewV4().String()
-// 	email2 := uuid.NewV4().String()
-// 	teamID2 := uuid.NewV4().String()
-// 	teamAccessToken2 := uuid.NewV4().String()
-// 	botAccessToken2 := uuid.NewV4().String()
-// 	botID2 := uuid.NewV4().String()
-
-// 	team2 := teams.New().
-// 		ID(id2).
-// 		TeamName(teamname2).
-// 		Email(email2).
-// 		SlackTeamID(teamID2).
-// 		SlackTeamAccessToken(teamAccessToken2).
-// 		SlackBotAccessToken(botAccessToken2).
-// 		SlackBotID(botID2).
-// 		Active(false).
-// 		CostPerUser(5)
-
-// 	tm, err := teams.Update(db, id, team2)
-
-// 	assert.Equal(t, id, *tm.GetID())
-// 	assert.Equal(t, teamname2, *tm.GetTeamName())
-// 	assert.Equal(t, email2, *tm.GetEmail())
-// 	assert.Equal(t, teamID2, *tm.GetSlackTeamID())
-// 	assert.Equal(t, teamAccessToken2, *tm.GetSlackTeamAccessToken())
-// 	assert.Equal(t, botAccessToken2, *tm.GetSlackBotAccessToken())
-// 	assert.Equal(t, botID2, *tm.GetSlackBotID())
-// 	assert.Equal(t, false, *tm.GetActive())
-// 	assert.Equal(t, 5, *tm.GetCostPerUser())
-// }
+	ts2, err := standupsteammates.Update(db, *s.GetID(), *te.GetID(), standupsteammates.New().TeamOwner(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, true, *ts2.GetTeamOwner())
+}
 
 // func TestUpdateBy(t *testing.T) {
 // 	db, close := DB(t)
@@ -343,41 +207,27 @@ func TestInsert(t *testing.T) {
 // 	assert.Equal(t, 5, *tm.GetCostPerUser())
 // }
 
-// func TestDelete(t *testing.T) {
-// 	db, close := DB(t)
-// 	defer close()
+func TestDelete(t *testing.T) {
+	db, close := DB(t)
+	defer close()
 
-// 	id := uuid.NewV4()
-// 	teamname := uuid.NewV4().String()
-// 	email := uuid.NewV4().String()
-// 	teamID := uuid.NewV4().String()
-// 	teamAccessToken := uuid.NewV4().String()
-// 	botAccessToken := uuid.NewV4().String()
-// 	botID := uuid.NewV4().String()
+	tm := team(t, db)
+	s := standup(t, db, tm)
+	te := teammate(t, db)
 
-// 	team := teams.New().
-// 		ID(id).
-// 		TeamName(teamname).
-// 		Email(email).
-// 		SlackTeamID(teamID).
-// 		SlackTeamAccessToken(teamAccessToken).
-// 		SlackBotAccessToken(botAccessToken).
-// 		SlackBotID(botID).
-// 		Active(true).
-// 		CostPerUser(1)
+	ts := standupsteammates.New().StandupID(*s.GetID()).TeammateID(*te.GetID())
+	_, err := standupsteammates.Insert(db, ts)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	_, err := teams.Insert(db, team)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	if e := standupsteammates.Delete(db, *s.GetID(), *te.GetID()); e != nil {
+		t.Fatal(e)
+	}
 
-// 	if e := teams.Delete(db, id); e != nil {
-// 		t.Fatal(e)
-// 	}
-
-// 	_, err = teams.Find(db, id)
-// 	assert.Equal(t, teams.ErrTeamNotFound, err)
-// }
+	_, err = standupsteammates.Find(db, *s.GetID(), *te.GetID())
+	assert.Equal(t, standupsteammates.ErrStandupTeammateNotFound, err)
+}
 
 // func TestDeleteBy(t *testing.T) {
 // 	db, close := DB(t)

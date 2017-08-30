@@ -128,7 +128,10 @@ func getColumns(standupteammate *StandupTeammate) map[string]interface{} {
 }
 
 // Find a `standupteammate` by its `standup_id`, `teammate_id`
-func Find(db testjack.DB, standupID *string, teammateID *string) (*StandupTeammate, error) {
+func Find(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID) (*StandupTeammate, error) {
+	_standupID := testjack.DecodeUUID(standupID)
+	_teammateID := testjack.DecodeUUID(teammateID)
+
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "standup_id", "teammate_id", "team_owner", "created_at", "updated_at"
@@ -138,8 +141,12 @@ func Find(db testjack.DB, standupID *string, teammateID *string) (*StandupTeamma
 	testjack.Log(sqlstr, standupID, teammateID)
 
 	// run the query
-	var cols *columns
-	row := db.QueryRow(sqlstr, standupID, teammateID)
+	cols := &columns{}
+	row := db.QueryRow(
+		sqlstr,
+		_standupID,
+		_teammateID,
+	)
 	if e := row.Scan(&cols.StandupID, &cols.TeammateID, &cols.TeamOwner, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
 			return nil, ErrStandupTeammateNotFound
@@ -174,17 +181,8 @@ func Insert(db testjack.DB, standupteammate *StandupTeammate) (*StandupTeammate,
 }
 
 // Update a `StandupTeammate` by its `standup_id`, `teammate_id`
-func Update(db testjack.DB, standupID *string, teammateID *string, standupteammate *StandupTeammate) (*StandupTeammate, error) {
+func Update(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID, standupteammate *StandupTeammate) (*StandupTeammate, error) {
 	fields := getColumns(standupteammate)
-
-	// first check if we have the foreign keys
-
-	if standupID == nil {
-		return nil, errors.New(`"standupID" must be non-nil`)
-	}
-	if teammateID == nil {
-		return nil, errors.New(`"teammateID" must be non-nil`)
-	}
 
 	// don't update the foreign keys
 
@@ -210,7 +208,7 @@ func Update(db testjack.DB, standupID *string, teammateID *string, standupteamma
 	testjack.Log(sqlstr, values...)
 
 	// run the query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, values...)
 	if e := row.Scan(&cols.StandupID, &cols.TeammateID, &cols.TeamOwner, &cols.CreatedAt, &cols.UpdatedAt); e != nil {
 		if e == pgx.ErrNoRows {
@@ -223,7 +221,7 @@ func Update(db testjack.DB, standupID *string, teammateID *string, standupteamma
 }
 
 // Delete a `StandupTeammate` by its `standup_id`, `teammate_id`
-func Delete(db testjack.DB, standupID *string, teammateID *string) error {
+func Delete(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID) error {
 	// sql query
 	const sqlstr = `
 	DELETE FROM jack.standups_teammates

@@ -134,6 +134,10 @@ func getColumns({{ $mv }} *{{ $m }}) map[string]interface{} {
 
 // Find a `{{ $mv }}` by its {{ $fks | join "`, `" | printf "`%s`"}}
 func Find(db {{ $pkg }}.DB, {{ $fkparams }}) (*{{ $m }}, error) {
+	{{ range .Table.ForeignKeys -}}
+	_{{ .Name | camelize }} := {{ fkdecode $pkg $.Table .Name }}
+	{{ end }}
+
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT {{ $cof }}
@@ -143,8 +147,13 @@ func Find(db {{ $pkg }}.DB, {{ $fkparams }}) (*{{ $m }}, error) {
 	{{ $pkg }}.Log(sqlstr, {{ $fklist }})
 
 	// run the query
-	var cols *columns
-	row := db.QueryRow(sqlstr, {{ $fklist }})
+	cols := &columns{}
+	row := db.QueryRow(
+		sqlstr, 
+		{{ range .Table.ForeignKeys -}}
+		_{{ .Name | camelize }},
+		{{ end -}}
+	)
 	if e := row.Scan({{ $cog }}); e != nil {
     if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound
@@ -190,13 +199,6 @@ func Insert(db {{ $pkg }}.DB, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 func Update(db {{ $pkg }}.DB, {{ $fkparams }}, {{ $mv }} *{{ $m }}) (*{{ $m }}, error) {
 	fields := getColumns({{ $mv }})
 
-	// first check if we have the foreign keys
-  {{ range .Table.ForeignKeys }}
-	if {{ .Name | camelize }} == nil {
-    return nil, errors.New(`"{{ .Name | camelize }}" must be non-nil`)
-  }
-  {{- end }}
-
 	// don't update the foreign keys
 	{{ range .Table.ForeignKeys }}
 	delete(fields, "{{ .Name }}")
@@ -220,7 +222,7 @@ func Update(db {{ $pkg }}.DB, {{ $fkparams }}, {{ $mv }} *{{ $m }}) (*{{ $m }}, 
 	{{ $pkg }}.Log(sqlstr, values...)
 
 	// run the query
-	var cols *columns
+	cols := &columns{}
 	row := db.QueryRow(sqlstr, values...)
 	if e := row.Scan({{ $cog }}); e != nil {
     if e == pgx.ErrNoRows {

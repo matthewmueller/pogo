@@ -116,6 +116,10 @@ func TestInsertWithID(t *testing.T) {
 	assert.Equal(t, 1, *tm.GetCostPerUser())
 }
 
+func TestEmptyInsert(t *testing.T) {
+
+}
+
 func TestFind(t *testing.T) {
 	db, close := DB(t)
 	defer close()

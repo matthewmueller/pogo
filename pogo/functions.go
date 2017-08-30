@@ -67,18 +67,24 @@ var templateMap = template.FuncMap{
 		return coerceAccessor(schema, s)
 	},
 
-	"decode": func(pkg, name, kind string) string {
-		switch kind {
-		case "uuid.UUID":
-			return pkg + ".DecodeUUID(" + name + ")"
-		default:
-			return "&" + name
+	"decode": decode,
+
+	"fkdecode": func(pkg string, table *Table, fkname string) string {
+		for _, fk := range table.ForeignKeys {
+			colname := fk.Name
+			for _, col := range table.Columns {
+				if colname == fkname {
+					return decode(pkg, camelize(fkname), col.DataType)
+				}
+			}
 		}
+		panic("no column found with that foreign key: " + fkname)
 	},
 
 	"encode": func(pkg, model, name, kind string) string {
 		switch kind {
-		case "uuid.UUID":
+		// TODO: consolidate into just `uuid`
+		case "uuid.UUID", "uuid":
 			return pkg + ".EncodeUUID(" + model + ".columns." + name + ")"
 		default:
 			return model + ".columns." + name
@@ -161,7 +167,7 @@ var templateMap = template.FuncMap{
 			colname := fk.Name
 			for _, col := range table.Columns {
 				if colname == col.Name {
-					out = append(out, camelize(fk.Name)+" *"+coerce(schema, col.DataType))
+					out = append(out, camelize(fk.Name)+" "+coerceAccessor(schema, col.DataType))
 				}
 			}
 		}
@@ -275,6 +281,16 @@ func camelize(s string) string {
 
 	parts[0] = strings.ToLower(parts[0])
 	return strings.Join(parts, "")
+}
+
+func decode(pkg, name, kind string) string {
+	switch kind {
+	// TODO: consolidate into just `uuid`
+	case "uuid.UUID", "uuid":
+		return pkg + ".DecodeUUID(" + name + ")"
+	default:
+		return "&" + name
+	}
 }
 
 // import (

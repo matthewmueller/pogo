@@ -25,8 +25,8 @@ type columns struct {
 	SlackBotID           *string    `json:"slack_bot_id,omitempty"`
 	TeamName             *string    `json:"team_name,omitempty"`
 	Scope                *[]string  `json:"scope,omitempty"`
-	Email                *string    `json:"email,omitempty"`     // user email
-	StripeID             *string    `json:"stripe_id,omitempty"` // user stripe id
+	Email                *string    `json:"email,omitempty"`
+	StripeID             *string    `json:"stripe_id,omitempty"`
 	Active               *bool      `json:"active,omitempty"`
 	FreeTeammates        *int       `json:"free_teammates,omitempty"`
 	CostPerUser          *int       `json:"cost_per_user,omitempty"`

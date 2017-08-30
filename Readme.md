@@ -14,17 +14,21 @@ TODO:
   - [x] Test out API. Probably return non-pointers.
   - [x] Finish generated tests using a pogo sql script (not jack)
   - [x] Create many-to-many generated tests
-
   - [x] Upsert
   - [x] Where condition
-  - [ ] Finish testjack tests
+  - [x] Finish testjack tests
     - [x] teams
-    - [ ] standups_teammates
-    - [ ] UNIQUE(a, b) multi-column index tests (email + teamname?)
-  - [ ] FindOrInsert (upsert with DO NOTHING)
-  - [ ] Handle empties. e.g. `INSERT INTO jack.teammates default values`
+    - [x] standups_teammates
 
 LATER:
 
+  - [ ] FindOrInsert (upsert with DO NOTHING)
+  - [ ] Handle empties. e.g. `INSERT INTO jack.teammates default values`
+  - [ ] InsertMany as Insert(db, team...)
+  - [ ] UpdateManyByID as Update(db, team...)
+  - [ ] DeleteManyByID as Delete(db, team...)
+  - [ ] UNIQUE(a, b) multi-column index tests (email + teamname?)
+  - [ ] Many-to-Many feature parity with regular models (UpdateBy, Upsert)
+  - [ ] One-to-Many operations using fks: teams.DeleteManyByStandupID(...)
   - [ ] Investigate type aliases to simplify accessor coercion  
   - [ ] Implement fake data generator
