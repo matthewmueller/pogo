@@ -16,7 +16,7 @@ import (
 // ErrStandupNotFound returned if the standup is not found
 var ErrStandupNotFound = errors.New("standup not found")
 
-// columns in `jack.standups`
+// columns in `"jack"."standups"`
 type columns struct {
 	ID             *string          `json:"id,omitempty"`
 	Name           *string          `json:"name,omitempty"`
@@ -34,7 +34,7 @@ type Standup struct {
 	columns *columns
 }
 
-// New `jack.standups` API
+// New `"jack"."standups"` API
 func New() *Standup {
 	return &Standup{&columns{}}
 }
@@ -208,7 +208,7 @@ func Find(db testjack.DB, id uuid.UUID) (*Standup, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
-	FROM jack.standups
+	FROM "jack"."standups"
 	WHERE "id" = $1
 	`
 	testjack.Log(sqlstr, _id)
@@ -230,7 +230,7 @@ func FindBySlackChannelID(db testjack.DB, slackChannelID string) (*Standup, erro
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
-	FROM jack.standups
+	FROM "jack"."standups"
 	WHERE "slack_channel_id" = $1
 	`
 	testjack.Log(sqlstr, slackChannelID)
@@ -255,7 +255,7 @@ func FindMany(db testjack.DB, where *WhereClause) ([]*Standup, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
-	FROM jack.standups
+	FROM "jack"."standups"
 	WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
@@ -293,7 +293,7 @@ func FindOne(db testjack.DB, where *WhereClause) (*Standup, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
-	FROM jack.standups
+	FROM "jack"."standups"
 	WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
@@ -309,14 +309,14 @@ func FindOne(db testjack.DB, where *WhereClause) (*Standup, error) {
 	return &Standup{cols}, nil
 }
 
-// Insert a `standup` into the `jack.standups` table.
+// Insert a `standup` into the `"jack"."standups"` table.
 func Insert(db testjack.DB, standup *Standup) (*Standup, error) {
 	// get all the non-nil columns and prepare them for the query
 	_c, _i, _v := testjack.Slice(getColumns(standup), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
-	INSERT INTO jack.standups (` + strings.Join(_c, ", ") + `)
+	INSERT INTO "jack"."standups" (` + strings.Join(_c, ", ") + `)
 	VALUES (` + strings.Join(_i, ", ") + `)
 	RETURNING "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
 	`
@@ -343,7 +343,7 @@ func Update(db testjack.DB, id uuid.UUID, standup *Standup) (*Standup, error) {
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.standups SET (` +
+	sqlstr := `UPDATE "jack"."standups" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `)
 		WHERE "id" = $1
@@ -377,7 +377,7 @@ func UpdateBySlackChannelID(db testjack.DB, slackChannelID string, standup *Stan
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.standups SET (` +
+	sqlstr := `UPDATE "jack"."standups" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE "slack_channel_id" = $1 ` +
@@ -403,7 +403,7 @@ func UpdateBySlackChannelID(db testjack.DB, slackChannelID string, standup *Stan
 	return &Standup{cols}, nil
 }
 
-// UpdateMany rows in `jack.standups` by a given condition
+// UpdateMany rows in `"jack"."standups"` by a given condition
 func UpdateMany(db testjack.DB, where *WhereClause, standup *Standup) ([]*Standup, error) {
 	var _o []*Standup
 
@@ -411,7 +411,7 @@ func UpdateMany(db testjack.DB, where *WhereClause, standup *Standup) ([]*Standu
 	_c, _i, _v := testjack.Slice(getColumns(standup), len(where.params))
 
 	// sql query
-	sqlstr := `UPDATE jack.standups SET (` +
+	sqlstr := `UPDATE "jack"."standups" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE ` + where.condition + ` ` +
@@ -453,12 +453,12 @@ func UpdateMany(db testjack.DB, where *WhereClause, standup *Standup) ([]*Standu
 	return _o, nil
 }
 
-// Delete a `standup` from the `jack.standups` table
+// Delete a `standup` from the `"jack"."standups"` table
 func Delete(db testjack.DB, id uuid.UUID) error {
 	_id := testjack.DecodeUUID(id)
 
 	// sql query
-	sqlstr := `DELETE FROM jack.standups WHERE "id" = $1`
+	sqlstr := `DELETE FROM "jack"."standups" WHERE "id" = $1`
 	testjack.Log(sqlstr, _id)
 
 	// run query
@@ -475,7 +475,7 @@ func Delete(db testjack.DB, id uuid.UUID) error {
 // DeleteBySlackChannelID find a Standup
 func DeleteBySlackChannelID(db testjack.DB, slackChannelID string) error {
 	// sql delete query
-	sqlstr := `DELETE FROM jack.standups WHERE "slack_channel_id" = $1`
+	sqlstr := `DELETE FROM "jack"."standups" WHERE "slack_channel_id" = $1`
 	testjack.Log(sqlstr, slackChannelID)
 
 	if _, e := db.Exec(sqlstr, slackChannelID); e != nil {
@@ -491,7 +491,7 @@ func DeleteBySlackChannelID(db testjack.DB, slackChannelID string) error {
 // DeleteMany delete many `standup`'s by the given condition
 func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.standups WHERE ` + where.condition
+	sqlstr := `DELETE FROM "jack"."standups" WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
 	if _, e := db.Exec(sqlstr, where.params...); e != nil {
@@ -507,7 +507,7 @@ func Upsert(db testjack.DB, standup *Standup) (*Standup, error) {
 	_c, _i, _v := testjack.Slice(getColumns(standup), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.standups (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."standups" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("id") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
@@ -530,7 +530,7 @@ func UpsertBySlackChannelID(db testjack.DB, standup *Standup) (*Standup, error) 
 	_c, _i, _v := testjack.Slice(getColumns(standup), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.standups (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."standups" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("slack_channel_id") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +

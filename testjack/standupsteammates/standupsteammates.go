@@ -16,7 +16,7 @@ import (
 // ErrStandupTeammateNotFound returned if the standupteammate is not found
 var ErrStandupTeammateNotFound = errors.New("standupteammate not found")
 
-// columns in `jack.standups_teammates`
+// columns in `"jack"."standups_teammates"`
 type columns struct {
 	StandupID  *string    `json:"standup_id,omitempty"`
 	TeammateID *string    `json:"teammate_id,omitempty"`
@@ -30,7 +30,7 @@ type StandupTeammate struct {
 	columns *columns
 }
 
-// New `jack.standups_teammates` API
+// New `"jack"."standups_teammates"` API
 func New() *StandupTeammate {
 	return &StandupTeammate{&columns{}}
 }
@@ -135,7 +135,7 @@ func Find(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID) (*StandupTe
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "standup_id", "teammate_id", "team_owner", "created_at", "updated_at"
-	FROM jack.standups_teammates
+	FROM "jack"."standups_teammates"
 	WHERE "standup_id" = $1 AND "teammate_id" = $2
 	`
 	testjack.Log(sqlstr, standupID, teammateID)
@@ -157,14 +157,14 @@ func Find(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID) (*StandupTe
 	return &StandupTeammate{cols}, nil
 }
 
-// Insert a `standupteammate` into `jack.standups_teammates`
+// Insert a `standupteammate` into `"jack"."standups_teammates"`
 func Insert(db testjack.DB, standupteammate *StandupTeammate) (*StandupTeammate, error) {
 	// get all the non-nil fields and prepare them for the query
 	_c, _i, _v := testjack.Slice(getColumns(standupteammate), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
-	INSERT INTO jack.standups_teammates (` + strings.Join(_c, ", ") + `)
+	INSERT INTO "jack"."standups_teammates" (` + strings.Join(_c, ", ") + `)
 	VALUES (` + strings.Join(_i, ", ") + `)
 	RETURNING "standup_id", "teammate_id", "team_owner", "created_at", "updated_at"
   `
@@ -193,7 +193,7 @@ func Update(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID, standupte
 	_c, _i, _v := testjack.Slice(fields, 2)
 
 	// sql query
-	sqlstr := `UPDATE jack.standups_teammates SET (` +
+	sqlstr := `UPDATE "jack"."standups_teammates" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `)
 		WHERE "standup_id" = $1 AND "teammate_id" = $2
@@ -224,7 +224,7 @@ func Update(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID, standupte
 func Delete(db testjack.DB, standupID uuid.UUID, teammateID uuid.UUID) error {
 	// sql query
 	const sqlstr = `
-	DELETE FROM jack.standups_teammates
+	DELETE FROM "jack"."standups_teammates"
 	WHERE "standup_id" = $1 AND "teammate_id" = $2
 	`
 	testjack.Log(sqlstr, standupID, teammateID)

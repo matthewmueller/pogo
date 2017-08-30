@@ -224,15 +224,15 @@ var templateMap = template.FuncMap{
 		s := schema.Name
 		t := table.Name
 
-		if s == "" && t == "" {
-			return ""
+		if t == "" {
+			panic("table needs to have a name")
 		}
 
-		if s != "" && t != "" {
-			s = s + "."
+		if s == "" {
+			return `"` + t + `"`
 		}
 
-		return s + t
+		return `"` + s + `"."` + t + `"`
 	},
 
 	"many2many": func(table *Table) bool {

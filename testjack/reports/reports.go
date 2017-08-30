@@ -17,7 +17,7 @@ import (
 // ErrReportNotFound returned if the report is not found
 var ErrReportNotFound = errors.New("report not found")
 
-// columns in `jack.reports`
+// columns in `"jack"."reports"`
 type columns struct {
 	ID        *string            `json:"id,omitempty"`
 	UserID    *string            `json:"user_id,omitempty"`
@@ -34,7 +34,7 @@ type Report struct {
 	columns *columns
 }
 
-// New `jack.reports` API
+// New `"jack"."reports"` API
 func New() *Report {
 	return &Report{&columns{}}
 }
@@ -194,7 +194,7 @@ func Find(db testjack.DB, id uuid.UUID) (*Report, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
-	FROM jack.reports
+	FROM "jack"."reports"
 	WHERE "id" = $1
 	`
 	testjack.Log(sqlstr, _id)
@@ -218,7 +218,7 @@ func FindMany(db testjack.DB, where *WhereClause) ([]*Report, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
-	FROM jack.reports
+	FROM "jack"."reports"
 	WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
@@ -256,7 +256,7 @@ func FindOne(db testjack.DB, where *WhereClause) (*Report, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
-	FROM jack.reports
+	FROM "jack"."reports"
 	WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
@@ -272,14 +272,14 @@ func FindOne(db testjack.DB, where *WhereClause) (*Report, error) {
 	return &Report{cols}, nil
 }
 
-// Insert a `report` into the `jack.reports` table.
+// Insert a `report` into the `"jack"."reports"` table.
 func Insert(db testjack.DB, report *Report) (*Report, error) {
 	// get all the non-nil columns and prepare them for the query
 	_c, _i, _v := testjack.Slice(getColumns(report), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
-	INSERT INTO jack.reports (` + strings.Join(_c, ", ") + `)
+	INSERT INTO "jack"."reports" (` + strings.Join(_c, ", ") + `)
 	VALUES (` + strings.Join(_i, ", ") + `)
 	RETURNING "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
 	`
@@ -306,7 +306,7 @@ func Update(db testjack.DB, id uuid.UUID, report *Report) (*Report, error) {
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.reports SET (` +
+	sqlstr := `UPDATE "jack"."reports" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `)
 		WHERE "id" = $1
@@ -329,7 +329,7 @@ func Update(db testjack.DB, id uuid.UUID, report *Report) (*Report, error) {
 	return &Report{cols}, nil
 }
 
-// UpdateMany rows in `jack.reports` by a given condition
+// UpdateMany rows in `"jack"."reports"` by a given condition
 func UpdateMany(db testjack.DB, where *WhereClause, report *Report) ([]*Report, error) {
 	var _o []*Report
 
@@ -337,7 +337,7 @@ func UpdateMany(db testjack.DB, where *WhereClause, report *Report) ([]*Report, 
 	_c, _i, _v := testjack.Slice(getColumns(report), len(where.params))
 
 	// sql query
-	sqlstr := `UPDATE jack.reports SET (` +
+	sqlstr := `UPDATE "jack"."reports" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE ` + where.condition + ` ` +
@@ -379,12 +379,12 @@ func UpdateMany(db testjack.DB, where *WhereClause, report *Report) ([]*Report, 
 	return _o, nil
 }
 
-// Delete a `report` from the `jack.reports` table
+// Delete a `report` from the `"jack"."reports"` table
 func Delete(db testjack.DB, id uuid.UUID) error {
 	_id := testjack.DecodeUUID(id)
 
 	// sql query
-	sqlstr := `DELETE FROM jack.reports WHERE "id" = $1`
+	sqlstr := `DELETE FROM "jack"."reports" WHERE "id" = $1`
 	testjack.Log(sqlstr, _id)
 
 	// run query
@@ -401,7 +401,7 @@ func Delete(db testjack.DB, id uuid.UUID) error {
 // DeleteMany delete many `report`'s by the given condition
 func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.reports WHERE ` + where.condition
+	sqlstr := `DELETE FROM "jack"."reports" WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
 	if _, e := db.Exec(sqlstr, where.params...); e != nil {
@@ -417,7 +417,7 @@ func Upsert(db testjack.DB, report *Report) (*Report, error) {
 	_c, _i, _v := testjack.Slice(getColumns(report), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.reports (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."reports" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("id") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +

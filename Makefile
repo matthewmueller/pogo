@@ -1,7 +1,9 @@
+test: migrate generate testonly
+
 generate: templates 
 	@go run cmd/pogo/pogo.go --db $(POSTGRES_URL) --schema jack --path testjack
 	
-test:
+testonly:
 	@go test ./...
 .PHONY: run
 

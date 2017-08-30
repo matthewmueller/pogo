@@ -16,7 +16,7 @@ import (
 // ErrTeamNotFound returned if the team is not found
 var ErrTeamNotFound = errors.New("team not found")
 
-// columns in `jack.teams`
+// columns in `"jack"."teams"`
 type columns struct {
 	ID                   *string    `json:"id,omitempty"`
 	SlackTeamID          *string    `json:"slack_team_id,omitempty"`
@@ -40,7 +40,7 @@ type Team struct {
 	columns *columns
 }
 
-// New `jack.teams` API
+// New `"jack"."teams"` API
 func New() *Team {
 	return &Team{&columns{}}
 }
@@ -298,7 +298,7 @@ func Find(db testjack.DB, id uuid.UUID) (*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-	FROM jack.teams
+	FROM "jack"."teams"
 	WHERE "id" = $1
 	`
 	testjack.Log(sqlstr, _id)
@@ -320,7 +320,7 @@ func FindBySlackBotAccessToken(db testjack.DB, slackBotAccessToken string) (*Tea
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-	FROM jack.teams
+	FROM "jack"."teams"
 	WHERE "slack_bot_access_token" = $1
 	`
 	testjack.Log(sqlstr, slackBotAccessToken)
@@ -343,7 +343,7 @@ func FindBySlackTeamAccessToken(db testjack.DB, slackTeamAccessToken string) (*T
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-	FROM jack.teams
+	FROM "jack"."teams"
 	WHERE "slack_team_access_token" = $1
 	`
 	testjack.Log(sqlstr, slackTeamAccessToken)
@@ -366,7 +366,7 @@ func FindBySlackTeamID(db testjack.DB, slackTeamID string) (*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-	FROM jack.teams
+	FROM "jack"."teams"
 	WHERE "slack_team_id" = $1
 	`
 	testjack.Log(sqlstr, slackTeamID)
@@ -391,7 +391,7 @@ func FindMany(db testjack.DB, where *WhereClause) ([]*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-	FROM jack.teams
+	FROM "jack"."teams"
 	WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
@@ -429,7 +429,7 @@ func FindOne(db testjack.DB, where *WhereClause) (*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
 	SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-	FROM jack.teams
+	FROM "jack"."teams"
 	WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
@@ -445,14 +445,14 @@ func FindOne(db testjack.DB, where *WhereClause) (*Team, error) {
 	return &Team{cols}, nil
 }
 
-// Insert a `team` into the `jack.teams` table.
+// Insert a `team` into the `"jack"."teams"` table.
 func Insert(db testjack.DB, team *Team) (*Team, error) {
 	// get all the non-nil columns and prepare them for the query
 	_c, _i, _v := testjack.Slice(getColumns(team), 0)
 
 	// sql insert query, primary key provided by sequence
 	sqlstr := `
-	INSERT INTO jack.teams (` + strings.Join(_c, ", ") + `)
+	INSERT INTO "jack"."teams" (` + strings.Join(_c, ", ") + `)
 	VALUES (` + strings.Join(_i, ", ") + `)
 	RETURNING "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
 	`
@@ -479,7 +479,7 @@ func Update(db testjack.DB, id uuid.UUID, team *Team) (*Team, error) {
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.teams SET (` +
+	sqlstr := `UPDATE "jack"."teams" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `)
 		WHERE "id" = $1
@@ -513,7 +513,7 @@ func UpdateBySlackBotAccessToken(db testjack.DB, slackBotAccessToken string, tea
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.teams SET (` +
+	sqlstr := `UPDATE "jack"."teams" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE "slack_bot_access_token" = $1 ` +
@@ -550,7 +550,7 @@ func UpdateBySlackTeamAccessToken(db testjack.DB, slackTeamAccessToken string, t
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.teams SET (` +
+	sqlstr := `UPDATE "jack"."teams" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE "slack_team_access_token" = $1 ` +
@@ -587,7 +587,7 @@ func UpdateBySlackTeamID(db testjack.DB, slackTeamID string, team *Team) (*Team,
 	_c, _i, _v := testjack.Slice(fields, 1)
 
 	// sql query
-	sqlstr := `UPDATE jack.teams SET (` +
+	sqlstr := `UPDATE "jack"."teams" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE "slack_team_id" = $1 ` +
@@ -613,7 +613,7 @@ func UpdateBySlackTeamID(db testjack.DB, slackTeamID string, team *Team) (*Team,
 	return &Team{cols}, nil
 }
 
-// UpdateMany rows in `jack.teams` by a given condition
+// UpdateMany rows in `"jack"."teams"` by a given condition
 func UpdateMany(db testjack.DB, where *WhereClause, team *Team) ([]*Team, error) {
 	var _o []*Team
 
@@ -621,7 +621,7 @@ func UpdateMany(db testjack.DB, where *WhereClause, team *Team) ([]*Team, error)
 	_c, _i, _v := testjack.Slice(getColumns(team), len(where.params))
 
 	// sql query
-	sqlstr := `UPDATE jack.teams SET (` +
+	sqlstr := `UPDATE "jack"."teams" SET (` +
 		strings.Join(_c, ", ") + `) = (` +
 		strings.Join(_i, ", ") + `) ` +
 		`WHERE ` + where.condition + ` ` +
@@ -663,12 +663,12 @@ func UpdateMany(db testjack.DB, where *WhereClause, team *Team) ([]*Team, error)
 	return _o, nil
 }
 
-// Delete a `team` from the `jack.teams` table
+// Delete a `team` from the `"jack"."teams"` table
 func Delete(db testjack.DB, id uuid.UUID) error {
 	_id := testjack.DecodeUUID(id)
 
 	// sql query
-	sqlstr := `DELETE FROM jack.teams WHERE "id" = $1`
+	sqlstr := `DELETE FROM "jack"."teams" WHERE "id" = $1`
 	testjack.Log(sqlstr, _id)
 
 	// run query
@@ -685,7 +685,7 @@ func Delete(db testjack.DB, id uuid.UUID) error {
 // DeleteBySlackBotAccessToken find a Team
 func DeleteBySlackBotAccessToken(db testjack.DB, slackBotAccessToken string) error {
 	// sql delete query
-	sqlstr := `DELETE FROM jack.teams WHERE "slack_bot_access_token" = $1`
+	sqlstr := `DELETE FROM "jack"."teams" WHERE "slack_bot_access_token" = $1`
 	testjack.Log(sqlstr, slackBotAccessToken)
 
 	if _, e := db.Exec(sqlstr, slackBotAccessToken); e != nil {
@@ -701,7 +701,7 @@ func DeleteBySlackBotAccessToken(db testjack.DB, slackBotAccessToken string) err
 // DeleteBySlackTeamAccessToken find a Team
 func DeleteBySlackTeamAccessToken(db testjack.DB, slackTeamAccessToken string) error {
 	// sql delete query
-	sqlstr := `DELETE FROM jack.teams WHERE "slack_team_access_token" = $1`
+	sqlstr := `DELETE FROM "jack"."teams" WHERE "slack_team_access_token" = $1`
 	testjack.Log(sqlstr, slackTeamAccessToken)
 
 	if _, e := db.Exec(sqlstr, slackTeamAccessToken); e != nil {
@@ -717,7 +717,7 @@ func DeleteBySlackTeamAccessToken(db testjack.DB, slackTeamAccessToken string) e
 // DeleteBySlackTeamID find a Team
 func DeleteBySlackTeamID(db testjack.DB, slackTeamID string) error {
 	// sql delete query
-	sqlstr := `DELETE FROM jack.teams WHERE "slack_team_id" = $1`
+	sqlstr := `DELETE FROM "jack"."teams" WHERE "slack_team_id" = $1`
 	testjack.Log(sqlstr, slackTeamID)
 
 	if _, e := db.Exec(sqlstr, slackTeamID); e != nil {
@@ -733,7 +733,7 @@ func DeleteBySlackTeamID(db testjack.DB, slackTeamID string) error {
 // DeleteMany delete many `team`'s by the given condition
 func DeleteMany(db testjack.DB, where *WhereClause) error {
 	// sql select query, primary key provided by sequence
-	sqlstr := `DELETE FROM jack.teams WHERE ` + where.condition
+	sqlstr := `DELETE FROM "jack"."teams" WHERE ` + where.condition
 	testjack.Log(sqlstr, where.params...)
 
 	if _, e := db.Exec(sqlstr, where.params...); e != nil {
@@ -749,7 +749,7 @@ func Upsert(db testjack.DB, team *Team) (*Team, error) {
 	_c, _i, _v := testjack.Slice(getColumns(team), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.teams (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."teams" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("id") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
@@ -772,7 +772,7 @@ func UpsertBySlackBotAccessToken(db testjack.DB, team *Team) (*Team, error) {
 	_c, _i, _v := testjack.Slice(getColumns(team), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.teams (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."teams" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("slack_bot_access_token") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
@@ -795,7 +795,7 @@ func UpsertBySlackTeamAccessToken(db testjack.DB, team *Team) (*Team, error) {
 	_c, _i, _v := testjack.Slice(getColumns(team), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.teams (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."teams" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("slack_team_access_token") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
@@ -818,7 +818,7 @@ func UpsertBySlackTeamID(db testjack.DB, team *Team) (*Team, error) {
 	_c, _i, _v := testjack.Slice(getColumns(team), 0)
 
 	// sql query
-	sqlstr := `INSERT INTO jack.teams (` + strings.Join(_c, ", ") + `) ` +
+	sqlstr := `INSERT INTO "jack"."teams" (` + strings.Join(_c, ", ") + `) ` +
 		`VALUES (` + strings.Join(_i, ", ") + `) ` +
 		`ON CONFLICT ("slack_team_id") ` +
 		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
