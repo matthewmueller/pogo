@@ -1,6 +1,7 @@
 package pogo
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/knq/snaker"
@@ -33,7 +34,7 @@ func coerce(schema *Schema, dt string) (kind string) {
 	}
 
 	switch dt {
-	case "uuid":
+	case "uuid", "citext":
 		return "string"
 	case "text":
 		return "string"
@@ -47,15 +48,16 @@ func coerce(schema *Schema, dt string) (kind string) {
 		return "float64"
 	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
 		return "time.Time"
-	case "json":
+	case "json", "jsonb":
 		return "json.RawMessage"
 	case "numeric", "decimal":
 		return "decimal.Decimal"
 	default:
 		for _, enum := range schema.Enums {
 			name := enum.Name
+
 			if schema.Name != "" && schema.Name != "public" {
-				name = schema.Name + "." + name
+				name = fmt.Sprintf(`"%s".%s`, schema.Name, name)
 			}
 
 			if name == dt {

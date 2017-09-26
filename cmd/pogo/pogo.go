@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
@@ -38,11 +38,13 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("unable to get the current working directory")
 	}
-	*outpath = path.Join(cwd, *outpath)
+	if !filepath.IsAbs(*outpath) {
+		*outpath = filepath.Join(cwd, *outpath)
+	}
 
 	output, err := pogo.Generate(db, &pogo.Settings{
 		Schema:  *schema,
-		Package: path.Base(*outpath),
+		Package: filepath.Base(*outpath),
 		Address: *dburl,
 	})
 	if err != nil {
