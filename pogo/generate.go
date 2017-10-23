@@ -127,6 +127,7 @@ func Generate(db *pgx.Conn, settings *Settings) (files map[string]string, err er
 
 		formatted, err := format(code)
 		if err != nil {
+			log.Infof("syntax error in code for %s\n\n%s", table.Name, code)
 			return files, err
 		}
 
@@ -240,7 +241,6 @@ func format(input string) (output string, err error) {
 	stdout.Close()
 
 	if e := cmd.Wait(); e != nil {
-		log.Infof("input %s", input)
 		return output, errors.New(string(formattingError))
 	}
 

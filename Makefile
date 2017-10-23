@@ -1,8 +1,11 @@
 test: migrate generate testonly
 
 generate: templates 
-	@go run cmd/pogo/pogo.go --db $(POSTGRES_URL) --schema jack --path testjack
+	@go run cmd/pogo/pogo.go --db $(POGO_POSTGRES_URL) --schema jack --path testjack
 	
+gambit: templates 
+	@go run cmd/pogo/pogo.go --db $(GAMBIT_POSTGRES_URL) --schema 1 --path testgambit
+
 testonly:
 	@go test ./...
 .PHONY: run
@@ -15,5 +18,5 @@ install: templates
 	@go install ./...
 
 migrate:
-	@migrate -path migration -url $(POSTGRES_URL) down
-	@migrate -path migration -url $(POSTGRES_URL) up
+	@migrate -path migration -url $(POGO_POSTGRES_URL) down
+	@migrate -path migration -url $(POGO_POSTGRES_URL) up

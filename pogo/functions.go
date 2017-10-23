@@ -67,6 +67,13 @@ var templateMap = template.FuncMap{
 		return coerceAccessor(schema, s)
 	},
 
+	"mayberename": func(s string) string {
+		if alias, isset := builtins[s]; isset {
+			return alias
+		}
+		return s
+	},
+
 	"decode": decode,
 
 	"fkdecode": func(pkg string, table *Table, fkname string) string {

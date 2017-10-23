@@ -75,7 +75,7 @@ func New() *{{ $m }} {
 
 {{ range .Table.Columns }}
 {{- $nu := .Name | capitalize -}}
-{{- $nc := .Name | camelize -}}
+{{- $nc := .Name | camelize | mayberename -}}
 {{- $dt := coerceaccessor $.Schema .DataType -}}
 // {{ $nu }} sets the `{{ .Name }}`
 func ({{ $mv }} *{{ $m }}) {{ $nu }}({{ $nc }} {{ $dt }}) *{{ $m }} {
