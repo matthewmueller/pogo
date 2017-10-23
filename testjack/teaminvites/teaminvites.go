@@ -64,7 +64,7 @@ func (teaminvite *TeamInvite) UnmarshalJSON(data []byte) error {
 }
 
 func (teaminvite *TeamInvite) String() string {
-	return "teaminvite TODO"
+	return "teaminvite"
 }
 
 // get all the non-nil columns

@@ -15,7 +15,7 @@ templates:
 .PHONY: templates
 
 install: templates
-	@go install ./...
+	@go install ./cmd/...
 
 migrate:
 	@migrate -path migration -url $(POGO_POSTGRES_URL) down

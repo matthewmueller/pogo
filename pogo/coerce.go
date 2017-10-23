@@ -57,14 +57,17 @@ func coerce(schema *Schema, dt string) (kind string) {
 			name := enum.Name
 
 			if schema.Name != "" && schema.Name != "public" {
-				name = fmt.Sprintf(`"%s".%s`, schema.Name, name)
+				name = fmt.Sprintf(`%s.%s`, schema.Name, name)
 			}
 
-			if name == dt {
+			// remove quotes
+			kind := strings.Replace(dt, "\"", "", -1)
+
+			if name == kind {
 				return "enum." + snaker.SnakeToCamelIdentifier(enum.Name)
 			}
 		}
-		panic("don't understand the data type `" + dt + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")
+		panic("pogo/coerce: don't understand the data type `" + dt + "`.\nPlease open an issue: https://github.com/matthewmueller/pogo/issues")
 	}
 }
 

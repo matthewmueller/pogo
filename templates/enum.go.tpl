@@ -23,7 +23,7 @@ package enum
 {{/*************************************************************************/}}
 
 // {{ $m }} is the `{{ $en }}` enum type from `{{ .Schema.Name }}`.
-type {{ $m }} uint16
+type {{ $m }} string
 
 {{/*************************************************************************/}}
 {{/* Our enum type */}}
@@ -32,50 +32,9 @@ type {{ $m }} uint16
 const (
   {{ range .Enum.Values }}
 	// {{ $m }}{{ .Label | capitalize }} is the '{{ .Label }}' {{ $m }}.
-	{{ $m }}{{ .Label | capitalize }} = {{ $m }}({{ .Order }})
+	{{ $m }}{{ .Label | capitalize }} = {{ $m }}("{{ .Label }}")
   {{ end }}
 )
-
-{{/*************************************************************************/}}
-{{/* Satisfy the stringer interface */}}
-{{/*************************************************************************/}}
-
-// String returns the string value of the `{{ $m }}`
-func ({{ $mv }} {{ $m }}) String() string {
-	var enumVal string
-
-	switch {{ $mv }} {
-  {{ range .Enum.Values }}
-  case {{ $m }}{{ .Label | capitalize }}:
-    enumVal = "{{ .Label }}"
-  {{ end }}
-	}
-
-	return enumVal
-}
-
-{{/*************************************************************************/}}
-{{/* Satisfy the marshaler interface */}}
-{{/*************************************************************************/}}
-
-// MarshalText marshals {{ $m }} into text.
-func ({{ $mv }} {{ $m }}) MarshalText() ([]byte, error) {
-	return []byte({{ $mv }}.String()), nil
-}
-
-// UnmarshalText unmarshals {{ $m }} from text.
-func ({{ $mv }} *{{ $m }}) UnmarshalText(text []byte) error {
-	switch string(text) {
-  {{ range .Enum.Values }}
-  case "{{ .Label }}":
-    *{{ $mv }} = {{ $m }}{{ .Label | capitalize }}
-  {{ end }}
-	default:
-		return errors.New("invalid {{ $m }}")
-	}
-
-	return nil
-}
 
 {{/*************************************************************************/}}
 {{/* Satisfy the sql/driver.Valuer interface */}}
@@ -83,27 +42,5 @@ func ({{ $mv }} *{{ $m }}) UnmarshalText(text []byte) error {
 
 // Value satisfies the sql/driver.Valuer interface for {{ $m }}.
 func ({{ $mv }} {{ $m }}) Value() (driver.Value, error) {
-	return {{ $mv }}.String(), nil
-}
-
-// Scan satisfies the database/sql.Scanner interface for {{ $m }}.
-func ({{ $mv }} *{{ $m }}) Scan(src interface{}) error {
-	buf, ok := src.([]byte)
-	if !ok {
-		return errors.New("invalid {{ $m }}")
-	}
-
-	return {{ $mv }}.UnmarshalText(buf)
-}
-
-{{/*************************************************************************/}}
-{{/* Custom scanner for pgx */}}
-{{/*************************************************************************/}}
-
-// ScanPgx into PGX
-func ({{ $mv }} *{{ $m }}) ScanPgx(vr *pgx.ValueReader) error {
-	if vr.Len() == -1 {
-		return nil
-	}
-	return {{ $mv }}.UnmarshalText(vr.ReadBytes(vr.Len()))
+	return string({{ $mv }}), nil
 }

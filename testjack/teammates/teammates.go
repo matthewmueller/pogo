@@ -161,7 +161,7 @@ func (teammate *Teammate) UnmarshalJSON(data []byte) error {
 }
 
 func (teammate *Teammate) String() string {
-	return "teammate TODO"
+	return "teammate"
 }
 
 // get all the non-nil columns

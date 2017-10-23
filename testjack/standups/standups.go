@@ -149,7 +149,7 @@ func (standup *Standup) UnmarshalJSON(data []byte) error {
 }
 
 func (standup *Standup) String() string {
-	return "standup TODO"
+	return "standup"
 }
 
 // get all the non-nil columns

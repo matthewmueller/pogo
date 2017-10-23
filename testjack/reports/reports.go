@@ -138,7 +138,7 @@ func (report *Report) UnmarshalJSON(data []byte) error {
 }
 
 func (report *Report) String() string {
-	return "report TODO"
+	return "report"
 }
 
 // get all the non-nil columns
