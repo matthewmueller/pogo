@@ -46,7 +46,7 @@ var builtins = map[string]string{
 	"interface":   "iface",
 	"select":      "sel",
 	"case":        "cs",
-	"dfr":         "def",
+	"defer":       "dfr",
 	"go":          "g",
 	"map":         "mp",
 	"struct":      "structure",
