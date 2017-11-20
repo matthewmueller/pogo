@@ -44,3 +44,12 @@ const (
 func ({{ $mv }} {{ $m }}) Value() (driver.Value, error) {
 	return string({{ $mv }}), nil
 }
+
+{{/*************************************************************************/}}
+{{/* Satisfy the pgtypes.EncodeBinary interface */}}
+{{/*************************************************************************/}}
+
+// Satisfy the pgtypes.EncodeBinary interface for {{ $m }}.
+func ({{ $mv }} {{ $m }}) EncodeBinary(_ *pgtype.ConnInfo, b []byte) ([]byte, error) {
+	return append(b, []byte({{ $mv }})...), nil
+}

@@ -1,3 +1,4 @@
+begin;
 -- Schema
 
 create schema jack;
@@ -128,4 +129,6 @@ create trigger updated_at before update on jack.standups_teammates for each row 
 create table if not exists jack."team-invites" (
   id uuid primary key not null default gen_random_uuid(),
   emails text[] not null default '{}'
-)
+);
+
+commit;

@@ -18,5 +18,5 @@ install: templates
 	@go install ./cmd/...
 
 migrate:
-	@migrate -path migration -url $(POGO_POSTGRES_URL) down
-	@migrate -path migration -url $(POGO_POSTGRES_URL) up
+	@migrate -path migration -database $(POGO_POSTGRES_URL) down
+	@migrate -path migration -database $(POGO_POSTGRES_URL) up
