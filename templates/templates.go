@@ -86,7 +86,7 @@ func templatesCodecGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/codec.go.tpl", size: 1311, mode: os.FileMode(420), modTime: time.Unix(1526596629, 0)}
+	info := bindataFileInfo{name: "templates/codec.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -106,7 +106,7 @@ func templatesEnumGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/enum.go.tpl", size: 2102, mode: os.FileMode(420), modTime: time.Unix(1526596629, 0)}
+	info := bindataFileInfo{name: "templates/enum.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -126,7 +126,7 @@ func templatesModelManyToManyGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/model-many-to-many.go.tpl", size: 8801, mode: os.FileMode(420), modTime: time.Unix(1526596629, 0)}
+	info := bindataFileInfo{name: "templates/model-many-to-many.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -146,7 +146,7 @@ func templatesModelGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/model.go.tpl", size: 18413, mode: os.FileMode(420), modTime: time.Unix(1526596629, 0)}
+	info := bindataFileInfo{name: "templates/model.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -166,7 +166,7 @@ func templatesModel_testGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/model_test.go.tpl", size: 3773, mode: os.FileMode(420), modTime: time.Unix(1526596629, 0)}
+	info := bindataFileInfo{name: "templates/model_test.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -186,7 +186,7 @@ func templatesPogoGoTpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/pogo.go.tpl", size: 2513, mode: os.FileMode(420), modTime: time.Unix(1526596629, 0)}
+	info := bindataFileInfo{name: "templates/pogo.go.tpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
