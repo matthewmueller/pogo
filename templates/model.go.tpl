@@ -49,7 +49,7 @@ type columns struct {
 {{/* This contains our fluent parameter container */}}
 {{/*************************************************************************/}}
 
-// {{ $m }} fluent API
+// {{ $m }} model
 type {{ $m }} struct {
 	columns *columns
 }
