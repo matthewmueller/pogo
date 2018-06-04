@@ -7,9 +7,9 @@ import (
 
 // Model struct
 type Model struct {
-	Directory string
-	Schema    *database.Schema
-	Table     *database.Table
+	Package string
+	Schema  *database.Schema
+	Table   *database.Table
 }
 
 var model = gen.MustCompile("model", `
@@ -18,7 +18,6 @@ var model = gen.MustCompile("model", `
 {{/*************************************************************************/}}
 
 {{ $tick := "`+"`"+`" }}
-{{ $package := package .Directory }}
 {{ $package := lowercase (camel .Table.Name) }}
 {{ $Model := capitalize (singular .Table.Name) }}
 {{ $model := lowercase (camel (singular .Table.Name)) }}
@@ -174,20 +173,19 @@ func Where(condition string, params ...interface{}) *WhereClause {
 {{ range .Table.Columns -}}
 {{ if .IsPrimaryKey -}}
 {{ $field := uncapitalize .Name }}
-// Find a {{$model}} by its "{{.Name}}"
-func Find(db {{ $pkg }}.DB, {{.Name}} {{$field}}) (*{{$Model}}, error) {
-	_{{ $p.Name }} := {{ decode .Settings.Package $p.Name $pt }}
 
+// Find a "{{$model}}" by its "{{.Name}}"
+func Find(db {{.Package}}.DB, {{.Name}} {{$field}}) (*{{$Model}}, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := {{ $tick }}
 	SELECT {{ $cof }}
 	FROM {{ $t }}
 	WHERE "{{ $p.Name }}" = $1
 	{{ $tick }}
-	{{$pkg}}.Log(sqlstr, _{{ $p.Name }})
+	{{.Package}}.Log(sqlstr, &{{$field}})
 
 	cols := &columns{}
-	row := db.QueryRow(sqlstr, _{{ $p.Name }})
+	row := db.QueryRow(sqlstr, &{{$field}})
   if e := row.Scan({{ $cog }}); e != nil {
     if e == pgx.ErrNoRows {
       return nil,  Err{{ $m }}NotFound

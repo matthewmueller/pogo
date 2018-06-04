@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
+
+	"github.com/knq/snaker"
 
 	"github.com/matthewmueller/log"
 	"github.com/matthewmueller/pogo/database"
@@ -33,7 +36,7 @@ type Pogo struct {
 
 // Run pogo
 func (p *Pogo) Run(ctx context.Context) (err error) {
-	pkgname := filepath.Base(p.cfg.Dir)
+	pkgname := strings.ToLower(snaker.SnakeToCamelIdentifier(filepath.Base(p.cfg.Dir)))
 
 	// introspect the schema
 	schema, err := p.cfg.DB.Introspect(p.cfg.Schema)
@@ -66,14 +69,15 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 		switch {
 		case isManyToMany(table):
 			files[path], err = template.Generate(&template.ManyToMany{
-				Schema: schema,
-				Table:  table,
+				Package: pkgname,
+				Schema:  schema,
+				Table:   table,
 			})
 		default:
 			files[path], err = template.Generate(&template.Model{
-				Directory: p.cfg.Dir,
-				Schema:    schema,
-				Table:     table,
+				Package: pkgname,
+				Schema:  schema,
+				Table:   table,
 			})
 		}
 

@@ -11,8 +11,9 @@ var manyToMany = gen.MustCompile("many-to-many", `
 
 // ManyToMany struct
 type ManyToMany struct {
-	Schema *database.Schema
-	Table  *database.Table
+	Package string
+	Schema  *database.Schema
+	Table   *database.Table
 }
 
 // Generate the base template
