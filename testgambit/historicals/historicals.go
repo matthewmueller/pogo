@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx"
-	"github.com/matthewmueller/gambit/pogo/enum"
 	"github.com/matthewmueller/pogo/testgambit"
+	"github.com/matthewmueller/pogo/testgambit/enum"
 	uuid "github.com/satori/go.uuid"
 )
 

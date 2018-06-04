@@ -24,7 +24,11 @@ func Fake(settings *Settings, schema *Schema, name string, dt string) (kind stri
 	case "uuid":
 		return "uuid.NewV4()"
 	case "text":
-		return fmt.Sprintf(`"%s"`, uuid.NewV4())
+		u, err := uuid.NewV4()
+		if err != nil {
+			panic(err)
+		}
+		return fmt.Sprintf(`"%s"`, u)
 	case "boolean":
 		return "false"
 	case "integer":
