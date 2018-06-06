@@ -3,11 +3,14 @@ package pogo
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 
+	gen "github.com/matthewmueller/go-gen"
 	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo/database"
-	"github.com/matthewmueller/pogo/template"
+	"github.com/matthewmueller/pogo/templates"
 )
 
 // Config struct
@@ -31,6 +34,13 @@ type Pogo struct {
 	cfg *Config
 }
 
+var pogo = gen.MustCompile("pogo.gotmpl", string(templates.MustAsset("pogo.gotmpl")))
+var model = gen.MustCompile("model.gotmpl", string(templates.MustAsset("model.gotmpl")))
+var many = gen.MustCompile("many.gotmpl", string(templates.MustAsset("many.gotmpl")))
+var enum = gen.MustCompile("enum.gotmpl", string(templates.MustAsset("enum.gotmpl")))
+
+type vars map[string]interface{}
+
 // Run pogo
 func (p *Pogo) Run(ctx context.Context) (err error) {
 	pkgname := text.Lower(text.Camel(filepath.Base(p.cfg.Dir)))
@@ -44,54 +54,81 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 	// files map
 	files := map[string]string{}
 
-	// generate ${pkgname}.go
+	// base file
 	path := pkgname + ".go"
-	files[path], err = template.Generate(&template.Base{
-		Package: pkgname,
-		Schema:  schema,
+	files[path], err = pogo(vars{
+		"Package": pkgname,
+		"Schema":  schema,
 	})
 	if err != nil {
 		return fmt.Errorf("error generating %s: %v", path, err)
 	}
 
-	// generate each table
+	// generate models for each table
 	for _, table := range schema.Tables {
-		name := table.Name
-		path := filepath.Join(name, name+".go")
-
-		switch {
-		case isManyToMany(table):
-			files[path], err = template.Generate(&template.ManyToMany{
-				Package: pkgname,
-				Schema:  schema,
-				Table:   table,
-			})
-		default:
-			files[path], err = template.Generate(&template.Model{
-				Package: pkgname,
-				Schema:  schema,
-				Table:   table,
-			})
+		if isManyToMany(table) {
+			continue
 		}
 
+		// generate the model
+		path := filepath.Join(table.Name, table.Name+".go")
+		files[path], err = model(vars{
+			"Package": pkgname,
+			"Schema":  schema,
+			"Table":   table,
+		})
+		if err != nil {
+			return fmt.Errorf("error generating %s: %v", path, err)
+		}
+	}
+
+	// generate models for many-to-many tables
+	for _, table := range schema.Tables {
+		if !isManyToMany(table) {
+			continue
+		}
+
+		// generate join model
+		path := filepath.Join(table.Name, table.Name+".go")
+		files[path], err = many(vars{
+			"Package": pkgname,
+			"Schema":  schema,
+			"Table":   table,
+		})
 		if err != nil {
 			return fmt.Errorf("error generating %s: %v", path, err)
 		}
 	}
 
 	// generate each enum
-	for _, enum := range schema.Enums {
-		name := enum.Name
-		path := filepath.Join("name", name+".go")
-
-		files[path], err = template.Generate(&template.Enum{
-			Package: pkgname,
-			Schema:  schema,
-			Enum:    enum,
+	for _, en := range schema.Enums {
+		name := en.Name
+		path := filepath.Join("enum", name+".go")
+		files[path], err = enum(vars{
+			"Package": pkgname,
+			"Schema":  schema,
+			"Enum":    en,
 		})
 		if err != nil {
 			return fmt.Errorf("error generating %s: %v", path, err)
 		}
+	}
+
+	for path, code := range files {
+		outpath := filepath.Join(p.cfg.Dir, path)
+		outdir := filepath.Dir(outpath)
+
+		if err := os.MkdirAll(outdir, 0755); err != nil {
+			return err
+		}
+
+		if err := ioutil.WriteFile(outpath, []byte(code), 0644); err != nil {
+			return err
+		}
+	}
+
+	if err := gen.FormatAll(p.cfg.Dir); err != nil {
+		return err
 	}
 
 	return nil
@@ -106,25 +143,20 @@ func isManyToMany(table *database.Table) bool {
 			pks = append(pks, c.Name)
 		}
 	}
+	if len(pks) > 1 {
+		return true
+	}
 
-	return len(pks) > 1
+	// no primary keys but at least one unique foreign key pair
+	for _, idx := range table.Indexes {
+		if idx.IsPrimary || !idx.IsUnique {
+			continue
+		}
+
+		if len(idx.Columns) >= 2 {
+			return true
+		}
+	}
+
+	return false
 }
-
-// // Generate the models
-// func (p *Pogo) Generate(ctx context.Context) (files []*File, err error) {
-
-// 	var f File
-// 	f.Name = p.cfg.PkgName + ".go"
-// 	f.Data, err = gen.Generate("core", `
-
-// 	`,
-// 		gen.Field("Schema", p.cfg.Schema),
-// 		gen.Field("Package", p.cfg.PkgName),
-// 	)
-// 	if err != nil {
-// 		return files, err
-// 	}
-// 	files = append(files, &f)
-
-// 	return files, nil
-// }

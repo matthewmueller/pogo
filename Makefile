@@ -11,7 +11,7 @@ testonly:
 .PHONY: run
 
 templates:
-	@go-bindata -nometadata -o templates/templates.go -pkg templates -ignore=templates.go templates/...
+	@go-bindata -nometadata -prefix="templates/" -o templates/templates.go -pkg templates -ignore=templates.go templates/...
 .PHONY: templates
 
 install: templates

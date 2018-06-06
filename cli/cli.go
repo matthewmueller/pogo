@@ -16,10 +16,10 @@ func Run(args []string) error {
 	// flags
 	db := cmd.Flag("db", "database connection string").Required().String()
 	schema := cmd.Flag("schema", "database schema").Default("public").String()
-	path := cmd.Flag("path", "output directory to write to").Default("pogo").String()
+	dir := cmd.Flag("dir", "output directory to write to").Default("pogo").String()
 
 	// run the generator
-	cmd.Run(func() error { return run(*db, *schema, *path) })
+	cmd.Run(func() error { return run(*db, *schema, *dir) })
 
 	return cmd.Parse(args)
 }
