@@ -71,11 +71,22 @@ func (p *Postgres) Introspect(schema string) (*Schema, error) {
 		Enums:  enums,
 	}
 
+	// add go types to table columns
 	for _, table := range tables {
 		for _, column := range table.Columns {
 			column.GoType, err = p.coerce(s, column.DataType)
 			if err != nil {
 				return nil, err
+			}
+		}
+
+		// add go types to index columns
+		for _, index := range table.Indexes {
+			for _, column := range index.Columns {
+				column.GoType, err = p.coerce(s, column.DataType)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

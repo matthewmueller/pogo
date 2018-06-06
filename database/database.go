@@ -32,7 +32,8 @@ type Column struct {
 	DefaultValue *string // default_value
 	IsPrimaryKey bool    // is_primary_key
 
-	GoType string // we add this on during introspection
+	// we add this on during introspection
+	GoType string
 }
 
 // ForeignKey represents a foreign key.
@@ -66,6 +67,9 @@ type IndexColumn struct {
 	Cid      int    // cid
 	Name     string // column_name
 	DataType string
+
+	// we add this on during introspection
+	GoType string
 }
 
 // Enum struct

@@ -1,4 +1,3 @@
-begin;
 -- Schema
 
 create schema jack;
@@ -125,10 +124,3 @@ create table if not exists jack.standups_teammates (
 
 create trigger created_at before insert on jack.standups_teammates for each row execute procedure jack.set_created_at();
 create trigger updated_at before update on jack.standups_teammates for each row execute procedure jack.set_updated_at();
-
-create table if not exists jack."team-invites" (
-  id uuid primary key not null default gen_random_uuid(),
-  emails text[] not null default '{}'
-);
-
-commit;

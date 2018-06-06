@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
-	"github.com/knq/snaker"
-
-	"github.com/matthewmueller/log"
+	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo/database"
 	"github.com/matthewmueller/pogo/template"
 )
@@ -36,7 +33,7 @@ type Pogo struct {
 
 // Run pogo
 func (p *Pogo) Run(ctx context.Context) (err error) {
-	pkgname := strings.ToLower(snaker.SnakeToCamelIdentifier(filepath.Base(p.cfg.Dir)))
+	pkgname := text.Lower(text.Camel(filepath.Base(p.cfg.Dir)))
 
 	// introspect the schema
 	schema, err := p.cfg.DB.Introspect(p.cfg.Schema)
@@ -62,10 +59,6 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 		name := table.Name
 		path := filepath.Join(name, name+".go")
 
-		if name != "users" {
-			continue
-		}
-
 		switch {
 		case isManyToMany(table):
 			files[path], err = template.Generate(&template.ManyToMany{
@@ -81,8 +74,6 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 			})
 		}
 
-		log.Infof(files[path])
-
 		if err != nil {
 			return fmt.Errorf("error generating %s: %v", path, err)
 		}
@@ -90,12 +81,14 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 
 	// generate each enum
 	for _, enum := range schema.Enums {
-		continue
-
 		name := enum.Name
 		path := filepath.Join("name", name+".go")
 
-		files[path], err = template.Generate(&template.Enum{})
+		files[path], err = template.Generate(&template.Enum{
+			Package: pkgname,
+			Schema:  schema,
+			Enum:    enum,
+		})
 		if err != nil {
 			return fmt.Errorf("error generating %s: %v", path, err)
 		}
@@ -106,22 +99,15 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 
 // Check if the relationship is many-to-many
 func isManyToMany(table *database.Table) bool {
-	hasPrimary := false
+	var pks []string
+
 	for _, c := range table.Columns {
 		if c.IsPrimaryKey {
-			hasPrimary = true
-			break
+			pks = append(pks, c.Name)
 		}
 	}
-	if hasPrimary {
-		return false
-	}
 
-	if len(table.ForeignKeys) == 2 {
-		return true
-	}
-
-	return false
+	return len(pks) > 1
 }
 
 // // Generate the models
