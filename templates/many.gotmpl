@@ -87,7 +87,7 @@ func Insert(db {{$.Package}}.DB, {{$user}}Input *{{$User}}Input) (*{{$User}}, er
 
   // sql insert query, primary key provided by sequence
   sqlstr := `
-  INSERT INTO {{$.Schema.Name}}"."{{$.Table.Name}} (` + strings.Join(_c, ", ") + `)
+  INSERT INTO "{{$.Schema.Name}}"."{{$.Table.Name}}" (` + strings.Join(_c, ", ") + `)
   VALUES (` + strings.Join(_i, ", ") + `)
   RETURNING {{$.Table.SQLReturn}}
   `
