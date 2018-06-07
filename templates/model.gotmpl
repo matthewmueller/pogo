@@ -175,7 +175,9 @@ func FindOne(db {{$.Package}}.DB, where *WhereClause) (*{{$User}}, error) {
 }	
 
 // FindMany find many "{{$user}}"'s by a given condition
-func FindMany(db {{$.Package}}.DB, where *WhereClause) ({{$users}} []*{{$User}}, err error) {
+func FindMany(db {{$.Package}}.DB, where *WhereClause) ([]*{{$User}}, error) {
+  {{$users}} := []*{{$User}}{}
+
   // sql select query, primary key provided by sequence
   sqlstr := `
   SELECT {{.Table.SQLSelect}}
@@ -202,12 +204,6 @@ func FindMany(db {{$.Package}}.DB, where *WhereClause) ({{$users}} []*{{$User}},
   if rows.Err() != nil {
     return {{$users}}, rows.Err()
   }
-
-  // ensure we return an empty array
-  // rather than nil when we marshal
-  // if len({{$users}}) == 0 {
-  // 	return make([]*{{$User}}, 0), nil
-  // }
 
   return {{$users}}, nil
 }
@@ -295,7 +291,9 @@ func UpdateBy{{$idx.GoMethod}}(db {{$.Package}}.DB, {{$idx.GoParams}}, {{$user}}
 {{ end }}
 
 // UpdateMany rows in "{{$.Schema.Name}}"."{{$.Table.Name}}" by a given condition
-func UpdateMany(db {{$.Package}}.DB, where *WhereClause, {{$user}}Input *{{$User}}Input) ({{$users}} []*{{$User}}, err error) {
+func UpdateMany(db {{$.Package}}.DB, where *WhereClause, {{$user}}Input *{{$User}}Input) ([]*{{$User}}, error) {
+  {{$users}} := []*{{$User}}{}
+
   // prepare the slices
   _c, _i, _v := {{$.Package}}.Slice(getColumns({{$user}}Input), len(where.params))
 
@@ -332,12 +330,6 @@ func UpdateMany(db {{$.Package}}.DB, where *WhereClause, {{$user}}Input *{{$User
   if rows.Err() != nil {
     return {{$users}}, rows.Err()
   }
-
-  // ensure we return an empty array
-  // rather than nil when we marshal
-  // if len({{$users}}) == 0 {
-  // 	return make([]*{{$User}}, 0), nil
-  // }
 
   return {{$users}}, nil
 }

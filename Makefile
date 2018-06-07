@@ -1,5 +1,7 @@
 test: migrate generate testonly
 
+examples: jack digby
+
 jack: templates 
 	@go run cmd/pogo/main.go --db $(JACK_POSTGRES_URL) --schema jack --dir _examples/jack
 
