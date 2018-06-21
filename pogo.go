@@ -34,10 +34,18 @@ type Pogo struct {
 	cfg *Config
 }
 
-var pogo = gen.MustCompile("pogo.gotmpl", string(templates.MustAsset("pogo.gotmpl")))
-var model = gen.MustCompile("model.gotmpl", string(templates.MustAsset("model.gotmpl")))
-var many = gen.MustCompile("many.gotmpl", string(templates.MustAsset("many.gotmpl")))
-var enum = gen.MustCompile("enum.gotmpl", string(templates.MustAsset("enum.gotmpl")))
+// pogo templates
+var template = struct {
+	Pogo  string
+	Model string
+	Many  string
+	Enum  string
+}{
+	Pogo:  string(templates.MustAsset("templates/pogo.gotmpl")),
+	Model: string(templates.MustAsset("templates/model.gotmpl")),
+	Many:  string(templates.MustAsset("templates/many.gotmpl")),
+	Enum:  string(templates.MustAsset("templates/enum.gotmpl")),
+}
 
 type vars map[string]interface{}
 
@@ -56,7 +64,7 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 
 	// base file
 	path := pkgname + ".go"
-	files[path], err = pogo(vars{
+	files[path], err = gen.Compile("pogo.gotmpl", template.Pogo, gen.Data{
 		"Package": pkgname,
 		"Schema":  schema,
 	})
@@ -72,7 +80,7 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 
 		// generate the model
 		path := filepath.Join(table.Name, table.Name+".go")
-		files[path], err = model(vars{
+		files[path], err = gen.Compile("pogo.gotmpl", template.Model, gen.Data{
 			"Package": pkgname,
 			"Schema":  schema,
 			"Table":   table,
@@ -90,7 +98,7 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 
 		// generate join model
 		path := filepath.Join(table.Name, table.Name+".go")
-		files[path], err = many(vars{
+		files[path], err = gen.Compile("pogo.gotmpl", template.Many, gen.Data{
 			"Package": pkgname,
 			"Schema":  schema,
 			"Table":   table,
@@ -104,7 +112,7 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 	for _, en := range schema.Enums {
 		name := en.Name
 		path := filepath.Join("enum", name+".go")
-		files[path], err = enum(vars{
+		files[path], err = gen.Compile("pogo.gotmpl", template.Enum, gen.Data{
 			"Package": pkgname,
 			"Schema":  schema,
 			"Enum":    en,
