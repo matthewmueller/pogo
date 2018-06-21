@@ -47,8 +47,6 @@ var template = struct {
 	Enum:  string(templates.MustAsset("templates/enum.gotmpl")),
 }
 
-type vars map[string]interface{}
-
 // Run pogo
 func (p *Pogo) Run(ctx context.Context) (err error) {
 	pkgname := text.Lower(text.Camel(filepath.Base(p.cfg.Dir)))
