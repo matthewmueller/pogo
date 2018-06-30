@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/matthewmueller/go-gen"
@@ -106,7 +107,7 @@ func (t *Table) GoScan() string {
 func (t *Table) SQLReturn() string {
 	var cols []string
 	for _, col := range t.Columns {
-		cols = append(cols, `"`+col.Name+`"`)
+		cols = append(cols, strconv.Quote(col.Name))
 	}
 	return strings.Join(cols, ", ")
 }
@@ -234,7 +235,7 @@ func (i *Index) GoParams() string {
 func (i *Index) SQLColumns() string {
 	var cols []string
 	for _, col := range i.Columns {
-		cols = append(cols, col.Name)
+		cols = append(cols, strconv.Quote(col.Name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", ")
@@ -243,7 +244,7 @@ func (i *Index) SQLColumns() string {
 func (i *Index) SQLWhere() string {
 	var cols []string
 	for i, col := range i.Columns {
-		cols = append(cols, fmt.Sprintf("\"%s\" = $%d", col.Name, i+1))
+		cols = append(cols, fmt.Sprintf("%s = $%d", strconv.Quote(col.Name), i+1))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, " AND ")

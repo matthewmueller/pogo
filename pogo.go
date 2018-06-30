@@ -50,6 +50,17 @@ var template = struct {
 
 // Run pogo
 func (p *Pogo) Run(ctx context.Context) (err error) {
+	// files map
+	files := map[string]string{}
+
+	pkgname := text.Lower(text.Camel(filepath.Base(p.cfg.Dir)))
+
+	// introspect the schema
+	schema, err := p.cfg.DB.Introspect(p.cfg.Schema)
+	if err != nil {
+		return err
+	}
+
 	abspath, err := filepath.Abs(p.cfg.Dir)
 	if err != nil {
 		return err
@@ -60,20 +71,13 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	pkgname := text.Lower(text.Camel(filepath.Base(p.cfg.Dir)))
-
-	// introspect the schema
-	schema, err := p.cfg.DB.Introspect(p.cfg.Schema)
-	if err != nil {
-		return err
+	fns := gen.Functions{
+		"import": importer,
 	}
-
-	// files map
-	files := map[string]string{}
 
 	// base file
 	path := pkgname + ".go"
-	files[path], err = gen.Compile("pogo.gotmpl", template.Pogo, gen.Data{
+	files[path], err = gen.Compile("pogo.gotmpl", template.Pogo, fns, gen.Data{
 		"Package": pkgname,
 		"Schema":  schema,
 	})
@@ -94,13 +98,10 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 			"Table":   table,
 		}
 
-		fns := gen.Functions{
-			"import": importer,
-		}
-
 		// generate the model
-		path := filepath.Join(table.Name, table.Name+".go")
-		files[path], err = gen.Compile("pogo.gotmpl", tpl, data, fns)
+		model := text.Lower(text.Camel(table.Model()))
+		path := filepath.Join(model, model+".go")
+		files[path], err = gen.Compile(path, tpl, data, fns)
 		if err != nil {
 			return fmt.Errorf("error generating %s: %v", path, err)
 		}
