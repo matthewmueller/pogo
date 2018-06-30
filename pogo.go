@@ -3,6 +3,7 @@ package pogo
 import (
 	"context"
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -49,6 +50,16 @@ var template = struct {
 
 // Run pogo
 func (p *Pogo) Run(ctx context.Context) (err error) {
+	abspath, err := filepath.Abs(p.cfg.Dir)
+	if err != nil {
+		return err
+	}
+
+	importer, err := importer(abspath)
+	if err != nil {
+		return err
+	}
+
 	pkgname := text.Lower(text.Camel(filepath.Base(p.cfg.Dir)))
 
 	// introspect the schema
@@ -72,35 +83,24 @@ func (p *Pogo) Run(ctx context.Context) (err error) {
 
 	// generate models for each table
 	for _, table := range schema.Tables {
+		tpl := template.Model
 		if isManyToMany(table) {
-			continue
+			tpl = template.Many
+		}
+
+		data := gen.Data{
+			"Package": pkgname,
+			"Schema":  schema,
+			"Table":   table,
+		}
+
+		fns := gen.Functions{
+			"import": importer,
 		}
 
 		// generate the model
 		path := filepath.Join(table.Name, table.Name+".go")
-		files[path], err = gen.Compile("pogo.gotmpl", template.Model, gen.Data{
-			"Package": pkgname,
-			"Schema":  schema,
-			"Table":   table,
-		})
-		if err != nil {
-			return fmt.Errorf("error generating %s: %v", path, err)
-		}
-	}
-
-	// generate models for many-to-many tables
-	for _, table := range schema.Tables {
-		if !isManyToMany(table) {
-			continue
-		}
-
-		// generate join model
-		path := filepath.Join(table.Name, table.Name+".go")
-		files[path], err = gen.Compile("pogo.gotmpl", template.Many, gen.Data{
-			"Package": pkgname,
-			"Schema":  schema,
-			"Table":   table,
-		})
+		files[path], err = gen.Compile("pogo.gotmpl", tpl, data, fns)
 		if err != nil {
 			return fmt.Errorf("error generating %s: %v", path, err)
 		}
@@ -165,4 +165,21 @@ func isManyToMany(table *database.Table) bool {
 	}
 
 	return false
+}
+
+// importer fn
+func importer(abspath string) (func(...string) string, error) {
+	gopath := build.Default.GOPATH
+	importBase, err := filepath.Rel(filepath.Join(gopath, "src"), abspath)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(s ...string) string {
+		path := importBase
+		for _, p := range s {
+			path = filepath.Join(path, p)
+		}
+		return path
+	}, nil
 }
