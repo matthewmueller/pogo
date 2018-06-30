@@ -204,7 +204,7 @@ func Insert(db jack.DB, teammateInput *TeammateInput) (*Teammate, error) {
 	return &teammate, nil
 }
 
-// Find a "Teammate" by "id"
+// Find a `Teammate` by it's primary key `id`
 func Find(db jack.DB, id string) (*Teammate, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
@@ -221,29 +221,6 @@ func Find(db jack.DB, id string) (*Teammate, error) {
 			return nil, ErrTeammateNotFound
 		}
 		return nil, e
-	}
-
-	return &teammate, nil
-}
-
-// FindByID find a teammate by id
-func FindByID(db jack.DB, id string) (*Teammate, error) {
-	// sql select query, primary key provided by sequence
-	sqlstr := `
-    SELECT "id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone", "created_at", "updated_at"
-    FROM "jack"."teammates"
-    WHERE "id" = $1
-  `
-	jack.Log(sqlstr, id)
-
-	var teammate Teammate
-	row := db.QueryRow(sqlstr, id)
-	err := row.Scan(&teammate.ID, &teammate.SlackID, &teammate.Username, &teammate.FirstName, &teammate.LastName, &teammate.Email, &teammate.Avatar, &teammate.Timezone, &teammate.CreatedAt, &teammate.UpdatedAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, ErrTeammateNotFound
-		}
-		return nil, err
 	}
 
 	return &teammate, nil

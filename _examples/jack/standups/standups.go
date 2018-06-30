@@ -192,7 +192,7 @@ func Insert(db jack.DB, standupInput *StandupInput) (*Standup, error) {
 	return &standup, nil
 }
 
-// Find a "Standup" by "id"
+// Find a `Standup` by it's primary key `id`
 func Find(db jack.DB, id string) (*Standup, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
@@ -209,29 +209,6 @@ func Find(db jack.DB, id string) (*Standup, error) {
 			return nil, ErrStandupNotFound
 		}
 		return nil, e
-	}
-
-	return &standup, nil
-}
-
-// FindByID find a standup by id
-func FindByID(db jack.DB, id string) (*Standup, error) {
-	// sql select query, primary key provided by sequence
-	sqlstr := `
-    SELECT "id", "name", "slack_channel_id", "time", "timezone", "questions", "team_id", "created_at", "updated_at"
-    FROM "jack"."standups"
-    WHERE "id" = $1
-  `
-	jack.Log(sqlstr, id)
-
-	var standup Standup
-	row := db.QueryRow(sqlstr, id)
-	err := row.Scan(&standup.ID, &standup.Name, &standup.SlackChannelID, &standup.Time, &standup.Timezone, &standup.Questions, &standup.TeamID, &standup.CreatedAt, &standup.UpdatedAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, ErrStandupNotFound
-		}
-		return nil, err
 	}
 
 	return &standup, nil

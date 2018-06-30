@@ -181,7 +181,7 @@ func Insert(db jack.DB, reportInput *ReportInput) (*Report, error) {
 	return &report, nil
 }
 
-// Find a "Report" by "id"
+// Find a `Report` by it's primary key `id`
 func Find(db jack.DB, id string) (*Report, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
@@ -198,29 +198,6 @@ func Find(db jack.DB, id string) (*Report, error) {
 			return nil, ErrReportNotFound
 		}
 		return nil, e
-	}
-
-	return &report, nil
-}
-
-// FindByID find a report by id
-func FindByID(db jack.DB, id string) (*Report, error) {
-	// sql select query, primary key provided by sequence
-	sqlstr := `
-    SELECT "id", "user_id", "timestamp", "questions", "standup_id", "status", "created_at", "updated_at"
-    FROM "jack"."reports"
-    WHERE "id" = $1
-  `
-	jack.Log(sqlstr, id)
-
-	var report Report
-	row := db.QueryRow(sqlstr, id)
-	err := row.Scan(&report.ID, &report.UserID, &report.Timestamp, &report.Questions, &report.StandupID, &report.Status, &report.CreatedAt, &report.UpdatedAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, ErrReportNotFound
-		}
-		return nil, err
 	}
 
 	return &report, nil

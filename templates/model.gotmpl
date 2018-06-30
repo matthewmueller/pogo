@@ -115,8 +115,8 @@ func Insert(db {{$.Package}}.DB, {{$user}}Input *{{$User}}Input) (*{{$User}}, er
 {{ if .Table.PrimaryKey }}
 {{ $pk := .Table.PrimaryKey }}
 {{ $email := $pk.Name | camel }}
-// Find a "{{$User}}" by "{{$pk.Name}}"
-func Find(db {{$.Package}}.DB, {{$email}} string) (*{{$User}}, error) {
+// Find a `{{$User}}` by it's primary key `{{$pk.Name}}`
+func Find(db {{$.Package}}.DB, {{$email}} {{$pk.GoType}}) (*{{$User}}, error) {
   // sql select query, primary key provided by sequence
   sqlstr := `
     SELECT {{.Table.SQLSelect}}
@@ -139,6 +139,7 @@ func Find(db {{$.Package}}.DB, {{$email}} string) (*{{$User}}, error) {
 {{ end }}
 
 {{ range $idx := .Table.Indexes }}
+{{- if (and $idx.IsUnique (not $idx.IsPrimary)) }}
 // FindBy{{$idx.GoMethod}} find a {{$user}} by {{$idx.Description}}
 func FindBy{{$idx.GoMethod}}(db {{$.Package}}.DB, {{$idx.GoParams}}) (*{{$User}}, error) {
   // sql select query, primary key provided by sequence
@@ -161,6 +162,7 @@ func FindBy{{$idx.GoMethod}}(db {{$.Package}}.DB, {{$idx.GoParams}}) (*{{$User}}
 
   return &{{$user}}, nil
 }
+{{- end }}
 {{ end }}
 
 // FindOne find one {{$user}} by a condition

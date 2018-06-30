@@ -264,7 +264,7 @@ func Insert(db jack.DB, teamInput *TeamInput) (*Team, error) {
 	return &team, nil
 }
 
-// Find a "Team" by "id"
+// Find a `Team` by it's primary key `id`
 func Find(db jack.DB, id string) (*Team, error) {
 	// sql select query, primary key provided by sequence
 	sqlstr := `
@@ -281,29 +281,6 @@ func Find(db jack.DB, id string) (*Team, error) {
 			return nil, ErrTeamNotFound
 		}
 		return nil, e
-	}
-
-	return &team, nil
-}
-
-// FindByID find a team by id
-func FindByID(db jack.DB, id string) (*Team, error) {
-	// sql select query, primary key provided by sequence
-	sqlstr := `
-    SELECT "id", "slack_team_id", "slack_team_access_token", "slack_bot_access_token", "slack_bot_id", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user", "trial_ends", "created_at", "updated_at"
-    FROM "jack"."teams"
-    WHERE "id" = $1
-  `
-	jack.Log(sqlstr, id)
-
-	var team Team
-	row := db.QueryRow(sqlstr, id)
-	err := row.Scan(&team.ID, &team.SlackTeamID, &team.SlackTeamAccessToken, &team.SlackBotAccessToken, &team.SlackBotID, &team.TeamName, &team.Scope, &team.Email, &team.StripeID, &team.Active, &team.FreeTeammates, &team.CostPerUser, &team.TrialEnds, &team.CreatedAt, &team.UpdatedAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, ErrTeamNotFound
-		}
-		return nil, err
 	}
 
 	return &team, nil
