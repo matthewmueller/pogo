@@ -1,4 +1,4 @@
-package database
+package db
 
 import (
 	"strconv"
@@ -26,6 +26,11 @@ func (t *Table) Slug() string {
 // Pascal generates the pascal case
 func (t *Table) Pascal() string {
 	return gen.Pascal(util.Singular(t.Name))
+}
+
+// Short generates a short variable
+func (t *Table) Short() string {
+	return gen.Lower(gen.Short(util.Singular(t.Name)))
 }
 
 // Camel generates the camel case
@@ -79,11 +84,11 @@ func (t *Table) Returning() string {
 
 // Scan builds the DB.Scan(...) params
 func (t *Table) Scan() string {
-	user := gen.Camel(util.Singular(t.Name))
+	camel := gen.Camel(util.Singular(t.Name))
 
 	var cols []string
 	for _, col := range t.Columns {
-		cols = append(cols, `&`+user+`.`+gen.Pascal(col.Name))
+		cols = append(cols, `&_`+camel+`.`+gen.Pascal(col.Name))
 	}
 	return strings.Join(cols, ", ")
 }
@@ -102,4 +107,42 @@ func (t *Table) IsManyToMany() bool {
 	}
 
 	return false
+}
+
+// Filters fn
+func (t *Table) Filters() (filters []*Filter) {
+	for _, col := range t.Columns {
+		filters = append(filters, &Filter{
+			Name:     col.Name,
+			DataType: col.DataType,
+		})
+	}
+
+	// for _, fk := range t.ForeignKeys {
+	// 	filters = append(filters, &Filter{
+	// 		Name:        fk.Name,
+	// 		FKReference: fk.ForeignKeyName,
+	// 	})
+	// }
+
+	return filters
+}
+
+// OrderBys fn
+func (t *Table) OrderBys() (orderbys []*OrderByField) {
+	for _, col := range t.Columns {
+		orderbys = append(orderbys, &OrderByField{
+			Name:     col.Name,
+			DataType: col.DataType,
+		})
+	}
+
+	// for _, fk := range t.ForeignKeys {
+	// 	orderbys = append(orderbys, &OrderByField{
+	// 		Name:        fk.Name,
+	// 		FKReference: fk.ForeignKeyName,
+	// 	})
+	// }
+
+	return orderbys
 }

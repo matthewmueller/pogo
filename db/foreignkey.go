@@ -1,4 +1,4 @@
-package database
+package db
 
 // ForeignKey struct
 type ForeignKey struct {

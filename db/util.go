@@ -1,4 +1,4 @@
-package database
+package db
 
 import (
 	"fmt"
@@ -69,10 +69,48 @@ func coerce(schema *Schema, dt string) (kind string, err error) {
 			kind := strings.Replace(dt, "\"", "", -1)
 
 			if name == kind {
-				return "enum." + gen.Snake(enum.Name), nil
+				return "enum." + gen.Pascal(enum.Name), nil
 			}
 		}
 
 		return "", fmt.Errorf(`pogo/coerce: don't understand the data type: %s`, dt)
 	}
+}
+
+func coerceFilter(schema *Schema, dt string) (kind string, err error) {
+	if strings.HasPrefix(dt, "SETOF ") || strings.HasSuffix(dt, "[]") {
+		return "List", nil
+	}
+
+	switch dt {
+	case "text":
+		return "String", nil
+	case "boolean":
+		return "Boolean", nil
+	case "integer", "smallint", "bigint":
+		return "Int", nil
+	case "real":
+		return "Float", nil
+	case "double", "float":
+		return "Float", nil
+	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
+		return "DateTime", nil
+	}
+
+	// maybe an enum?
+	for _, enum := range schema.Enums {
+		name := enum.Name
+
+		if schema.Name != "" && schema.Name != "public" {
+			name = fmt.Sprintf(`%s.%s`, schema.Name, name)
+		}
+
+		// remove quotes
+		kind := strings.Replace(dt, "\"", "", -1)
+		if name == kind {
+			return "Enum", nil
+		}
+	}
+
+	return "", fmt.Errorf(`pogo/coerce: don't understand the data type: %s`, dt)
 }

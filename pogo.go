@@ -1,21 +1,19 @@
 package pogo
 
 import (
-	"fmt"
-
 	"github.com/matthewmueller/go-gen"
 
 	"github.com/jackc/pgx"
 	"github.com/matthewmueller/pogo/paths"
 	"github.com/matthewmueller/pogo/postgres"
 	"github.com/matthewmueller/pogo/templates"
+	"github.com/matthewmueller/pogo/util"
 )
 
 var pogoTemplate = gen.MustCompile("pogo", templates.MustAssetString("templates/pogo.gotmpl"))
 var modelTemplate = gen.MustCompile("model", templates.MustAssetString("templates/model.gotmpl"))
-
-// var manyTemplate = gen.MustCompile("many", templates.MustAssetString("templates/many.gotmpl"))
-// var enumTemplate = gen.MustCompile("enum", templates.MustAssetString("templates/enum.gotmpl"))
+var manyTemplate = gen.MustCompile("many", templates.MustAssetString("templates/many.gotmpl"))
+var enumTemplate = gen.MustCompile("enum", templates.MustAssetString("templates/enum.gotmpl"))
 
 // template data
 type data map[string]interface{}
@@ -33,9 +31,12 @@ func (p *Pogo) Run() error {
 	if err != nil {
 		return err
 	}
-	_ = files
 
-	return nil
+	if err := util.WriteFiles(files); err != nil {
+		return err
+	}
+
+	return gen.FormatAll(p.Output)
 }
 
 // Generate pogo files
@@ -63,7 +64,8 @@ func (p *Pogo) Generate() (files map[string]string, err error) {
 		return files, err
 	}
 
-	files[path.Rel("pogo.go")], err = pogoTemplate(data{
+	relpath := path.Rel("pogo.go")
+	files[relpath], err = pogoTemplate(data{
 		"Path":   path,
 		"Schema": schema,
 	})
@@ -72,17 +74,23 @@ func (p *Pogo) Generate() (files map[string]string, err error) {
 	}
 
 	for _, table := range schema.Tables {
-		if table.Name != "teams" {
+		if table.Name != "teams" && table.Name != "teammates" && table.Name != "reports" {
 			continue
 		}
 
 		// is many to many?
 		template := modelTemplate
-		// if table.IsManyToMany() {
-		// 	template = manyTemplate
-		// }
+		if table.IsManyToMany() {
+			template = manyTemplate
+		}
 
-		files[path.Rel(table.Slug()+".go")], err = template(data{
+		path, err := path.New("./" + table.Slug())
+		if err != nil {
+			return files, err
+		}
+
+		relpath := path.Rel(table.Slug() + ".go")
+		files[relpath], err = template(data{
 			"Path":   path,
 			"Schema": schema,
 			"Table":  table,
@@ -90,24 +98,23 @@ func (p *Pogo) Generate() (files map[string]string, err error) {
 		if err != nil {
 			return files, err
 		}
+	}
 
-		code, err := gen.Format(files[path.Rel(table.Slug()+".go")])
+	enumpath, err := path.New("./enum")
+	if err != nil {
+		return files, err
+	}
+	for _, enum := range schema.Enums {
+		relpath := enumpath.Rel(enum.Slug() + ".go")
+		files[relpath], err = enumTemplate(data{
+			"Path":   enumpath,
+			"Schema": schema,
+			"Enum":   enum,
+		})
 		if err != nil {
 			return files, err
 		}
-		fmt.Println(code)
 	}
-
-	// for _, enum := range schema.Enums {
-	// 	files[path.Rel("enum", enum.Slug()+".go")], err = enumTemplate(data{
-	// 		"Path":   path,
-	// 		"Schema": schema,
-	// 		"Enum":   enum,
-	// 	})
-	// 	if err != nil {
-	// 		return files, err
-	// 	}
-	// }
 
 	return files, nil
 }

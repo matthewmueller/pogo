@@ -1,4 +1,4 @@
-package database
+package db
 
 import (
 	"github.com/matthewmueller/go-gen"
@@ -23,6 +23,11 @@ func (c *Column) Pascal() string {
 // Camel case
 func (c *Column) Camel() string {
 	return gen.Camel(c.Name)
+}
+
+// Snake case
+func (c *Column) Snake() string {
+	return gen.Snake(c.Name)
 }
 
 // Type of column

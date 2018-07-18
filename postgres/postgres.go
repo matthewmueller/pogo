@@ -6,34 +6,34 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx"
-	"github.com/matthewmueller/pogo/database"
+	"github.com/matthewmueller/pogo/db"
 	"github.com/pkg/errors"
 )
 
 // Introspect a postgres database
-func Introspect(db *pgx.Conn, schema string) (*database.Schema, error) {
-	tables, err := getTables(db, schema)
+func Introspect(conn *pgx.Conn, schema string) (*db.Schema, error) {
+	tables, err := getTables(conn, schema)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get tables from schema")
 	}
 
 	for _, table := range tables {
 		// get the columns
-		columns, err := getColumns(db, schema, table.Name)
+		columns, err := getColumns(conn, schema, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get columns for '%s' from schema", table.Name)
 		}
 		table.Columns = columns
 
 		// get the foreign keys
-		fks, err := getForeignKeys(db, schema, table.Name)
+		fks, err := getForeignKeys(conn, schema, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the foreign keys for '%s' from schema", table.Name)
 		}
 		table.ForeignKeys = fks
 
 		// get the indexes
-		indexes, err := getIndexes(db, schema, table.Name)
+		indexes, err := getIndexes(conn, schema, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the indexes for '%s' from schema", table.Name)
 		}
@@ -41,7 +41,7 @@ func Introspect(db *pgx.Conn, schema string) (*database.Schema, error) {
 		// get each of the index columns
 		for _, index := range indexes {
 			// get the index columns
-			icols, err := getIndexColumns(db, schema, table.Name, index.Name)
+			icols, err := getIndexColumns(conn, schema, table.Name, index.Name)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.Name)
 			}
@@ -51,19 +51,25 @@ func Introspect(db *pgx.Conn, schema string) (*database.Schema, error) {
 		table.Indexes = indexes
 	}
 
-	enums, err := getEnums(db, schema)
+	procedures, err := getProcedures(conn, schema)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get the stored procedures")
+	}
+
+	enums, err := getEnums(conn, schema)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get the enums")
 	}
 
-	return &database.Schema{
-		Name:   schema,
-		Tables: tables,
-		Enums:  enums,
+	return &db.Schema{
+		Name:       schema,
+		Tables:     tables,
+		Enums:      enums,
+		Procedures: procedures,
 	}, nil
 }
 
-func getTables(db *pgx.Conn, schema string) (tables []*database.Table, err error) {
+func getTables(conn *pgx.Conn, schema string) (tables []*db.Table, err error) {
 	// sql query
 	const sqlstr = `
 	SELECT c.relkind, c.relname, false
@@ -76,7 +82,7 @@ func getTables(db *pgx.Conn, schema string) (tables []*database.Table, err error
 	// run query
 	// DBLog(sqlstr, schema, relkind)
 	// "r" constant is for tables
-	q, err := db.Query(sqlstr, schema, "r")
+	q, err := conn.Query(sqlstr, schema, "r")
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +90,7 @@ func getTables(db *pgx.Conn, schema string) (tables []*database.Table, err error
 
 	// load results
 	for q.Next() {
-		t := database.Table{}
+		t := db.Table{}
 
 		// scan
 		err = q.Scan(&t.Type, &t.Name, &t.ManualPk)
@@ -101,7 +107,7 @@ func getTables(db *pgx.Conn, schema string) (tables []*database.Table, err error
 	return tables, nil
 }
 
-func getColumns(db *pgx.Conn, schema string, table string) (columns []*database.Column, err error) {
+func getColumns(conn *pgx.Conn, schema string, table string) (columns []*db.Column, err error) {
 	// sql query
 	// TODO: support onDelete and onUpdate
 	const sqlstr = `
@@ -125,7 +131,7 @@ func getColumns(db *pgx.Conn, schema string, table string) (columns []*database.
 
 	// run query
 	// DBLog(sqlstr, schema, table, sys)
-	q, err := db.Query(sqlstr, schema, table)
+	q, err := conn.Query(sqlstr, schema, table)
 	if err != nil {
 		return columns, err
 	}
@@ -133,7 +139,7 @@ func getColumns(db *pgx.Conn, schema string, table string) (columns []*database.
 
 	// load results
 	for q.Next() {
-		c := database.Column{}
+		c := db.Column{}
 
 		// scan
 		err = q.Scan(&c.FieldOrdinal, &c.Name, &c.DataType, &c.NotNull, &c.Comment, &c.DefaultValue, &c.IsPrimaryKey)
@@ -153,7 +159,7 @@ func getColumns(db *pgx.Conn, schema string, table string) (columns []*database.
 	return columns, nil
 }
 
-func getForeignKeys(db *pgx.Conn, schema string, table string) (fks []*database.ForeignKey, err error) {
+func getForeignKeys(conn *pgx.Conn, schema string, table string) (fks []*db.ForeignKey, err error) {
 	// sql query
 
 	const sqlstr = `
@@ -171,7 +177,7 @@ func getForeignKeys(db *pgx.Conn, schema string, table string) (fks []*database.
 
 	// run query
 	// DBLog(sqlstr, schema, table)
-	q, err := db.Query(sqlstr, schema, table)
+	q, err := conn.Query(sqlstr, schema, table)
 	if err != nil {
 		return fks, err
 	}
@@ -179,7 +185,7 @@ func getForeignKeys(db *pgx.Conn, schema string, table string) (fks []*database.
 
 	// load results
 	for q.Next() {
-		fk := database.ForeignKey{}
+		fk := db.ForeignKey{}
 
 		// scan
 		err = q.Scan(&fk.ForeignKeyName, &fk.Name, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
@@ -196,7 +202,7 @@ func getForeignKeys(db *pgx.Conn, schema string, table string) (fks []*database.
 	return fks, nil
 }
 
-func getIndexes(db *pgx.Conn, schema string, table string) (indexes []*database.Index, err error) {
+func getIndexes(conn *pgx.Conn, schema string, table string) (indexes []*db.Index, err error) {
 	// sql query
 	const sqlstr = `SELECT ` +
 		`DISTINCT ic.relname, ` + // ::varchar AS index_name
@@ -213,7 +219,7 @@ func getIndexes(db *pgx.Conn, schema string, table string) (indexes []*database.
 
 	// run query
 	// DBLog(sqlstr, schema, table)
-	q, err := db.Query(sqlstr, schema, table)
+	q, err := conn.Query(sqlstr, schema, table)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +227,7 @@ func getIndexes(db *pgx.Conn, schema string, table string) (indexes []*database.
 
 	// load results
 	for q.Next() {
-		i := database.Index{}
+		i := db.Index{}
 
 		// scan
 		err = q.Scan(&i.Name, &i.IsUnique, &i.IsPrimary, &i.SeqNo, &i.Origin, &i.IsPartial)
@@ -239,20 +245,20 @@ func getIndexes(db *pgx.Conn, schema string, table string) (indexes []*database.
 }
 
 // get the column indexes
-func getIndexColumns(db *pgx.Conn, schema string, table string, index string) ([]*database.IndexColumn, error) {
-	allcols, err := getColumns(db, schema, table)
+func getIndexColumns(conn *pgx.Conn, schema string, table string, index string) ([]*db.IndexColumn, error) {
+	allcols, err := getColumns(conn, schema, table)
 	if err != nil {
 		return nil, err
 	}
 
 	// load columns
-	cols, err := indexColumns(db, schema, index)
+	cols, err := indexColumns(conn, schema, index)
 	if err != nil {
 		return nil, err
 	}
 
 	// load col order
-	colOrd, err := colOrder(db, schema, index)
+	colOrd, err := colOrder(conn, schema, index)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +270,7 @@ func getIndexColumns(db *pgx.Conn, schema string, table string, index string) ([
 	}
 
 	// put cols in order using colOrder
-	ret := []*database.IndexColumn{}
+	ret := []*db.IndexColumn{}
 	for _, v := range strings.Split(colOrd.Ord, " ") {
 		cid, err := strconv.Atoi(v)
 		if err != nil {
@@ -273,7 +279,7 @@ func getIndexColumns(db *pgx.Conn, schema string, table string, index string) ([
 
 		// find column
 		found := false
-		var c *database.IndexColumn
+		var c *db.IndexColumn
 		for _, ic := range cols {
 			if cid == ic.Cid {
 				found = true
@@ -302,7 +308,7 @@ func getIndexColumns(db *pgx.Conn, schema string, table string, index string) ([
 }
 
 // indexColumns runs a custom query, returning results as IndexColumn.
-func indexColumns(db *pgx.Conn, schema string, index string) ([]*database.IndexColumn, error) {
+func indexColumns(conn *pgx.Conn, schema string, index string) ([]*db.IndexColumn, error) {
 	var err error
 
 	// sql query
@@ -319,16 +325,16 @@ func indexColumns(db *pgx.Conn, schema string, index string) ([]*database.IndexC
 
 	// run query
 	// DBLog(sqlstr, schema, index)
-	q, err := db.Query(sqlstr, schema, index)
+	q, err := conn.Query(sqlstr, schema, index)
 	if err != nil {
 		return nil, err
 	}
 	defer q.Close()
 
 	// load results
-	res := []*database.IndexColumn{}
+	res := []*db.IndexColumn{}
 	for q.Next() {
-		ic := database.IndexColumn{}
+		ic := db.IndexColumn{}
 
 		// scan
 		err = q.Scan(&ic.SeqNo, &ic.Cid, &ic.Name)
@@ -351,7 +357,7 @@ type columnOrder struct {
 }
 
 // colOrder runs a custom query, returning results as columnOrder.
-func colOrder(db *pgx.Conn, schema string, index string) (*columnOrder, error) {
+func colOrder(conn *pgx.Conn, schema string, index string) (*columnOrder, error) {
 	var err error
 
 	// sql query
@@ -366,7 +372,7 @@ func colOrder(db *pgx.Conn, schema string, index string) (*columnOrder, error) {
 	// run query
 	// DBLog(sqlstr, schema, index)
 	var pco columnOrder
-	err = db.QueryRow(sqlstr, schema, index).Scan(&pco.Ord)
+	err = conn.QueryRow(sqlstr, schema, index).Scan(&pco.Ord)
 	if err != nil {
 		return nil, err
 	}
@@ -374,8 +380,81 @@ func colOrder(db *pgx.Conn, schema string, index string) (*columnOrder, error) {
 	return &pco, nil
 }
 
+func getProcedures(conn *pgx.Conn, schema string) (procs []*db.Procedure, err error) {
+	// sql query
+	const sqlstr = `SELECT ` +
+		`p.proname, ` + // ::varchar AS proc_name
+		`pg_get_function_result(p.oid) ` + // ::varchar AS return_type
+		`FROM pg_proc p ` +
+		`JOIN ONLY pg_namespace n ON p.pronamespace = n.oid ` +
+		`WHERE n.nspname = $1`
+
+	// run query
+	q, err := conn.Query(sqlstr, schema)
+	if err != nil {
+		return nil, err
+	}
+	defer q.Close()
+
+	// load results
+	for q.Next() {
+		p := db.Procedure{}
+
+		// scan
+		err = q.Scan(&p.Name, &p.ReturnType)
+		if err != nil {
+			return nil, err
+		}
+
+		procs = append(procs, &p)
+	}
+
+	// range over the procs and get the parameters
+	for i, proc := range procs {
+		// get the params
+		params, err := getProcedureParams(conn, schema, proc.Name)
+		if err != nil {
+			return procs, err
+		}
+		procs[i].Params = append(procs[i].Params, params...)
+	}
+
+	return procs, nil
+}
+
+func getProcedureParams(conn *pgx.Conn, schema, procedure string) (params []*db.ProcedureParam, err error) {
+	// sql query
+	const sqlstr = `SELECT ` +
+		`UNNEST(p.proargnames), ` + // ::varchar as name
+		`UNNEST(STRING_TO_ARRAY(oidvectortypes(p.proargtypes), ', ')) ` + // ::varchar AS param_type
+		`FROM pg_proc p ` +
+		`JOIN ONLY pg_namespace n ON p.pronamespace = n.oid ` +
+		`WHERE n.nspname = $1 AND p.proname = $2`
+
+	q, err := conn.Query(sqlstr, schema, procedure)
+	if err != nil {
+		return nil, err
+	}
+	defer q.Close()
+
+	// load results
+	for q.Next() {
+		pp := db.ProcedureParam{}
+
+		// scan
+		err = q.Scan(&pp.Name, &pp.Type)
+		if err != nil {
+			return nil, err
+		}
+
+		params = append(params, &pp)
+	}
+
+	return params, nil
+}
+
 // getTable function
-func getEnums(db *pgx.Conn, schema string) (enums []*database.Enum, err error) {
+func getEnums(conn *pgx.Conn, schema string) (enums []*db.Enum, err error) {
 	// sql query
 	const sqlstr = `
     SELECT DISTINCT
@@ -388,14 +467,14 @@ func getEnums(db *pgx.Conn, schema string) (enums []*database.Enum, err error) {
 
 	// run query
 	// DBLog(sqlstr, schema)
-	q, err := db.Query(sqlstr, schema)
+	q, err := conn.Query(sqlstr, schema)
 	if err != nil {
 		return nil, err
 	}
 
 	// load results
 	for q.Next() {
-		e := database.Enum{}
+		e := db.Enum{}
 
 		// scan
 		err = q.Scan(&e.Name)
@@ -411,7 +490,7 @@ func getEnums(db *pgx.Conn, schema string) (enums []*database.Enum, err error) {
 	q.Close()
 
 	for _, re := range enums {
-		values, err := getEnumValues(db, schema, re.Name)
+		values, err := getEnumValues(conn, schema, re.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -422,7 +501,7 @@ func getEnums(db *pgx.Conn, schema string) (enums []*database.Enum, err error) {
 }
 
 // Values runs a custom query, returning results as Value.
-func getEnumValues(db *pgx.Conn, schema string, enum string) ([]*database.EnumValue, error) {
+func getEnumValues(conn *pgx.Conn, schema string, enum string) ([]*db.EnumValue, error) {
 	var err error
 
 	// sql query
@@ -438,16 +517,16 @@ func getEnumValues(db *pgx.Conn, schema string, enum string) ([]*database.EnumVa
 
 	// run query
 	// DBLog(sqlstr, schema, enum)
-	q, err := db.Query(sqlstr, schema, enum)
+	q, err := conn.Query(sqlstr, schema, enum)
 	if err != nil {
 		return nil, err
 	}
 	defer q.Close()
 
 	// load results
-	res := []*database.EnumValue{}
+	res := []*db.EnumValue{}
 	for q.Next() {
-		ev := database.EnumValue{}
+		ev := db.EnumValue{}
 
 		// scan
 		err = q.Scan(&ev.Label, &ev.Order)
