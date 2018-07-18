@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo/testutil"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
@@ -98,8 +97,17 @@ var up = `
 		id serial not null primary key,
 		standup_id integer not null references jack.standups(id),
 		teammate_id integer not null references jack.teammates(id),
+		unique(standup_id, teammate_id),
 
-		team_owner bool not null default 'false'
+		"time" text not null,
+		owner bool not null default 'false'
+	);
+
+	-- CRONS
+	create table if not exists jack.crons (
+		id serial not null primary key,
+		"job" text unique not null,
+		frequency text not null
 	);
 
 	-- jack add
@@ -111,6 +119,8 @@ var up = `
 `
 
 var down = `
+	drop table if exists jack.crons cascade;
+
 	drop table if exists jack.standups_teammates cascade;
 
 	drop table if exists jack.questions cascade;
@@ -201,129 +211,153 @@ func TestPogo(t *testing.T) {
 				insert into jack.reports (teammate_id, standup_id, status) values (2, 1, 'COMPLETE');
 			`,
 			Query:    `SELECT * FROM reports WHERE teammate_id = $1 ORDER BY "timestamp" DESC LIMIT 1`,
-			Function: `report.Find(db, report.NewFilter().TeammateID(1), report.NewOrderBy().Timestamp(report.Desc))`,
+			Function: `report.Find(db, report.NewFilter().TeammateID(1), report.NewOrder().Timestamp(report.DESC))`,
 			Expected: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
 		},
-		// {
-		// 	Query:    `UPDATE reports SET questions = $1 WHERE id = $2 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO reports (user_id, timestamp, standup_id, status) VALUES ($1, $2, $3, $4) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teammate_standups (standup_id, teammate_id, time) VALUES ($1, $2, $3) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET time = $3, status = 'ACTIVE' RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teammate_standups (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE teammate_standups SET status = 'OPTOUT' WHERE teammate_id = $1 AND standup_id = $2 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `DELETE FROM crons WHERE job = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM standups WHERE id = $1 AND team_id = $2`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT id, team_name, bot_access_token, team_access_token, bot_user_id FROM teams WHERE team_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM teammates WHERE id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM teammates WHERE slack_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE standups SET name = $1, channel_id = $2, time = $3, tz = $4, team_id = $5, owner = $6 WHERE id = $7 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teammates (slack_id, team_id) VALUES ($1, $2) ON CONFLICT (slack_id) DO UPDATE SET id = teammates.id RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE teams SET active = TRUE WHERE team_id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM standups WHERE team_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO crons (job, frequency, tz) VALUES ($1, $2, $3) ON CONFLICT (job) DO NOTHING RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM teammate_standups WHERE standup_id = $1 AND status = $2`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM teams where id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO crons (job, frequency, tz) VALUES ($1, $2, $3) ON CONFLICT (job) DO NOTHING`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE teams SET active = FALSE WHERE team_id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM teammate_standups WHERE standup_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teams (team_id, team_access_token, bot_access_token, bot_user_id, team_name, scope, email, trial_ends, active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (team_id) DO UPDATE SET team_access_token = $2, bot_access_token = $3, bot_user_id = $4, team_name = $5, scope = $6, email = $7, active = $9 WHERE teams.id = teams.id RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM standups WHERE team_id = $1 AND id = $2 LIMIT 1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM crons WHERE job LIKE $2`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM standups WHERE id = $1 LIMIT 1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT teammate_id FROM teammate_standups WHERE standup_id = $1 AND status = $2`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM teammates WHERE id = ANY ($1)`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT bot_access_token,team_access_token FROM teams WHERE team_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT bot_access_token FROM teams WHERE team_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM conversations WHERE user_id = $1 ORDER BY updated DESC LIMIT 1`,
-		// 	Expected: ``,
-		// },
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+			`,
+			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id, time) VALUES ($1, $2, $3) RETURNING *`,
+			Function: `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+			`,
+			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
+			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 2, '12:00', false);
+			`,
+			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
+			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 2, '12:00', false);
+			`,
+			Query:    `UPDATE jack.standups_teammates SET "time" = '1:00', "owner" = true WHERE teammate_id = $1 AND standup_id = $2 RETURNING *`,
+			Function: `standupteammate.UpdateByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+		},
+		{
+			Setup: `
+				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
+				insert into jack.crons ("job", "frequency") values ('j2', '* * * * 1-5');
+			`,
+			Query:    `DELETE FROM crons WHERE job = $1 RETURNING *`,
+			Function: `cron.DeleteByJob(db, "j2")`,
+			Expected: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
+		},
+		{
+			Setup: `
+				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
+				insert into jack.crons ("job", "frequency") values ('j2', '* * * * 1-5');
+			`,
+			Query:    `DELETE FROM crons WHERE id = $1 RETURNING *`,
+			Function: `cron.DeleteByID(db, 2)`,
+			Expected: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teams (token, team_name) values (22, 'b');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+			`,
+			Query:    `INSERT INTO teammates (slack_id, team_id) VALUES ($1, $2) ON CONFLICT (slack_id) DO UPDATE SET id = teammates.id RETURNING *`,
+			Function: `teammate.UpsertBySlackID(db, "b", teammate.New().TeamID(2).Username("b").Timezone("b"))`,
+			Expected: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teams (token, team_name) values (22, 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (2, 'a', 'a', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (2, 'b', 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'c', 'c', 'c', 'c');
+			`,
+			Query:    `SELECT * FROM standups WHERE team_id = $1`,
+			Function: `standup.FindMany(db, standup.NewFilter().TeamID(2), standup.NewOrder().Channel(standup.DESC))`,
+			Expected: `[{"id":2,"team_id":2,"name":"b","channel":"b","time":"b","timezone":"b"},{"id":1,"team_id":2,"name":"a","channel":"a","time":"a","timezone":"a"}]`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'c', 'c', 'c');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 1, '12:00', false);
+				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 3, '1:00', true);
+			`,
+			Query:    `SELECT * FROM standups_teammates WHERE standup_id = $1`,
+			Function: `standupteammate.FindMany(db, standupteammate.NewFilter().StandupID(1))`,
+			Expected: `[{"id":1,"standup_id":1,"teammate_id":1,"time":"12:00"},{"id":2,"standup_id":1,"teammate_id":3,"time":"1:00","owner":true}]`,
+		},
+		{
+			Setup: `
+				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
+				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
+				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
+			`,
+			Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
+			Function: `cron.Delete(db, cron.NewFilter().JobContains("j1"))`,
+			Expected: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
+		},
+		{
+			Setup: `
+				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
+				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
+				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
+			`,
+			Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
+			Function: `cron.Delete(db, cron.NewFilter().JobStartsWith("j1"))`,
+			Expected: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
+		},
+		{
+			Setup: `
+				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
+				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
+				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
+			`,
+			Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
+			Function: `cron.DeleteMany(db, cron.NewFilter().JobContains("2"))`,
+			Expected: `[{"id":2,"job":"j20","frequency":"* * * * 1-5"},{"id":3,"job":"j21","frequency":"* * * * 1-5"}]`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+			`,
+			Query:    `SELECT * FROM teammates WHERE id = IN ($1)`,
+			Function: `teammate.Find(db, teammate.NewFilter().SlackIDIn("b", "c"))`,
+			Expected: ``,
+		},
 		// {
 		// 	Query:    `SELECT * FROM reports WHERE user_id = $1 AND standup_id = $2 AND "timestamp" > (timestamp '1d' - INTERVAL '1hr') ORDER BY "timestamp" DESC LIMIT 1`,
 		// 	Expected: ``,
@@ -337,75 +371,7 @@ func TestPogo(t *testing.T) {
 		// 	Expected: ``,
 		// },
 		// {
-		// 	Query:    `UPDATE teams SET stripe_id = $1 WHERE id = $2 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE teams SET stripe_id = $1 WHERE id = $2 RETURNING team_id`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO invitations ("from", "to", standup, "for") VALUES ($1, $2, $3, $4) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO reports (user_id, timestamp, standup_id) VALUES ($1, $2, $3) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO reports (user_id, timestamp, standup_id) VALUES ($1, $3, $2) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE teams SET team_access_token = $1, bot_access_token = $2, bot_user_id = $3, team_name = $4, scope = $5, email = $6, active = TRUE WHERE team_id = $7 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teams (team_id, team_access_token, bot_access_token, bot_user_id, team_name, scope, email, trial_ends) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO conversations (user_id, topic, context, state) VALUES ($1, $2, $2, $3) RETURNING id`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE conversations SET context = $1, state = $2 WHERE id = $3`,
-		// 	Expected: ``,
-		// },
-		// {
 		// 	Query:    `UPDATE conversations SET context = NULL WHERE id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT questions FROM reports WHERE id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE reports SET status = $2, questions = $3 WHERE id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE reports SET questions = $2 WHERE id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO standups (name, channel_id, time, tz, team_id, owner) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teammate_standups (time, teammate_id, standup_id) VALUES ($1, $2, $3) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO teammates (slack_id, team_id) VALUES ($1, $2) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE teams SET active = FALSE WHERE id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `DELETE FROM teammate_standups WHERE teammate_id = $1 AND standup_id = $2`,
 		// 	Expected: ``,
 		// },
 		// {
@@ -413,47 +379,11 @@ func TestPogo(t *testing.T) {
 		// 	Expected: ``,
 		// },
 		// {
-		// 	Query:    `SELECT * FROM conversations WHERE user_id = $1`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE conversations SET state = $2 WHERE id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE invitations SET status = $2 WHERE id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE standups SET name = $2, channel_id = $3, time = $4, tz = $5, team_id = $6 WHERE id = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `SELECT * FROM invitations WHERE "to" = $1 AND status = $2 AND "for" = $3 LIMIT 1`,
-		// 	Expected: ``,
-		// },
-		// {
 		// 	Query:    `SELECT * FROM jack.invitations WHERE "to" = $1 AND status = $2 AND "for" = $3 LIMIT 1`,
 		// 	Expected: ``,
 		// },
 		// {
-		// 	Query:    `INSERT INTO jack.teammates (slack_id, team_id) VALUES ($1, $2) RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `UPDATE jack.conversations SET state = $2 WHERE id = $1 RETURNING id`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `DELETE FROM jack.crons WHERE job = $1 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
 		// 	Query:    `INSERT INTO crons (job, frequency, tz) VALUES ($1, $2, $3) ON CONFLICT (job) DO UPDATE SET frequency = concat($4::text, ' ', substring(crons.frequency from '[\\d\\-\\,\\*]+$')), tz = $3 RETURNING *`,
-		// 	Expected: ``,
-		// },
-		// {
-		// 	Query:    `INSERT INTO crons (job, frequency, tz) VALUES ($1, $2, $3) ON CONFLICT (job) DO UPDATE SET frequency = concat(' ', $4::text, substring(crons.frequency from '[\\d\\-\\,\\*]+$')), tz = $3 RETURNING *`,
 		// 	Expected: ``,
 		// },
 	}
@@ -475,8 +405,12 @@ func TestPogo(t *testing.T) {
 	// defer remove()
 
 	for _, test := range tests {
-		t.Run(truncate(text.Snake(test.Function), 20), func(t *testing.T) {
+		name := truncate(test.Function, 20)
+		if i := strings.Index(test.Function, "("); i >= 0 {
+			name = truncate(test.Function, i)
+		}
 
+		t.Run(name, func(t *testing.T) {
 			testutil.Exec(t, conn, down)
 			testutil.Exec(t, conn, up)
 
@@ -484,13 +418,18 @@ func TestPogo(t *testing.T) {
 				testutil.Exec(t, conn, test.Setup)
 			}
 
-			stdout, stderr, remove := testutil.Run(t, text.Snake(test.Function), `
+			stdout, stderr, remove := testutil.Run(t, name, `
 				package main
 	
 				import (
 					"`+importBase+`/pogo/enum"
 					pogo "`+importBase+`/pogo"
 					team "`+importBase+`/pogo/team"
+					cron "`+importBase+`/pogo/cron"
+					report "`+importBase+`/pogo/report"
+					standup "`+importBase+`/pogo/standup"
+					teammate "`+importBase+`/pogo/teammate"
+					standupteammate "`+importBase+`/pogo/standup-teammate"
 				)
 	
 				func main() {
@@ -572,9 +511,6 @@ func diff(expected, actual string) string {
 func truncate(str string, num int) string {
 	s := str
 	if len(str) > num {
-		if num > 3 {
-			num -= 3
-		}
 		s = str[0:num]
 	}
 	return s

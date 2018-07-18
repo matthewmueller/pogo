@@ -44,6 +44,8 @@ func (t *Table) PluralCamel() string {
 }
 
 // PrimaryKey fn
+// TODO: return multiple columns in
+// in the case of many-to-many relationships
 func (t *Table) PrimaryKey() *Column {
 	for _, col := range t.Columns {
 		if col.IsPrimaryKey {
@@ -94,20 +96,20 @@ func (t *Table) Scan() string {
 }
 
 // IsManyToMany checks if the relationship is many-to-many
-func (t *Table) IsManyToMany() bool {
-	var pks []string
+// func (t *Table) IsManyToMany() bool {
+// 	var pks []string
 
-	for _, c := range t.Columns {
-		if c.IsPrimaryKey {
-			pks = append(pks, c.Name)
-		}
-	}
-	if len(pks) > 1 {
-		return true
-	}
+// 	for _, c := range t.Columns {
+// 		if c.IsPrimaryKey {
+// 			pks = append(pks, c.Name)
+// 		}
+// 	}
+// 	if len(pks) > 1 {
+// 		return true
+// 	}
 
-	return false
-}
+// 	return false
+// }
 
 // Filters fn
 func (t *Table) Filters() (filters []*Filter) {
@@ -128,21 +130,21 @@ func (t *Table) Filters() (filters []*Filter) {
 	return filters
 }
 
-// OrderBys fn
-func (t *Table) OrderBys() (orderbys []*OrderByField) {
+// Orders fn
+func (t *Table) Orders() (orders []*OrderField) {
 	for _, col := range t.Columns {
-		orderbys = append(orderbys, &OrderByField{
+		orders = append(orders, &OrderField{
 			Name:     col.Name,
 			DataType: col.DataType,
 		})
 	}
 
 	// for _, fk := range t.ForeignKeys {
-	// 	orderbys = append(orderbys, &OrderByField{
+	// 	orders = append(orders, &OrderField{
 	// 		Name:        fk.Name,
 	// 		FKReference: fk.ForeignKeyName,
 	// 	})
 	// }
 
-	return orderbys
+	return orders
 }

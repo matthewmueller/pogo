@@ -48,7 +48,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Contains",
 			Description: f.Name + " contains",
 			DataType:    f.DataType,
-			format:      fmt.Sprintf("%s LIKE %%%%s%%", f.Name),
+			format:      fmt.Sprintf("%s LIKE '%%%%' || %%s || '%%%%'", f.Name),
 		})
 
 		// field doesn't contain
@@ -56,7 +56,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotContains",
 			Description: f.Name + " doesn't contain",
 			DataType:    f.DataType,
-			format:      fmt.Sprintf("%s NOT LIKE %%%%s%%", f.Name),
+			format:      fmt.Sprintf("%s NOT LIKE '%%%%' || %%s || '%%%%'", f.Name),
 		})
 
 		// field starts with
@@ -64,7 +64,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "StartsWith",
 			Description: f.Name + " starts with",
 			DataType:    f.DataType,
-			format:      fmt.Sprintf("%s LIKE %%s%%", f.Name),
+			format:      fmt.Sprintf("%s LIKE %%s || '%%%%'", f.Name),
 		})
 
 		// field doesn't start with
@@ -72,7 +72,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotStartsWith",
 			Description: f.Name + " doesn't start with",
 			DataType:    f.DataType,
-			format:      fmt.Sprintf("%s NOT LIKE %%s%%", f.Name),
+			format:      fmt.Sprintf("%s NOT LIKE %%s || '%%%%'", f.Name),
 		})
 
 		// field ends with
@@ -80,7 +80,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "EndsWith",
 			Description: f.Name + " ends with",
 			DataType:    f.DataType,
-			format:      fmt.Sprintf("%s LIKE %%%%s", f.Name),
+			format:      fmt.Sprintf("%s LIKE '%%%%' || %%s", f.Name),
 		})
 
 		// field doesn't end with
@@ -88,7 +88,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotEndsWith",
 			Description: f.Name + " doesn't end with",
 			DataType:    f.DataType,
-			format:      fmt.Sprintf("%s NOT LIKE %%%%s", f.Name),
+			format:      fmt.Sprintf("%s NOT LIKE '%%%%' || %%s", f.Name),
 		})
 
 		// field is less than
@@ -127,16 +127,18 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		fields = append(fields, &FilterField{
 			Name:        f.Name + "In",
 			Description: f.Name + " is in",
-			DataType:    f.DataType + "[]",
+			DataType:    f.DataType,
 			format:      fmt.Sprintf("%s IN (%%s)", f.Name),
+			Spread:      `, `,
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
 			Name:        f.Name + "NotIn",
 			Description: f.Name + " is not in",
-			DataType:    f.DataType + "[]",
-			format:      fmt.Sprintf("%s NOT IN (%%s)", f.Name),
+			DataType:    f.DataType,
+			// Spread:      true,
+			format: fmt.Sprintf("%s NOT IN (%%s)", f.Name),
 		})
 
 	case "Int":
@@ -192,16 +194,18 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		fields = append(fields, &FilterField{
 			Name:        f.Name + "In",
 			Description: f.Name + " is in",
-			DataType:    f.DataType + "[]",
+			DataType:    f.DataType,
 			format:      fmt.Sprintf("%s IN (%%s)", f.Name),
+			// Spread:      fmt.Sprintf("%s IN (%%s)", f.Name),
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
 			Name:        f.Name + "NotIn",
 			Description: f.Name + " is not in",
-			DataType:    f.DataType + "[]",
-			format:      fmt.Sprintf("%s NOT IN (%%s)", f.Name),
+			DataType:    f.DataType,
+			// Spread:      true,
+			format: fmt.Sprintf("%s NOT IN (%%s)", f.Name),
 		})
 
 	case "Float":
@@ -244,13 +248,15 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		// field is in list
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "In",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "NotIn",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 	case "Boolean":
@@ -282,13 +288,15 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		// field is in list
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "In",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "NotIn",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 		// field is less than
@@ -331,13 +339,15 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		// field is in list
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "In",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "NotIn",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 	case "List":
@@ -350,13 +360,15 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "ContainsEvery",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "ContainsSome",
-			DataType: f.DataType + "[]",
+			DataType: f.DataType,
+			// Spread:   true,
 		})
 
 	default:
@@ -372,6 +384,7 @@ type FilterField struct {
 	Description string
 	DataType    string
 	format      string
+	Spread      string
 }
 
 // Pascal case
@@ -386,7 +399,16 @@ func (f *FilterField) Camel() string {
 
 // Type of filter
 func (f *FilterField) Type(schema *Schema) (string, error) {
-	return coerce(schema, f.DataType)
+	dt, err := coerce(schema, f.DataType)
+	if err != nil {
+		return "", err
+	}
+
+	if f.Spread != "" {
+		return "..." + dt, nil
+	}
+
+	return dt, nil
 }
 
 // Format returns the filter's condition sprintf format

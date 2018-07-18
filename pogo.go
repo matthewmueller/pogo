@@ -12,7 +12,6 @@ import (
 
 var pogoTemplate = gen.MustCompile("pogo", templates.MustAssetString("templates/pogo.gotmpl"))
 var modelTemplate = gen.MustCompile("model", templates.MustAssetString("templates/model.gotmpl"))
-var manyTemplate = gen.MustCompile("many", templates.MustAssetString("templates/many.gotmpl"))
 var enumTemplate = gen.MustCompile("enum", templates.MustAssetString("templates/enum.gotmpl"))
 
 // template data
@@ -74,23 +73,13 @@ func (p *Pogo) Generate() (files map[string]string, err error) {
 	}
 
 	for _, table := range schema.Tables {
-		if table.Name != "teams" && table.Name != "teammates" && table.Name != "reports" {
-			continue
-		}
-
-		// is many to many?
-		template := modelTemplate
-		if table.IsManyToMany() {
-			template = manyTemplate
-		}
-
 		path, err := path.New("./" + table.Slug())
 		if err != nil {
 			return files, err
 		}
 
 		relpath := path.Rel(table.Slug() + ".go")
-		files[relpath], err = template(data{
+		files[relpath], err = modelTemplate(data{
 			"Path":   path,
 			"Schema": schema,
 			"Table":  table,

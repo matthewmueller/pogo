@@ -6,8 +6,8 @@ import (
 	"github.com/matthewmueller/go-gen"
 )
 
-// OrderByField struct
-type OrderByField struct {
+// OrderField struct
+type OrderField struct {
 	Name        string // column name
 	Description string // column description
 	DataType    string // column type (only for columns)
@@ -15,11 +15,11 @@ type OrderByField struct {
 }
 
 // Pascal case
-func (o *OrderByField) Pascal() string {
+func (o *OrderField) Pascal() string {
 	return gen.Pascal(o.Name)
 }
 
 // Format the order by condition
-func (o *OrderByField) Format() string {
+func (o *OrderField) Format() string {
 	return fmt.Sprintf(`"%s" %%s`, o.Name)
 }

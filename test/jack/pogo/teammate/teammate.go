@@ -244,14 +244,14 @@ func (f *Filter) IDGte(v int) *Filter {
 }
 
 // IDIn id is in
-func (f *Filter) IDIn(v []int) *Filter {
+func (f *Filter) IDIn(v int) *Filter {
 	f.formats = append(f.formats, `id IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // IDNotIn id is not in
-func (f *Filter) IDNotIn(v []int) *Filter {
+func (f *Filter) IDNotIn(v int) *Filter {
 	f.formats = append(f.formats, `id NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -300,14 +300,14 @@ func (f *Filter) TeamIDGte(v int) *Filter {
 }
 
 // TeamIDIn team_id is in
-func (f *Filter) TeamIDIn(v []int) *Filter {
+func (f *Filter) TeamIDIn(v int) *Filter {
 	f.formats = append(f.formats, `team_id IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TeamIDNotIn team_id is not in
-func (f *Filter) TeamIDNotIn(v []int) *Filter {
+func (f *Filter) TeamIDNotIn(v int) *Filter {
 	f.formats = append(f.formats, `team_id NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -329,42 +329,42 @@ func (f *Filter) SlackIDNot(v string) *Filter {
 
 // SlackIDContains slack_id contains
 func (f *Filter) SlackIDContains(v string) *Filter {
-	f.formats = append(f.formats, `slack_id LIKE %%s%`)
+	f.formats = append(f.formats, `slack_id LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // SlackIDNotContains slack_id doesn't contain
 func (f *Filter) SlackIDNotContains(v string) *Filter {
-	f.formats = append(f.formats, `slack_id NOT LIKE %%s%`)
+	f.formats = append(f.formats, `slack_id NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // SlackIDStartsWith slack_id starts with
 func (f *Filter) SlackIDStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `slack_id LIKE %s%`)
+	f.formats = append(f.formats, `slack_id LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // SlackIDNotStartsWith slack_id doesn't start with
 func (f *Filter) SlackIDNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `slack_id NOT LIKE %s%`)
+	f.formats = append(f.formats, `slack_id NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // SlackIDEndsWith slack_id ends with
 func (f *Filter) SlackIDEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `slack_id LIKE %%s`)
+	f.formats = append(f.formats, `slack_id LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // SlackIDNotEndsWith slack_id doesn't end with
 func (f *Filter) SlackIDNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `slack_id NOT LIKE %%s`)
+	f.formats = append(f.formats, `slack_id NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -398,14 +398,20 @@ func (f *Filter) SlackIDGte(v string) *Filter {
 }
 
 // SlackIDIn slack_id is in
-func (f *Filter) SlackIDIn(v []string) *Filter {
-	f.formats = append(f.formats, `slack_id IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) SlackIDIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`slack_id IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // SlackIDNotIn slack_id is not in
-func (f *Filter) SlackIDNotIn(v []string) *Filter {
+func (f *Filter) SlackIDNotIn(v string) *Filter {
 	f.formats = append(f.formats, `slack_id NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -427,42 +433,42 @@ func (f *Filter) UsernameNot(v string) *Filter {
 
 // UsernameContains username contains
 func (f *Filter) UsernameContains(v string) *Filter {
-	f.formats = append(f.formats, `username LIKE %%s%`)
+	f.formats = append(f.formats, `username LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // UsernameNotContains username doesn't contain
 func (f *Filter) UsernameNotContains(v string) *Filter {
-	f.formats = append(f.formats, `username NOT LIKE %%s%`)
+	f.formats = append(f.formats, `username NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // UsernameStartsWith username starts with
 func (f *Filter) UsernameStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `username LIKE %s%`)
+	f.formats = append(f.formats, `username LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // UsernameNotStartsWith username doesn't start with
 func (f *Filter) UsernameNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `username NOT LIKE %s%`)
+	f.formats = append(f.formats, `username NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // UsernameEndsWith username ends with
 func (f *Filter) UsernameEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `username LIKE %%s`)
+	f.formats = append(f.formats, `username LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // UsernameNotEndsWith username doesn't end with
 func (f *Filter) UsernameNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `username NOT LIKE %%s`)
+	f.formats = append(f.formats, `username NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -496,14 +502,20 @@ func (f *Filter) UsernameGte(v string) *Filter {
 }
 
 // UsernameIn username is in
-func (f *Filter) UsernameIn(v []string) *Filter {
-	f.formats = append(f.formats, `username IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) UsernameIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`username IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // UsernameNotIn username is not in
-func (f *Filter) UsernameNotIn(v []string) *Filter {
+func (f *Filter) UsernameNotIn(v string) *Filter {
 	f.formats = append(f.formats, `username NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -525,42 +537,42 @@ func (f *Filter) FirstNameNot(v string) *Filter {
 
 // FirstNameContains first_name contains
 func (f *Filter) FirstNameContains(v string) *Filter {
-	f.formats = append(f.formats, `first_name LIKE %%s%`)
+	f.formats = append(f.formats, `first_name LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // FirstNameNotContains first_name doesn't contain
 func (f *Filter) FirstNameNotContains(v string) *Filter {
-	f.formats = append(f.formats, `first_name NOT LIKE %%s%`)
+	f.formats = append(f.formats, `first_name NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // FirstNameStartsWith first_name starts with
 func (f *Filter) FirstNameStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `first_name LIKE %s%`)
+	f.formats = append(f.formats, `first_name LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // FirstNameNotStartsWith first_name doesn't start with
 func (f *Filter) FirstNameNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `first_name NOT LIKE %s%`)
+	f.formats = append(f.formats, `first_name NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // FirstNameEndsWith first_name ends with
 func (f *Filter) FirstNameEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `first_name LIKE %%s`)
+	f.formats = append(f.formats, `first_name LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // FirstNameNotEndsWith first_name doesn't end with
 func (f *Filter) FirstNameNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `first_name NOT LIKE %%s`)
+	f.formats = append(f.formats, `first_name NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -594,14 +606,20 @@ func (f *Filter) FirstNameGte(v string) *Filter {
 }
 
 // FirstNameIn first_name is in
-func (f *Filter) FirstNameIn(v []string) *Filter {
-	f.formats = append(f.formats, `first_name IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) FirstNameIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`first_name IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // FirstNameNotIn first_name is not in
-func (f *Filter) FirstNameNotIn(v []string) *Filter {
+func (f *Filter) FirstNameNotIn(v string) *Filter {
 	f.formats = append(f.formats, `first_name NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -623,42 +641,42 @@ func (f *Filter) LastNameNot(v string) *Filter {
 
 // LastNameContains last_name contains
 func (f *Filter) LastNameContains(v string) *Filter {
-	f.formats = append(f.formats, `last_name LIKE %%s%`)
+	f.formats = append(f.formats, `last_name LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // LastNameNotContains last_name doesn't contain
 func (f *Filter) LastNameNotContains(v string) *Filter {
-	f.formats = append(f.formats, `last_name NOT LIKE %%s%`)
+	f.formats = append(f.formats, `last_name NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // LastNameStartsWith last_name starts with
 func (f *Filter) LastNameStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `last_name LIKE %s%`)
+	f.formats = append(f.formats, `last_name LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // LastNameNotStartsWith last_name doesn't start with
 func (f *Filter) LastNameNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `last_name NOT LIKE %s%`)
+	f.formats = append(f.formats, `last_name NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // LastNameEndsWith last_name ends with
 func (f *Filter) LastNameEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `last_name LIKE %%s`)
+	f.formats = append(f.formats, `last_name LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // LastNameNotEndsWith last_name doesn't end with
 func (f *Filter) LastNameNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `last_name NOT LIKE %%s`)
+	f.formats = append(f.formats, `last_name NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -692,14 +710,20 @@ func (f *Filter) LastNameGte(v string) *Filter {
 }
 
 // LastNameIn last_name is in
-func (f *Filter) LastNameIn(v []string) *Filter {
-	f.formats = append(f.formats, `last_name IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) LastNameIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`last_name IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // LastNameNotIn last_name is not in
-func (f *Filter) LastNameNotIn(v []string) *Filter {
+func (f *Filter) LastNameNotIn(v string) *Filter {
 	f.formats = append(f.formats, `last_name NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -721,42 +745,42 @@ func (f *Filter) EmailNot(v string) *Filter {
 
 // EmailContains email contains
 func (f *Filter) EmailContains(v string) *Filter {
-	f.formats = append(f.formats, `email LIKE %%s%`)
+	f.formats = append(f.formats, `email LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailNotContains email doesn't contain
 func (f *Filter) EmailNotContains(v string) *Filter {
-	f.formats = append(f.formats, `email NOT LIKE %%s%`)
+	f.formats = append(f.formats, `email NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailStartsWith email starts with
 func (f *Filter) EmailStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `email LIKE %s%`)
+	f.formats = append(f.formats, `email LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailNotStartsWith email doesn't start with
 func (f *Filter) EmailNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `email NOT LIKE %s%`)
+	f.formats = append(f.formats, `email NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailEndsWith email ends with
 func (f *Filter) EmailEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `email LIKE %%s`)
+	f.formats = append(f.formats, `email LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailNotEndsWith email doesn't end with
 func (f *Filter) EmailNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `email NOT LIKE %%s`)
+	f.formats = append(f.formats, `email NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -790,14 +814,20 @@ func (f *Filter) EmailGte(v string) *Filter {
 }
 
 // EmailIn email is in
-func (f *Filter) EmailIn(v []string) *Filter {
-	f.formats = append(f.formats, `email IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) EmailIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`email IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // EmailNotIn email is not in
-func (f *Filter) EmailNotIn(v []string) *Filter {
+func (f *Filter) EmailNotIn(v string) *Filter {
 	f.formats = append(f.formats, `email NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -819,42 +849,42 @@ func (f *Filter) AvatarNot(v string) *Filter {
 
 // AvatarContains avatar contains
 func (f *Filter) AvatarContains(v string) *Filter {
-	f.formats = append(f.formats, `avatar LIKE %%s%`)
+	f.formats = append(f.formats, `avatar LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // AvatarNotContains avatar doesn't contain
 func (f *Filter) AvatarNotContains(v string) *Filter {
-	f.formats = append(f.formats, `avatar NOT LIKE %%s%`)
+	f.formats = append(f.formats, `avatar NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // AvatarStartsWith avatar starts with
 func (f *Filter) AvatarStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `avatar LIKE %s%`)
+	f.formats = append(f.formats, `avatar LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // AvatarNotStartsWith avatar doesn't start with
 func (f *Filter) AvatarNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `avatar NOT LIKE %s%`)
+	f.formats = append(f.formats, `avatar NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // AvatarEndsWith avatar ends with
 func (f *Filter) AvatarEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `avatar LIKE %%s`)
+	f.formats = append(f.formats, `avatar LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // AvatarNotEndsWith avatar doesn't end with
 func (f *Filter) AvatarNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `avatar NOT LIKE %%s`)
+	f.formats = append(f.formats, `avatar NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -888,14 +918,20 @@ func (f *Filter) AvatarGte(v string) *Filter {
 }
 
 // AvatarIn avatar is in
-func (f *Filter) AvatarIn(v []string) *Filter {
-	f.formats = append(f.formats, `avatar IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) AvatarIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`avatar IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // AvatarNotIn avatar is not in
-func (f *Filter) AvatarNotIn(v []string) *Filter {
+func (f *Filter) AvatarNotIn(v string) *Filter {
 	f.formats = append(f.formats, `avatar NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -917,42 +953,42 @@ func (f *Filter) TimezoneNot(v string) *Filter {
 
 // TimezoneContains timezone contains
 func (f *Filter) TimezoneContains(v string) *Filter {
-	f.formats = append(f.formats, `timezone LIKE %%s%`)
+	f.formats = append(f.formats, `timezone LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TimezoneNotContains timezone doesn't contain
 func (f *Filter) TimezoneNotContains(v string) *Filter {
-	f.formats = append(f.formats, `timezone NOT LIKE %%s%`)
+	f.formats = append(f.formats, `timezone NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TimezoneStartsWith timezone starts with
 func (f *Filter) TimezoneStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `timezone LIKE %s%`)
+	f.formats = append(f.formats, `timezone LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TimezoneNotStartsWith timezone doesn't start with
 func (f *Filter) TimezoneNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `timezone NOT LIKE %s%`)
+	f.formats = append(f.formats, `timezone NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TimezoneEndsWith timezone ends with
 func (f *Filter) TimezoneEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `timezone LIKE %%s`)
+	f.formats = append(f.formats, `timezone LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TimezoneNotEndsWith timezone doesn't end with
 func (f *Filter) TimezoneNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `timezone NOT LIKE %%s`)
+	f.formats = append(f.formats, `timezone NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -986,98 +1022,104 @@ func (f *Filter) TimezoneGte(v string) *Filter {
 }
 
 // TimezoneIn timezone is in
-func (f *Filter) TimezoneIn(v []string) *Filter {
-	f.formats = append(f.formats, `timezone IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) TimezoneIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`timezone IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // TimezoneNotIn timezone is not in
-func (f *Filter) TimezoneNotIn(v []string) *Filter {
+func (f *Filter) TimezoneNotIn(v string) *Filter {
 	f.formats = append(f.formats, `timezone NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
-// NewOrderBy fn
-func NewOrderBy() *OrderBy {
-	return &OrderBy{}
-}
-
-// OrderBy orders the given fields
-type OrderBy struct {
-	formats []string
-}
-
-// Order specificies the ORDER BY <order>
-type Order string
+// OrderBy specificies the ORDERBy BY <order>
+type OrderBy string
 
 const (
 	// Asc sorts by ascending order
-	Asc Order = "ASC"
+	ASC OrderBy = "ASC"
 
 	// Desc sorts by descending order
-	Desc Order = "DESC"
+	DESC OrderBy = "DESC"
 )
 
+// NewOrder fn
+func NewOrder() *Order {
+	return &Order{}
+}
+
+// Order orders the given fields
+type Order struct {
+	formats []string
+}
+
 // Clause fn
-func (o *OrderBy) Clause() *pogo.Clause {
+func (o *Order) Clause() *pogo.Clause {
 	return &pogo.Clause{
 		Type:   "ORDER BY",
 		Format: strings.Join(o.formats, ", "),
 	}
 }
 
-// ID orders `id` by a sort expression
-func (o *OrderBy) ID(order Order) *OrderBy {
+// ID sorts `id` by an expression
+func (o *Order) ID(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"id" %s`, order))
 	return o
 }
 
-// TeamID orders `team_id` by a sort expression
-func (o *OrderBy) TeamID(order Order) *OrderBy {
+// TeamID sorts `team_id` by an expression
+func (o *Order) TeamID(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"team_id" %s`, order))
 	return o
 }
 
-// SlackID orders `slack_id` by a sort expression
-func (o *OrderBy) SlackID(order Order) *OrderBy {
+// SlackID sorts `slack_id` by an expression
+func (o *Order) SlackID(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"slack_id" %s`, order))
 	return o
 }
 
-// Username orders `username` by a sort expression
-func (o *OrderBy) Username(order Order) *OrderBy {
+// Username sorts `username` by an expression
+func (o *Order) Username(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"username" %s`, order))
 	return o
 }
 
-// FirstName orders `first_name` by a sort expression
-func (o *OrderBy) FirstName(order Order) *OrderBy {
+// FirstName sorts `first_name` by an expression
+func (o *Order) FirstName(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"first_name" %s`, order))
 	return o
 }
 
-// LastName orders `last_name` by a sort expression
-func (o *OrderBy) LastName(order Order) *OrderBy {
+// LastName sorts `last_name` by an expression
+func (o *Order) LastName(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"last_name" %s`, order))
 	return o
 }
 
-// Email orders `email` by a sort expression
-func (o *OrderBy) Email(order Order) *OrderBy {
+// Email sorts `email` by an expression
+func (o *Order) Email(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"email" %s`, order))
 	return o
 }
 
-// Avatar orders `avatar` by a sort expression
-func (o *OrderBy) Avatar(order Order) *OrderBy {
+// Avatar sorts `avatar` by an expression
+func (o *Order) Avatar(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"avatar" %s`, order))
 	return o
 }
 
-// Timezone orders `timezone` by a sort expression
-func (o *OrderBy) Timezone(order Order) *OrderBy {
+// Timezone sorts `timezone` by an expression
+func (o *Order) Timezone(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"timezone" %s`, order))
 	return o
 }
@@ -1190,6 +1232,48 @@ func FindBySlackID(db pogo.DB, slackID string) (*Teammate, error) {
 	return &_teammate, nil
 }
 
+// FindMany finds many "jack"."teammates" by a condition
+func FindMany(db pogo.DB, conds ...pogo.Condition) ([]*Teammate, error) {
+	var teammates []*Teammate
+
+	_s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return teammates, err
+	}
+
+	// sql select query, primary key provided by sequence
+	sqlstr := `SELECT "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone" ` +
+		`FROM "jack"."teammates" ` +
+		_s
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	rows, err := db.Query(sqlstr, _v...)
+	if err != nil {
+		return teammates, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var _teammate Teammate
+		if e := rows.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil {
+			if e == pgx.ErrNoRows {
+				return teammates, ErrTeammateNotFound
+			}
+			return teammates, err
+		}
+		teammates = append(teammates, &_teammate)
+	}
+	if rows.Err() != nil {
+		return teammates, rows.Err()
+	}
+
+	return teammates, nil
+}
+
 // UpdateByID a "teammate" in "jack"."teammates" by its "id"
 func UpdateByID(db pogo.DB, id int, teammate *Input) (*Teammate, error) {
 	fields := teammate.columns()
@@ -1207,8 +1291,8 @@ func UpdateByID(db pogo.DB, id int, teammate *Input) (*Teammate, error) {
 	}
 
 	// sql query
-	sqlstr := `UPDATE "jack"."teammates" SET` +
-		` ` + strings.Join(_u, ", ") + ` ` +
+	sqlstr := `UPDATE "jack"."teammates" SET ` +
+		strings.Join(_u, ", ") + ` ` +
 		`WHERE "id" = $1 ` +
 		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
 
@@ -1227,6 +1311,206 @@ func UpdateByID(db pogo.DB, id int, teammate *Input) (*Teammate, error) {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeammateNotFound
 		}
+		return nil, e
+	}
+
+	return &_teammate, nil
+}
+
+// UpdateBySlackID find a Teammate
+func UpdateBySlackID(db pogo.DB, slackID string, teammate *Input) (*Teammate, error) {
+	// add values to input, overriding existing keys if present in the input
+	teammate = teammate.SlackID(slackID)
+
+	// get the columns
+	fields := teammate.columns()
+
+	// don't update the keys
+	delete(fields, "slack_id")
+
+	// prepare the slices
+	_c, _i, _v := slice(fields, 1)
+
+	// setup the update fields
+	var _u []string
+	for i, c := range _c {
+		_u = append(_u, c+" = "+_i[i])
+	}
+
+	// sql query
+	sqlstr := `UPDATE "jack"."teammates" SET ` +
+		strings.Join(_u, ", ") + ` ` +
+		`WHERE "slack_id" = $1 ` +
+		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
+
+	// setup the query
+	values := []interface{}{}
+	values = append(values, slackID)
+	values = append(values, _v...)
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, values...)
+	}
+
+	// run the query
+	var _teammate Teammate
+	row := db.QueryRow(sqlstr, values...)
+	if e := row.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeammateNotFound
+		}
+		return nil, e
+	}
+
+	return &_teammate, nil
+}
+
+// Delete `Teammate`s by some conditions. Returns the first result.
+func Delete(db pogo.DB, conds ...pogo.Condition) (*Teammate, error) {
+	_s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return nil, err
+	}
+
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teammates" ` +
+		_s + ` ` +
+		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	var _teammate Teammate
+	row := db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeammateNotFound
+		}
+		return nil, e
+	}
+
+	return &_teammate, nil
+}
+
+// DeleteMany `Teammate`s by some conditions, returning all results.
+func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*Teammate, error) {
+	var teammates []*Teammate
+
+	_s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return teammates, err
+	}
+
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teammates" ` +
+		_s + ` ` +
+		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	rows, err := db.Query(sqlstr, _v...)
+	if err != nil {
+		return teammates, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var _teammate Teammate
+		if e := rows.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil {
+			if e == pgx.ErrNoRows {
+				return teammates, ErrTeammateNotFound
+			}
+			return teammates, err
+		}
+		teammates = append(teammates, &_teammate)
+	}
+	if rows.Err() != nil {
+		return teammates, rows.Err()
+	}
+
+	return teammates, nil
+}
+
+// DeleteByID a "teammate" from the "jack"."teammates" table
+func DeleteByID(db pogo.DB, id int) (*Teammate, error) {
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teammates" ` +
+		`WHERE "id" = $1 ` +
+		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, id)
+	}
+
+	// run the query
+	var _teammate Teammate
+	row := db.QueryRow(sqlstr, id)
+	if e := row.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeammateNotFound
+		}
+		return nil, e
+	}
+
+	return &_teammate, nil
+}
+
+// DeleteBySlackID deletes a "teammate"
+func DeleteBySlackID(db pogo.DB, slackID string) (*Teammate, error) {
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teammates" ` +
+		`WHERE "slack_id" = $1 ` +
+		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, slackID)
+	}
+
+	// run the query
+	var _teammate Teammate
+	row := db.QueryRow(sqlstr, slackID)
+	if e := row.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeammateNotFound
+		}
+		return nil, e
+	}
+
+	return &_teammate, nil
+}
+
+// UpsertBySlackID find a "Teammate"
+func UpsertBySlackID(db pogo.DB, slackID string, teammate *Input) (*Teammate, error) {
+	// add values to input, overriding existing keys if present in the input
+	teammate = teammate.SlackID(slackID)
+
+	// get all the non-nil columns and prepare them for the query
+	_c, _i, _v := slice(teammate.columns(), 0)
+
+	// sql query
+	sqlstr := `INSERT INTO "jack"."teammates" (` + strings.Join(_c, ", ") + `) ` +
+		`VALUES (` + strings.Join(_i, ", ") + `) ` +
+		`ON CONFLICT ("slack_id") ` +
+		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
+		`RETURNING "id", "team_id", "slack_id", "username", "first_name", "last_name", "email", "avatar", "timezone"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	// run query
+	var _teammate Teammate
+	row := db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&_teammate.ID, &_teammate.TeamID, &_teammate.SlackID, &_teammate.Username, &_teammate.FirstName, &_teammate.LastName, &_teammate.Email, &_teammate.Avatar, &_teammate.Timezone); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 

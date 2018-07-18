@@ -163,7 +163,7 @@ func getForeignKeys(conn *pgx.Conn, schema string, table string) (fks []*db.Fore
 	// sql query
 
 	const sqlstr = `
-    SELECT r.conname, b.attname, i.relname, c.relname, d.attname, 0, 0, '', '', ''
+    SELECT b.attname, format_type(d.atttypid, d.atttypmod), r.conname, i.relname, c.relname, d.attname, 0, 0, '', '', ''
     FROM pg_constraint r
     JOIN ONLY pg_class a ON a.oid = r.conrelid
     JOIN ONLY pg_attribute b ON b.attisdropped = false AND b.attnum = ANY(r.conkey) AND b.attrelid = r.conrelid
@@ -188,7 +188,7 @@ func getForeignKeys(conn *pgx.Conn, schema string, table string) (fks []*db.Fore
 		fk := db.ForeignKey{}
 
 		// scan
-		err = q.Scan(&fk.ForeignKeyName, &fk.Name, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
+		err = q.Scan(&fk.Name, &fk.DataType, &fk.ForeignKeyName, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
 		if err != nil {
 			return fks, err
 		}

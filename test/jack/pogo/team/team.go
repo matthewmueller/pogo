@@ -244,14 +244,14 @@ func (f *Filter) IDGte(v int) *Filter {
 }
 
 // IDIn id is in
-func (f *Filter) IDIn(v []int) *Filter {
+func (f *Filter) IDIn(v int) *Filter {
 	f.formats = append(f.formats, `id IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // IDNotIn id is not in
-func (f *Filter) IDNotIn(v []int) *Filter {
+func (f *Filter) IDNotIn(v int) *Filter {
 	f.formats = append(f.formats, `id NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -300,14 +300,14 @@ func (f *Filter) TokenGte(v int) *Filter {
 }
 
 // TokenIn token is in
-func (f *Filter) TokenIn(v []int) *Filter {
+func (f *Filter) TokenIn(v int) *Filter {
 	f.formats = append(f.formats, `token IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TokenNotIn token is not in
-func (f *Filter) TokenNotIn(v []int) *Filter {
+func (f *Filter) TokenNotIn(v int) *Filter {
 	f.formats = append(f.formats, `token NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -329,42 +329,42 @@ func (f *Filter) TeamNameNot(v string) *Filter {
 
 // TeamNameContains team_name contains
 func (f *Filter) TeamNameContains(v string) *Filter {
-	f.formats = append(f.formats, `team_name LIKE %%s%`)
+	f.formats = append(f.formats, `team_name LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TeamNameNotContains team_name doesn't contain
 func (f *Filter) TeamNameNotContains(v string) *Filter {
-	f.formats = append(f.formats, `team_name NOT LIKE %%s%`)
+	f.formats = append(f.formats, `team_name NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TeamNameStartsWith team_name starts with
 func (f *Filter) TeamNameStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `team_name LIKE %s%`)
+	f.formats = append(f.formats, `team_name LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TeamNameNotStartsWith team_name doesn't start with
 func (f *Filter) TeamNameNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `team_name NOT LIKE %s%`)
+	f.formats = append(f.formats, `team_name NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TeamNameEndsWith team_name ends with
 func (f *Filter) TeamNameEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `team_name LIKE %%s`)
+	f.formats = append(f.formats, `team_name LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // TeamNameNotEndsWith team_name doesn't end with
 func (f *Filter) TeamNameNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `team_name NOT LIKE %%s`)
+	f.formats = append(f.formats, `team_name NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -398,14 +398,20 @@ func (f *Filter) TeamNameGte(v string) *Filter {
 }
 
 // TeamNameIn team_name is in
-func (f *Filter) TeamNameIn(v []string) *Filter {
-	f.formats = append(f.formats, `team_name IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) TeamNameIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`team_name IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // TeamNameNotIn team_name is not in
-func (f *Filter) TeamNameNotIn(v []string) *Filter {
+func (f *Filter) TeamNameNotIn(v string) *Filter {
 	f.formats = append(f.formats, `team_name NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -419,14 +425,14 @@ func (f *Filter) ScopeContains(v []string) *Filter {
 }
 
 // ScopeContainsEvery
-func (f *Filter) ScopeContainsEvery(v [][]string) *Filter {
+func (f *Filter) ScopeContainsEvery(v []string) *Filter {
 	f.formats = append(f.formats, ``)
 	f.values = append(f.values, v)
 	return f
 }
 
 // ScopeContainsSome
-func (f *Filter) ScopeContainsSome(v [][]string) *Filter {
+func (f *Filter) ScopeContainsSome(v []string) *Filter {
 	f.formats = append(f.formats, ``)
 	f.values = append(f.values, v)
 	return f
@@ -448,42 +454,42 @@ func (f *Filter) EmailNot(v string) *Filter {
 
 // EmailContains email contains
 func (f *Filter) EmailContains(v string) *Filter {
-	f.formats = append(f.formats, `email LIKE %%s%`)
+	f.formats = append(f.formats, `email LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailNotContains email doesn't contain
 func (f *Filter) EmailNotContains(v string) *Filter {
-	f.formats = append(f.formats, `email NOT LIKE %%s%`)
+	f.formats = append(f.formats, `email NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailStartsWith email starts with
 func (f *Filter) EmailStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `email LIKE %s%`)
+	f.formats = append(f.formats, `email LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailNotStartsWith email doesn't start with
 func (f *Filter) EmailNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `email NOT LIKE %s%`)
+	f.formats = append(f.formats, `email NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailEndsWith email ends with
 func (f *Filter) EmailEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `email LIKE %%s`)
+	f.formats = append(f.formats, `email LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // EmailNotEndsWith email doesn't end with
 func (f *Filter) EmailNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `email NOT LIKE %%s`)
+	f.formats = append(f.formats, `email NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -517,14 +523,20 @@ func (f *Filter) EmailGte(v string) *Filter {
 }
 
 // EmailIn email is in
-func (f *Filter) EmailIn(v []string) *Filter {
-	f.formats = append(f.formats, `email IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) EmailIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`email IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // EmailNotIn email is not in
-func (f *Filter) EmailNotIn(v []string) *Filter {
+func (f *Filter) EmailNotIn(v string) *Filter {
 	f.formats = append(f.formats, `email NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -546,42 +558,42 @@ func (f *Filter) StripeIDNot(v string) *Filter {
 
 // StripeIDContains stripe_id contains
 func (f *Filter) StripeIDContains(v string) *Filter {
-	f.formats = append(f.formats, `stripe_id LIKE %%s%`)
+	f.formats = append(f.formats, `stripe_id LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // StripeIDNotContains stripe_id doesn't contain
 func (f *Filter) StripeIDNotContains(v string) *Filter {
-	f.formats = append(f.formats, `stripe_id NOT LIKE %%s%`)
+	f.formats = append(f.formats, `stripe_id NOT LIKE '%%' || %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // StripeIDStartsWith stripe_id starts with
 func (f *Filter) StripeIDStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `stripe_id LIKE %s%`)
+	f.formats = append(f.formats, `stripe_id LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // StripeIDNotStartsWith stripe_id doesn't start with
 func (f *Filter) StripeIDNotStartsWith(v string) *Filter {
-	f.formats = append(f.formats, `stripe_id NOT LIKE %s%`)
+	f.formats = append(f.formats, `stripe_id NOT LIKE %s || '%%'`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // StripeIDEndsWith stripe_id ends with
 func (f *Filter) StripeIDEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `stripe_id LIKE %%s`)
+	f.formats = append(f.formats, `stripe_id LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // StripeIDNotEndsWith stripe_id doesn't end with
 func (f *Filter) StripeIDNotEndsWith(v string) *Filter {
-	f.formats = append(f.formats, `stripe_id NOT LIKE %%s`)
+	f.formats = append(f.formats, `stripe_id NOT LIKE '%%' || %s`)
 	f.values = append(f.values, v)
 	return f
 }
@@ -615,14 +627,20 @@ func (f *Filter) StripeIDGte(v string) *Filter {
 }
 
 // StripeIDIn stripe_id is in
-func (f *Filter) StripeIDIn(v []string) *Filter {
-	f.formats = append(f.formats, `stripe_id IN (%s)`)
-	f.values = append(f.values, v)
+func (f *Filter) StripeIDIn(v ...string) *Filter {
+	var rs []string
+	for range v {
+		rs = append(rs, "%s")
+	}
+	f.formats = append(f.formats, fmt.Sprintf(`stripe_id IN (%s)`, strings.Join(rs, `, `)))
+	for _, i := range v {
+		f.values = append(f.values, i)
+	}
 	return f
 }
 
 // StripeIDNotIn stripe_id is not in
-func (f *Filter) StripeIDNotIn(v []string) *Filter {
+func (f *Filter) StripeIDNotIn(v string) *Filter {
 	f.formats = append(f.formats, `stripe_id NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -685,14 +703,14 @@ func (f *Filter) FreeTeammatesGte(v int) *Filter {
 }
 
 // FreeTeammatesIn free_teammates is in
-func (f *Filter) FreeTeammatesIn(v []int) *Filter {
+func (f *Filter) FreeTeammatesIn(v int) *Filter {
 	f.formats = append(f.formats, `free_teammates IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // FreeTeammatesNotIn free_teammates is not in
-func (f *Filter) FreeTeammatesNotIn(v []int) *Filter {
+func (f *Filter) FreeTeammatesNotIn(v int) *Filter {
 	f.formats = append(f.formats, `free_teammates NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
@@ -741,98 +759,98 @@ func (f *Filter) CostPerUserGte(v int) *Filter {
 }
 
 // CostPerUserIn cost_per_user is in
-func (f *Filter) CostPerUserIn(v []int) *Filter {
+func (f *Filter) CostPerUserIn(v int) *Filter {
 	f.formats = append(f.formats, `cost_per_user IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
 // CostPerUserNotIn cost_per_user is not in
-func (f *Filter) CostPerUserNotIn(v []int) *Filter {
+func (f *Filter) CostPerUserNotIn(v int) *Filter {
 	f.formats = append(f.formats, `cost_per_user NOT IN (%s)`)
 	f.values = append(f.values, v)
 	return f
 }
 
-// NewOrderBy fn
-func NewOrderBy() *OrderBy {
-	return &OrderBy{}
-}
-
-// OrderBy orders the given fields
-type OrderBy struct {
-	formats []string
-}
-
-// Order specificies the ORDER BY <order>
-type Order string
+// OrderBy specificies the ORDERBy BY <order>
+type OrderBy string
 
 const (
 	// Asc sorts by ascending order
-	Asc Order = "ASC"
+	ASC OrderBy = "ASC"
 
 	// Desc sorts by descending order
-	Desc Order = "DESC"
+	DESC OrderBy = "DESC"
 )
 
+// NewOrder fn
+func NewOrder() *Order {
+	return &Order{}
+}
+
+// Order orders the given fields
+type Order struct {
+	formats []string
+}
+
 // Clause fn
-func (o *OrderBy) Clause() *pogo.Clause {
+func (o *Order) Clause() *pogo.Clause {
 	return &pogo.Clause{
 		Type:   "ORDER BY",
 		Format: strings.Join(o.formats, ", "),
 	}
 }
 
-// ID orders `id` by a sort expression
-func (o *OrderBy) ID(order Order) *OrderBy {
+// ID sorts `id` by an expression
+func (o *Order) ID(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"id" %s`, order))
 	return o
 }
 
-// Token orders `token` by a sort expression
-func (o *OrderBy) Token(order Order) *OrderBy {
+// Token sorts `token` by an expression
+func (o *Order) Token(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"token" %s`, order))
 	return o
 }
 
-// TeamName orders `team_name` by a sort expression
-func (o *OrderBy) TeamName(order Order) *OrderBy {
+// TeamName sorts `team_name` by an expression
+func (o *Order) TeamName(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"team_name" %s`, order))
 	return o
 }
 
-// Scope orders `scope` by a sort expression
-func (o *OrderBy) Scope(order Order) *OrderBy {
+// Scope sorts `scope` by an expression
+func (o *Order) Scope(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"scope" %s`, order))
 	return o
 }
 
-// Email orders `email` by a sort expression
-func (o *OrderBy) Email(order Order) *OrderBy {
+// Email sorts `email` by an expression
+func (o *Order) Email(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"email" %s`, order))
 	return o
 }
 
-// StripeID orders `stripe_id` by a sort expression
-func (o *OrderBy) StripeID(order Order) *OrderBy {
+// StripeID sorts `stripe_id` by an expression
+func (o *Order) StripeID(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"stripe_id" %s`, order))
 	return o
 }
 
-// Active orders `active` by a sort expression
-func (o *OrderBy) Active(order Order) *OrderBy {
+// Active sorts `active` by an expression
+func (o *Order) Active(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"active" %s`, order))
 	return o
 }
 
-// FreeTeammates orders `free_teammates` by a sort expression
-func (o *OrderBy) FreeTeammates(order Order) *OrderBy {
+// FreeTeammates sorts `free_teammates` by an expression
+func (o *Order) FreeTeammates(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"free_teammates" %s`, order))
 	return o
 }
 
-// CostPerUser orders `cost_per_user` by a sort expression
-func (o *OrderBy) CostPerUser(order Order) *OrderBy {
+// CostPerUser sorts `cost_per_user` by an expression
+func (o *Order) CostPerUser(order OrderBy) *Order {
 	o.formats = append(o.formats, fmt.Sprintf(`"cost_per_user" %s`, order))
 	return o
 }
@@ -945,6 +963,48 @@ func FindByToken(db pogo.DB, token int) (*Team, error) {
 	return &_team, nil
 }
 
+// FindMany finds many "jack"."teams" by a condition
+func FindMany(db pogo.DB, conds ...pogo.Condition) ([]*Team, error) {
+	var teams []*Team
+
+	_s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return teams, err
+	}
+
+	// sql select query, primary key provided by sequence
+	sqlstr := `SELECT "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user" ` +
+		`FROM "jack"."teams" ` +
+		_s
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	rows, err := db.Query(sqlstr, _v...)
+	if err != nil {
+		return teams, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var _team Team
+		if e := rows.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil {
+			if e == pgx.ErrNoRows {
+				return teams, ErrTeamNotFound
+			}
+			return teams, err
+		}
+		teams = append(teams, &_team)
+	}
+	if rows.Err() != nil {
+		return teams, rows.Err()
+	}
+
+	return teams, nil
+}
+
 // UpdateByID a "team" in "jack"."teams" by its "id"
 func UpdateByID(db pogo.DB, id int, team *Input) (*Team, error) {
 	fields := team.columns()
@@ -962,8 +1022,8 @@ func UpdateByID(db pogo.DB, id int, team *Input) (*Team, error) {
 	}
 
 	// sql query
-	sqlstr := `UPDATE "jack"."teams" SET` +
-		` ` + strings.Join(_u, ", ") + ` ` +
+	sqlstr := `UPDATE "jack"."teams" SET ` +
+		strings.Join(_u, ", ") + ` ` +
 		`WHERE "id" = $1 ` +
 		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
 
@@ -982,6 +1042,206 @@ func UpdateByID(db pogo.DB, id int, team *Input) (*Team, error) {
 		if e == pgx.ErrNoRows {
 			return nil, ErrTeamNotFound
 		}
+		return nil, e
+	}
+
+	return &_team, nil
+}
+
+// UpdateByToken find a Team
+func UpdateByToken(db pogo.DB, token int, team *Input) (*Team, error) {
+	// add values to input, overriding existing keys if present in the input
+	team = team.Token(token)
+
+	// get the columns
+	fields := team.columns()
+
+	// don't update the keys
+	delete(fields, "token")
+
+	// prepare the slices
+	_c, _i, _v := slice(fields, 1)
+
+	// setup the update fields
+	var _u []string
+	for i, c := range _c {
+		_u = append(_u, c+" = "+_i[i])
+	}
+
+	// sql query
+	sqlstr := `UPDATE "jack"."teams" SET ` +
+		strings.Join(_u, ", ") + ` ` +
+		`WHERE "token" = $1 ` +
+		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
+
+	// setup the query
+	values := []interface{}{}
+	values = append(values, token)
+	values = append(values, _v...)
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, values...)
+	}
+
+	// run the query
+	var _team Team
+	row := db.QueryRow(sqlstr, values...)
+	if e := row.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeamNotFound
+		}
+		return nil, e
+	}
+
+	return &_team, nil
+}
+
+// Delete `Team`s by some conditions. Returns the first result.
+func Delete(db pogo.DB, conds ...pogo.Condition) (*Team, error) {
+	_s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return nil, err
+	}
+
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teams" ` +
+		_s + ` ` +
+		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	var _team Team
+	row := db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeamNotFound
+		}
+		return nil, e
+	}
+
+	return &_team, nil
+}
+
+// DeleteMany `Team`s by some conditions, returning all results.
+func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*Team, error) {
+	var teams []*Team
+
+	_s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return teams, err
+	}
+
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teams" ` +
+		_s + ` ` +
+		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	rows, err := db.Query(sqlstr, _v...)
+	if err != nil {
+		return teams, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var _team Team
+		if e := rows.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil {
+			if e == pgx.ErrNoRows {
+				return teams, ErrTeamNotFound
+			}
+			return teams, err
+		}
+		teams = append(teams, &_team)
+	}
+	if rows.Err() != nil {
+		return teams, rows.Err()
+	}
+
+	return teams, nil
+}
+
+// DeleteByID a "team" from the "jack"."teams" table
+func DeleteByID(db pogo.DB, id int) (*Team, error) {
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teams" ` +
+		`WHERE "id" = $1 ` +
+		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, id)
+	}
+
+	// run the query
+	var _team Team
+	row := db.QueryRow(sqlstr, id)
+	if e := row.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeamNotFound
+		}
+		return nil, e
+	}
+
+	return &_team, nil
+}
+
+// DeleteByToken deletes a "team"
+func DeleteByToken(db pogo.DB, token int) (*Team, error) {
+	// sql delete query
+	sqlstr := `DELETE FROM "jack"."teams" ` +
+		`WHERE "token" = $1 ` +
+		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, token)
+	}
+
+	// run the query
+	var _team Team
+	row := db.QueryRow(sqlstr, token)
+	if e := row.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil {
+		if e == pgx.ErrNoRows {
+			return nil, ErrTeamNotFound
+		}
+		return nil, e
+	}
+
+	return &_team, nil
+}
+
+// UpsertByToken find a "Team"
+func UpsertByToken(db pogo.DB, token int, team *Input) (*Team, error) {
+	// add values to input, overriding existing keys if present in the input
+	team = team.Token(token)
+
+	// get all the non-nil columns and prepare them for the query
+	_c, _i, _v := slice(team.columns(), 0)
+
+	// sql query
+	sqlstr := `INSERT INTO "jack"."teams" (` + strings.Join(_c, ", ") + `) ` +
+		`VALUES (` + strings.Join(_i, ", ") + `) ` +
+		`ON CONFLICT ("token") ` +
+		`DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
+		`RETURNING "id", "token", "team_name", "scope", "email", "stripe_id", "active", "free_teammates", "cost_per_user"`
+
+	// log query if we've provided a logger
+	if pogo.Log != nil {
+		pogo.Log(sqlstr, _v...)
+	}
+
+	// run query
+	var _team Team
+	row := db.QueryRow(sqlstr, _v...)
+	if e := row.Scan(&_team.ID, &_team.Token, &_team.TeamName, &_team.Scope, &_team.Email, &_team.StripeID, &_team.Active, &_team.FreeTeammates, &_team.CostPerUser); e != nil && e != pgx.ErrNoRows {
 		return nil, e
 	}
 
