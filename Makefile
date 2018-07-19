@@ -1,17 +1,14 @@
-test: templates jack
+test: templates jack.test
 
 precommit: test
 
-examples: jack digby
+examples: jack.example
 
-jack: templates 
+jack.test: templates 
 	@go test -v ./test/jack/jack_test.go
 
-# digby: templates 
-# 	@go run cmd/pogo/main.go --db $(DIGBY_POSTGRES_URL) --dir _examples/digby
-
-# gambit: templates 
-# 	@go run cmd/pogo/main.go --db $(GAMBIT_POSTGRES_URL) --schema 1 --dir _examples/gambit
+jack.example: templates
+	@go run cmd/pogo/main.go --db $(JACK_POSTGRES_URL) --schema jack --dir _examples/jack/pogo
 
 templates:
 	@go-bindata -nometadata -o templates/templates.go -pkg templates -ignore=templates.go templates/...
