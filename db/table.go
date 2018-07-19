@@ -117,6 +117,7 @@ func (t *Table) Filters() (filters []*Filter) {
 		filters = append(filters, &Filter{
 			Name:     col.Name,
 			DataType: col.DataType,
+			NotNull:  col.NotNull,
 		})
 	}
 

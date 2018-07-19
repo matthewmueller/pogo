@@ -34,3 +34,8 @@ func (c *Column) Snake() string {
 func (c *Column) Type(schema *Schema) (string, error) {
 	return coerce(schema, c.DataType)
 }
+
+// Nullable of column
+func (c *Column) Nullable() bool {
+	return !c.NotNull
+}
