@@ -300,107 +300,122 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 	case "DateTime":
 		// field equals
 		fields = append(fields, &FilterField{
-			Name:     f.Name,
-			DataType: f.DataType,
+			Name:        f.Name,
+			Description: f.Name + " is equal to",
+			DataType:    f.DataType,
 		})
 
 		// field doesn't equal
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Not",
-			DataType: f.DataType,
+			Name:        f.Name + "Not",
+			Description: f.Name + " is not equal to",
+			DataType:    f.DataType,
 		})
 
 		// field is in list
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "In",
-			DataType: f.DataType,
-			Spread:   `, `,
-			Format:   fmt.Sprintf("%s IN (%%s)", f.Name),
+			Name:        f.Name + "In",
+			Description: f.Name + " is in",
+			DataType:    f.DataType,
+			Spread:      `, `,
+			Format:      fmt.Sprintf("%s IN (%%s)", f.Name),
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "NotIn",
-			DataType: f.DataType,
-			Spread:   `, `,
-			Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
+			Name:        f.Name + "NotIn",
+			Description: f.Name + " is not in",
+			DataType:    f.DataType,
+			Spread:      `, `,
+			Format:      fmt.Sprintf("%s NOT IN (%%s)", f.Name),
 		})
 
 		// field is less than
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Lt",
-			DataType: f.DataType,
+			Name:        f.Name + "Lt",
+			Description: f.Name + " is less than",
+			DataType:    f.DataType,
 		})
 
 		// field is less than or equal
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Lte",
-			DataType: f.DataType,
+			Name:        f.Name + "Lte",
+			Description: f.Name + " is less than or equal",
+			DataType:    f.DataType,
 		})
 
 		// field is greater than
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Gt",
-			DataType: f.DataType,
+			Name:        f.Name + "Gt",
+			Description: f.Name + " is greater than",
+			DataType:    f.DataType,
 		})
 
 		// field is greater than or equal
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Gte",
-			DataType: f.DataType,
+			Name:        f.Name + "Gte",
+			Description: f.Name + " is greater than or equal",
+			DataType:    f.DataType,
 		})
 
 	case "Enum":
 		// field equals
 		fields = append(fields, &FilterField{
-			Name:     f.Name,
-			DataType: f.DataType,
+			Name:        f.Name,
+			Description: f.Name + " is equal to",
+			DataType:    f.DataType,
 		})
 
 		// field doesn't equal
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Not",
-			DataType: f.DataType,
+			Name:        f.Name + "Not",
+			Description: f.Name + " is not equal to",
+			DataType:    f.DataType,
 		})
 
 		// field is in list
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "In",
-			DataType: f.DataType,
-			Spread:   `, `,
-			Format:   fmt.Sprintf("%s IN (%%s)", f.Name),
+			Name:        f.Name + "In",
+			Description: f.Name + " is in",
+			DataType:    f.DataType,
+			Spread:      `, `,
+			Format:      fmt.Sprintf("%s IN (%%s)", f.Name),
 		})
 
 		// field is not in list
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "NotIn",
-			DataType: f.DataType,
-			Spread:   `, `,
-			Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
+			Name:        f.Name + "NotIn",
+			Description: f.Name + " is not in",
+			DataType:    f.DataType,
+			Spread:      `, `,
+			Format:      fmt.Sprintf("%s NOT IN (%%s)", f.Name),
 		})
 
 	case "List":
 		// field equals
 		fields = append(fields, &FilterField{
-			Name:     f.Name + "Contains",
-			DataType: f.DataType,
+			Name:        f.Name + "Contains",
+			Description: f.Name + " contains",
+			DataType:    f.DataType,
 		})
 
-		// field equals
-		fields = append(fields, &FilterField{
-			Name:     f.Name + "ContainsEvery",
-			DataType: f.DataType,
-			Spread:   `, `,
-			// Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
-		})
+		// // field equals
+		// fields = append(fields, &FilterField{
+		// 	Name:     f.Name + "ContainsEvery",
+		// Description: f.Name + " contains every",
+		// 	DataType: f.DataType,
+		// 	Spread:   `, `,
+		// 	// Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
+		// })
 
-		// field equals
-		fields = append(fields, &FilterField{
-			Name:     f.Name + "ContainsSome",
-			DataType: f.DataType,
-			Spread:   `, `,
-			// Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
-		})
+		// // field equals
+		// fields = append(fields, &FilterField{
+		// 	Name:     f.Name + "ContainsSome",
+		// Description: f.Name + " contains some",
+		// 	DataType: f.DataType,
+		// 	Spread:   `, `,
+		// 	// Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
+		// })
 
 	default:
 		return fields, fmt.Errorf("filter fields: unknown type %s", kind)

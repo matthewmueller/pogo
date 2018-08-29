@@ -154,10 +154,10 @@ func (f *Filter) {{ $field.Pascal }}(v {{ $field.Type $.Schema }}) *Filter {
 type OrderBy string
 
 const (
-	// Asc sorts by ascending order
+	// ASC sorts by ascending order
 	ASC OrderBy = "ASC"
 
-	// Desc sorts by descending order
+	// DESC sorts by descending order
 	DESC OrderBy = "DESC"
 )
 
@@ -357,7 +357,7 @@ func Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$
 	if err != nil {
 		return nil, err
 	}
-  
+
   fields := {{$.Table.Camel}}.columns()
 
   // prepare the slices
@@ -408,7 +408,7 @@ func UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (
 	if err != nil {
 		return nil, err
 	}
-  
+
   fields := {{$.Table.Camel}}.columns()
 
   // prepare the slices
@@ -582,7 +582,7 @@ func Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
 	}
 
   // sql delete query
-  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` + 
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     _s + ` ` +
     `RETURNING {{$.Table.Returning}}`
 
@@ -614,7 +614,7 @@ func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, err
 	}
 
   // sql delete query
-  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` + 
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     _s + ` ` +
     `RETURNING {{$.Table.Returning}}`
 
@@ -651,7 +651,7 @@ func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, err
 // DeleteBy{{$pk.Pascal}} a "{{$.Table.Camel}}" from the "{{$.Schema.Name}}"."{{$.Table.Name}}" table
 func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
-  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` + 
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     `WHERE "{{$pk.Name}}" = $1 ` +
     `RETURNING {{$.Table.Returning}}`
 
@@ -678,10 +678,10 @@ func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{
 // DeleteBy{{$idx.Method}} deletes a "{{$.Table.Camel}}"
 func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
-  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` + 
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     `WHERE {{$idx.Where}} ` +
     `RETURNING {{$.Table.Returning}}`
-  
+
   // log query if we've provided a logger
   if pogo.Log != nil {
     pogo.Log(sqlstr, {{$idx.Variables}})
