@@ -417,6 +417,9 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		// 	// Format:   fmt.Sprintf("%s NOT IN (%%s)", f.Name),
 		// })
 
+	case "JSON":
+		// nothing to do atm
+
 	default:
 		return fields, fmt.Errorf("filter fields: unknown type %s", kind)
 	}

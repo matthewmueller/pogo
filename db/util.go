@@ -95,6 +95,8 @@ func coerceFilter(schema *Schema, dt string) (kind string, err error) {
 		return "Float", nil
 	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
 		return "DateTime", nil
+	case "json", "jsonb":
+		return "JSON", nil
 	}
 
 	// maybe an enum?
@@ -112,5 +114,5 @@ func coerceFilter(schema *Schema, dt string) (kind string, err error) {
 		}
 	}
 
-	return "", fmt.Errorf(`pogo/coerce: don't understand the data type: %s`, dt)
+	return "", fmt.Errorf(`pogo/coerceFilter: don't understand the data type: %s`, dt)
 }

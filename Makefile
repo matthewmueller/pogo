@@ -1,11 +1,13 @@
+GREP?=""
+
 test: templates jack.test
 
 precommit: test
 
 examples: jack.example
 
-jack.test: templates 
-	@go test -v ./test/jack/jack_test.go
+jack.test: templates
+	@go test -v ./test/jack/jack_test.go -run $(GREP)
 
 jack.example: templates
 	@go run cmd/pogo/main.go --db $(JACK_POSTGRES_URL) --schema jack --dir _examples/jack/pogo

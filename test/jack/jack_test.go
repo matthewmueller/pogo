@@ -59,7 +59,9 @@ var up = `
 		"name" text not null,
 		channel text unique not null,
 		"time" text not null,
-		timezone text not null
+		timezone text not null,
+
+		unique(team_id, "name")
 	);
 
 	create table if not exists jack.questions (
@@ -110,6 +112,15 @@ var up = `
 		frequency text
 	);
 
+	-- convos
+	create table jack.convos (
+		"user" text primary key,
+		"intent" text,
+		"slot" text,
+		"state" jsonb not null default '{}'::jsonb,
+		"ttl" int
+	);
+
 	-- jack add
 	create function jack.add(a int, b int) returns int as $$
 	begin
@@ -119,6 +130,8 @@ var up = `
 `
 
 var down = `
+	drop table if exists jack.convos cascade;
+
 	drop table if exists jack.crons cascade;
 
 	drop table if exists jack.standups_teammates cascade;
@@ -205,6 +218,18 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
+			`,
+			Query:    `SELECT "id", "team_id" FROM "standups" WHERE "name" = $1 AND "team_id" = $2`,
+			Function: `standup.FindByNameAndTeamID(db, "b", 1)`,
+			Expected: `{"id":2,"team_id":1,"name":"b","channel":"b","time":"a","timezone":"a"}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 				insert into jack.reports (teammate_id, standup_id) values (1, 1);
 				insert into jack.reports (teammate_id, standup_id) values (1, 1);
 				insert into jack.reports (teammate_id, standup_id, status) values (1, 1, 'COMPLETE');
@@ -242,7 +267,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
-				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 2, '12:00', false);
 			`,
 			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
@@ -255,7 +280,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
-				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 2, '12:00', false);
 			`,
 			Query:    `UPDATE jack.standups_teammates SET "time" = '1:00', "owner" = true WHERE teammate_id = $1 AND standup_id = $2 RETURNING *`,
@@ -321,7 +346,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'c', 'c', 'c');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
-				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 1, '12:00', false);
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 3, '1:00', true);
 			`,
@@ -400,7 +425,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'c', 'c', 'c');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
-				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'b', 'a', 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 1, '12:00', false);
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 3, '1:00', true);
 			`,
@@ -494,7 +519,7 @@ func TestPogo(t *testing.T) {
 
 			stdout, stderr, remove := testutil.Run(t, name, `
 				package main
-	
+
 				import (
 					"`+importBase+`/pogo/enum"
 					pogo "`+importBase+`/pogo"
@@ -505,33 +530,33 @@ func TestPogo(t *testing.T) {
 					teammate "`+importBase+`/pogo/teammate"
 					standupteammate "`+importBase+`/pogo/standup-teammate"
 				)
-	
+
 				func main() {
 					cfg, err := pgx.ParseConnectionString("`+url+`")
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
-	
+
 					db, err := pgx.Connect(cfg)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
 					defer db.Close()
-	
+
 					actual, err := `+test.Function+`
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
-	
+
 					buf, err := json.Marshal(actual)
 					if err != nil {
 						fmt.Fprintln(os.Stderr, err.Error())
 						return
 					}
-					
+
 					fmt.Fprintf(os.Stdout, "%s", string(buf))
 				}
 			`)

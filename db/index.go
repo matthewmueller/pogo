@@ -57,10 +57,16 @@ func (i *Index) Params(schema *Schema) (string, error) {
 // Where fn
 func (i *Index) Where() string {
 	var cols []string
-	for i, col := range i.Columns {
-		cols = append(cols, fmt.Sprintf("%s = $%d", strconv.Quote(col.Name), i+1))
+
+	// sort the column names
+	for _, col := range i.Columns {
+		cols = append(cols, col.Name)
 	}
 	sort.Strings(cols)
+	for i, col := range cols {
+		cols[i] = fmt.Sprintf("%s = $%d", strconv.Quote(col), i+1)
+	}
+
 	return strings.Join(cols, " AND ")
 }
 
