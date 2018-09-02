@@ -169,7 +169,6 @@ func TestPogo(t *testing.T) {
 
 	var tests = []struct {
 		Setup    string
-		Query    string
 		Function string
 		Expected string
 		Error    string
@@ -179,12 +178,10 @@ func TestPogo(t *testing.T) {
 				insert into jack.teams (token, team_name) values (11, 'a');
 				insert into jack.teams (token, team_name) values (22, 'b');
 			`,
-			Query:    `SELECT * FROM teams WHERE id = $1`,
 			Function: `team.FindByID(db, 2)`,
 			Expected: `{"id":2,"token":22,"team_name":"b","active":true,"free_teammates":4,"cost_per_user":1}`,
 		},
 		{
-			Query:    `INSERT INTO jack.teams (token, team_name) VALUES ($1, $2) RETURNING id`,
 			Function: `team.Insert(db, team.New().Token(11).TeamName("1"))`,
 			Expected: `{"id":1,"token":11,"team_name":"1","active":true,"free_teammates":4,"cost_per_user":1}`,
 		},
@@ -193,7 +190,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teams (token, team_name) values (11, 'a');
 				insert into jack.teams (token, team_name) values (22, 'b');
 			`,
-			Query:    `UPDATE jack.teams SET stripe_id = $1 WHERE id = $2 RETURNING *`,
 			Function: `team.UpdateByID(db, 2, team.New().StripeID("stripey"))`,
 			Expected: `{"id":2,"token":22,"team_name":"b","stripe_id":"stripey","active":true,"free_teammates":4,"cost_per_user":1}`,
 		},
@@ -202,7 +198,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teams (token, team_name) values (11, 'a');
 				insert into jack.teams (token, team_name) values (22, 'b');
 			`,
-			Query:    `UPDATE jack.teams SET stripe_id = $1, active = false WHERE id = $2 RETURNING *`,
 			Function: `team.UpdateByID(db, 2, team.New().StripeID("stripey").Active(false))`,
 			Expected: `{"id":2,"token":22,"team_name":"b","stripe_id":"stripey","free_teammates":4,"cost_per_user":1}`,
 		},
@@ -212,7 +207,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 			`,
-			Query:    `SELECT id FROM teammates WHERE slack_id = $1`,
 			Function: `teammate.FindBySlackID(db, "b")`,
 			Expected: `{"id":2,"team_id":1,"slack_id":"b","username":"b","timezone":"b"}`,
 		},
@@ -224,7 +218,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 			`,
-			Query:    `SELECT "id", "team_id" FROM "standups" WHERE "name" = $1 AND "team_id" = $2`,
 			Function: `standup.FindByNameAndTeamID(db, "b", 1)`,
 			Expected: `{"id":2,"team_id":1,"name":"b","channel":"b","time":"a","timezone":"a"}`,
 		},
@@ -239,7 +232,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.reports (teammate_id, standup_id, status) values (1, 1, 'COMPLETE');
 				insert into jack.reports (teammate_id, standup_id, status) values (2, 1, 'COMPLETE');
 			`,
-			Query:    `SELECT * FROM reports WHERE teammate_id = $1 ORDER BY "timestamp" DESC LIMIT 1`,
 			Function: `report.Find(db, report.NewFilter().TeammateID(1), report.NewOrder().Timestamp(report.DESC))`,
 			Expected: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
 		},
@@ -250,7 +242,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
-			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id, time) VALUES ($1, $2, $3) RETURNING *`,
 			Function: `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
 			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
@@ -261,7 +252,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
-			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
 			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Status(enum.StandupTeammateStatusActive).Owner(true))`,
 			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
@@ -274,7 +264,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", "status", owner) values (1, 2, '12:00', 'ACTIVE', false);
 			`,
-			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
 			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Status(enum.StandupTeammateStatusInvited).Owner(true))`,
 			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"INVITED","time":"1:00","owner":true}`,
 		},
@@ -287,7 +276,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 2, 'ACTIVE', '12:00', false);
 			`,
-			Query:    `UPDATE jack.standups_teammates SET "time" = '1:00', "owner" = true WHERE teammate_id = $1 AND standup_id = $2 RETURNING *`,
 			Function: `standupteammate.UpdateByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
 			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
@@ -296,7 +284,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
 				insert into jack.crons ("job", "frequency") values ('j2', '* * * * 1-5');
 			`,
-			Query:    `DELETE FROM crons WHERE job = $1 RETURNING *`,
 			Function: `cron.DeleteByJob(db, "j2")`,
 			Expected: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
 		},
@@ -305,7 +292,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j1', '* * * * *');
 				insert into jack.crons ("job", "frequency") values ('j2', '* * * * 1-5');
 			`,
-			Query:    `DELETE FROM crons WHERE id = $1 RETURNING *`,
 			Function: `cron.DeleteByID(db, 2)`,
 			Expected: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
 		},
@@ -316,7 +302,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 			`,
-			Query:    `INSERT INTO teammates (slack_id, team_id) VALUES ($1, $2) ON CONFLICT (slack_id) DO UPDATE SET id = teammates.id RETURNING *`,
 			Function: `teammate.UpsertBySlackID(db, "b", teammate.New().TeamID(2).Username("b").Timezone("b"))`,
 			Expected: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
 		},
@@ -327,7 +312,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 			`,
-			Query:    `INSERT INTO teammates (slack_id, team_id) VALUES ($1, $2) ON CONFLICT (slack_id) DO UPDATE SET id = teammates.id RETURNING *`,
 			Function: `teammate.UpsertByID(db, 2, teammate.New().TeamID(2).SlackID("b").Username("b").Timezone("b"))`,
 			Expected: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
 		},
@@ -339,7 +323,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (2, 'b', 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'c', 'c', 'c', 'c');
 			`,
-			Query:    `SELECT * FROM standups WHERE team_id = $1`,
 			Function: `standup.FindMany(db, standup.NewFilter().TeamID(2), standup.NewOrder().Channel(standup.DESC))`,
 			Expected: `[{"id":2,"team_id":2,"name":"b","channel":"b","time":"b","timezone":"b"},{"id":1,"team_id":2,"name":"a","channel":"a","time":"a","timezone":"a"}]`,
 		},
@@ -354,7 +337,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 1, 'ACTIVE', '12:00', false);
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 3, 'ACTIVE', '1:00', true);
 			`,
-			Query:    `SELECT * FROM standups_teammates WHERE standup_id = $1`,
 			Function: `standupteammate.FindMany(db, standupteammate.NewFilter().StandupID(1))`,
 			Expected: `[{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"12:00"},{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"1:00","owner":true}]`,
 		},
@@ -364,7 +346,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
 				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
 			`,
-			Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
 			Function: `cron.Delete(db, cron.NewFilter().JobContains("j1"))`,
 			Expected: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
 		},
@@ -374,7 +355,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
 				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
 			`,
-			Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
 			Function: `cron.Delete(db, cron.NewFilter().JobStartsWith("j1"))`,
 			Expected: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
 		},
@@ -384,7 +364,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
 				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
 			`,
-			Query:    `DELETE FROM crons WHERE job SIMILAR TO $1`,
 			Function: `cron.DeleteMany(db, cron.NewFilter().JobContains("2"))`,
 			Expected: `[{"id":2,"job":"j20","frequency":"* * * * 1-5"},{"id":3,"job":"j21","frequency":"* * * * 1-5"}]`,
 		},
@@ -394,7 +373,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 			`,
-			Query:    `SELECT * FROM teammates WHERE id = IN ($1)`,
 			Function: `teammate.Find(db, teammate.NewFilter().SlackIDIn("b", "c"))`,
 			Expected: `{"id":2,"team_id":1,"slack_id":"b","username":"b","timezone":"b"}`,
 		},
@@ -409,7 +387,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.reports (teammate_id, standup_id, status) values (1, 1, 'COMPLETE');
 				insert into jack.reports (teammate_id, standup_id, status) values (2, 1, 'COMPLETE');
 			`,
-			Query:    `SELECT * FROM reports WHERE teammate_id = $1 AND standup_id = $2 AND "timestamp" > (timestamp '1d' - INTERVAL '1hr') ORDER BY "timestamp" DESC LIMIT 1`,
 			Function: `report.Find(db, report.NewFilter().TeammateID(2).StandupID(1).TimestampGt(2), report.NewOrder().Timestamp(report.DESC))`,
 			Expected: `{"id":4,"teammate_id":2,"standup_id":1,"status":"COMPLETE","timestamp":4}`,
 		},
@@ -418,7 +395,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teams (token, team_name) values (11, 'a');
 				insert into jack.teams (token, team_name) values (22, 'b');
 			`,
-			Query:    `select * from teams`,
 			Function: `team.FindMany(db)`,
 			Expected: `[{"id":1,"token":11,"team_name":"a","active":true,"free_teammates":4,"cost_per_user":1},{"id":2,"token":22,"team_name":"b","active":true,"free_teammates":4,"cost_per_user":1}]`,
 		},
@@ -433,7 +409,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 1, 'ACTIVE', '12:00', false);
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 3, 'ACTIVE', '1:00', true);
 			`,
-			Query:    `SELECT * FROM standups_teammates WHERE owner = true AND standup_id = ANY($1)`,
 			Function: `standupteammate.Find(db, standupteammate.NewFilter().Owner(true).StandupIDIn(1, 3))`,
 			Expected: `{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
@@ -443,7 +418,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teams (token, team_name) values (22, 'b');
 				insert into jack.teams (token, team_name) values (33, 'c');
 			`,
-			Query:    `UPDATE jack.teams SET team_name = 'cool' team_name WHERE token IN (11, 44) RETURNING *`,
 			Function: `team.Update(db, team.New().TeamName("cool"), team.NewFilter().TokenIn(11, 44))`,
 			Expected: `{"id":1,"token":11,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1}`,
 		},
@@ -453,7 +427,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.teams (token, team_name) values (22, 'b');
 				insert into jack.teams (token, team_name) values (33, 'c');
 			`,
-			Query:    `UPDATE jack.teams SET team_name = 'cool' team_name WHERE token IN (11, 44) RETURNING *`,
 			Function: `team.UpdateMany(db, team.New().TeamName("cool"), team.NewFilter().TokenIn(11, 22))`,
 			Expected: `[{"id":1,"token":11,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1},{"id":2,"token":22,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1}]`,
 		},
@@ -463,7 +436,6 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
 				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
 			`,
-			Query:    `UPDATE crons SET frequency = NULL WHERE id = $1`,
 			Function: `cron.UpdateByID(db, 1, cron.New())`,
 			Error:    `cron.UpdateByID: no input provided`,
 		},
@@ -473,12 +445,10 @@ func TestPogo(t *testing.T) {
 				insert into jack.crons ("job", "frequency") values ('j20', '* * * * 1-5');
 				insert into jack.crons ("job", "frequency") values ('j21', '* * * * 1-5');
 			`,
-			Query:    `UPDATE crons SET frequency = NULL WHERE id = $1`,
 			Function: `cron.UpdateByID(db, 1, cron.New().NullableFrequency(nil))`,
 			Expected: `{"id":1,"job":"j1"}`,
 		},
 		// {
-		// 	Query:    `INSERT INTO crons (job, frequency, tz) VALUES ($1, $2, $3) ON CONFLICT (job) DO UPDATE SET frequency = concat($4::text, ' ', substring(crons.frequency from '[\\d\\-\\,\\*]+$')), tz = $3 RETURNING *`,
 		// 	Expected: ``,
 		// },
 	}
