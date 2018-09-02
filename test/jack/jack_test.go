@@ -3,6 +3,7 @@ package jack_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"go/build"
 	"os"
 	"path/filepath"
@@ -448,9 +449,14 @@ func TestPogo(t *testing.T) {
 			Function: `cron.UpdateByID(db, 1, cron.New().NullableFrequency(nil))`,
 			Expected: `{"id":1,"job":"j1"}`,
 		},
-		// {
-		// 	Expected: ``,
-		// },
+		{
+			Setup: `
+				insert into jack.convos ("user", "intent") values ('U0QS7USPJ', 'standup_join');
+				insert into jack.convos ("user", "intent") values ('U0QS890N5', 'standup_join');
+			`,
+			Function: `convo.FindMany(db, convo.NewFilter().UserIn("U0QS7USPJ", "U0QS890N5"))`,
+			Expected: `[{"user":"U0QS7USPJ","intent":"standup_join","state":{}},{"user":"U0QS890N5","intent":"standup_join","state":{}}]`,
+		},
 	}
 
 	gopath := build.Default.GOPATH
@@ -540,12 +546,24 @@ func TestPogo(t *testing.T) {
 					if test.Error == stderr {
 						return
 					}
+					fmt.Println("# Expected:")
+					fmt.Println(test.Error)
+					fmt.Println()
+					fmt.Println("# Actual:")
+					fmt.Println(stderr)
+					fmt.Println()
 					t.Fatal(diff(test.Error, stderr))
 				}
 				t.Fatal(errors.New(stderr))
 			}
 
 			if test.Expected != stdout {
+				fmt.Println("# Expected:")
+				fmt.Println(test.Expected)
+				fmt.Println()
+				fmt.Println("# Actual:")
+				fmt.Println(stdout)
+				fmt.Println()
 				t.Fatal(diff(test.Expected, stdout))
 			}
 
