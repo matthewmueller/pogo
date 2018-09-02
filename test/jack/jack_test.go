@@ -94,6 +94,8 @@ var up = `
 		answer text not null
 	);
 
+	create type jack.standup_teammate_status as enum ('INVITED','ACTIVE','INACTIVE');
+
 	-- STANDUPS_TEAMMATES
 	create table if not exists jack.standups_teammates (
 		id serial not null primary key,
@@ -101,6 +103,7 @@ var up = `
 		teammate_id integer not null references jack.teammates(id),
 		unique(standup_id, teammate_id),
 
+		"status" jack.standup_teammate_status not null,
 		"time" text not null,
 		owner bool not null default 'false'
 	);
@@ -135,6 +138,7 @@ var down = `
 	drop table if exists jack.crons cascade;
 
 	drop table if exists jack.standups_teammates cascade;
+	drop type if exists jack.standup_teammate_status cascade;
 
 	drop table if exists jack.questions cascade;
 
@@ -247,8 +251,8 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
 			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id, time) VALUES ($1, $2, $3) RETURNING *`,
-			Function: `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+			Function: `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -258,8 +262,8 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
 			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
-			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Status(enum.StandupTeammateStatusActive).Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -268,11 +272,11 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
-				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 2, '12:00', false);
+				insert into jack.standups_teammates (standup_id, teammate_id, "time", "status", owner) values (1, 2, '12:00', 'ACTIVE', false);
 			`,
 			Query:    `INSERT INTO standups_teammates (standup_id, teammate_id) VALUES ($1, $2) ON CONFLICT (standup_id, teammate_id) DO UPDATE SET status = 'ACTIVE' RETURNING *`,
-			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Status(enum.StandupTeammateStatusInvited).Owner(true))`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"INVITED","time":"1:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -281,11 +285,11 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
-				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 2, '12:00', false);
+				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 2, 'ACTIVE', '12:00', false);
 			`,
 			Query:    `UPDATE jack.standups_teammates SET "time" = '1:00', "owner" = true WHERE teammate_id = $1 AND standup_id = $2 RETURNING *`,
 			Function: `standupteammate.UpdateByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"time":"1:00","owner":true}`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -347,12 +351,12 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'c', 'c', 'c');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
-				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 1, '12:00', false);
-				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 3, '1:00', true);
+				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 1, 'ACTIVE', '12:00', false);
+				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 3, 'ACTIVE', '1:00', true);
 			`,
 			Query:    `SELECT * FROM standups_teammates WHERE standup_id = $1`,
 			Function: `standupteammate.FindMany(db, standupteammate.NewFilter().StandupID(1))`,
-			Expected: `[{"id":1,"standup_id":1,"teammate_id":1,"time":"12:00"},{"id":2,"standup_id":1,"teammate_id":3,"time":"1:00","owner":true}]`,
+			Expected: `[{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"12:00"},{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"1:00","owner":true}]`,
 		},
 		{
 			Setup: `
@@ -426,12 +430,12 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'c', 'c', 'c');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'b', 'b', 'a', 'a');
-				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 1, '12:00', false);
-				insert into jack.standups_teammates (standup_id, teammate_id, "time", owner) values (1, 3, '1:00', true);
+				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 1, 'ACTIVE', '12:00', false);
+				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 3, 'ACTIVE', '1:00', true);
 			`,
 			Query:    `SELECT * FROM standups_teammates WHERE owner = true AND standup_id = ANY($1)`,
 			Function: `standupteammate.Find(db, standupteammate.NewFilter().Owner(true).StandupIDIn(1, 3))`,
-			Expected: `{"id":2,"standup_id":1,"teammate_id":3,"time":"1:00","owner":true}`,
+			Expected: `{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
 		{
 			Setup: `

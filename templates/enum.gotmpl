@@ -25,15 +25,15 @@ const (
 {{/*************************************************************************/}}
 
 // Value satisfies the sql/driver.Valuer interface for {{$.Enum.Pascal}}.
-// func ({{$.Enum.Camel}} {{$.Enum.Pascal}}) Value() (driver.Value, error) {
-//   return string({{$.Enum.Camel}}), nil
-// }
+func ({{$.Enum.Camel}} {{$.Enum.Pascal}}) Value() (driver.Value, error) {
+  return string({{$.Enum.Camel}}), nil
+}
 
 {{/*************************************************************************/}}
 {{/* Satisfy the pgtypes.EncodeBinary interface */}}
 {{/*************************************************************************/}}
 
 // EncodeBinary Satisfies the pgtypes.EncodeBinary interface for {{$.Enum.Pascal}}.
-// func ({{$.Enum.Camel}} {{$.Enum.Pascal}}) EncodeBinary(_ *pgtype.ConnInfo, b []byte) ([]byte, error) {
-//   return append(b, []byte({{$.Enum.Camel}})...), nil
-// }	
+func ({{$.Enum.Camel}} {{$.Enum.Pascal}}) EncodeBinary(_ *pgtype.ConnInfo, b []byte) ([]byte, error) {
+  return append(b, []byte({{$.Enum.Camel}})...), nil
+}
