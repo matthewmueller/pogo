@@ -234,6 +234,19 @@ func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   return &_{{$.Table.Camel}}, nil
 }
 
+// InsertMany "{{$.Table.Name}}" into the "{{$.Schema.Name}}"."{{$.Table.Name}}"
+func InsertMany(db pogo.DB, {{$.Table.PluralCamel}} ...*Input) ([]*{{$.Table.Pascal}}, error) {
+	var _{{$.Table.PluralCamel}} []*{{$.Table.Pascal}}
+	for _, {{$.Table.Camel}} := range {{$.Table.PluralCamel}} {
+		_{{$.Table.Camel}}, err := Insert(db, {{$.Table.Camel}})
+		if err != nil {
+			return _{{$.Table.PluralCamel}}, err
+		}
+		_{{$.Table.PluralCamel}} = append(_{{$.Table.PluralCamel}}, _{{$.Table.Camel}})
+	}
+	return _{{$.Table.PluralCamel}}, nil
+}
+
 {{/* Find a row by a set of conditions */}}
 // Find a `{{$.Table.Pascal}}` by some conditions.
 func Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {

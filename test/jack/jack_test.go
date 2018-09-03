@@ -67,10 +67,12 @@ var up = `
 
 	create table if not exists jack.questions (
 		id serial not null primary key,
-		"order" smallint not null,
 		standup_id integer not null references jack.standups(id) on delete cascade,
 
-		question text not null
+		"order" smallint not null,
+		question text not null,
+
+		unique(standup_id, "order")
 	);
 
 	-- REPORTS
@@ -470,6 +472,18 @@ func TestPogo(t *testing.T) {
 			Function: `standupteammate.New().StandupID(1).TeammateID(1).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true).Insert(db)`,
 			Expected: `{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"1:00","owner":true}`,
 		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+			`,
+			Function: `question.InsertMany(
+				db,
+				question.New().StandupID(1).Order(2).Question("what's my name?"),
+				question.New().StandupID(1).Order(1).Question("what's my age?"),
+			)`,
+			Expected: `[{"id":1,"standup_id":1,"order":2,"question":"what's my name?"},{"id":2,"standup_id":1,"order":1,"question":"what's my age?"}]`,
+		},
 	}
 
 	gopath := build.Default.GOPATH
@@ -520,6 +534,7 @@ func TestPogo(t *testing.T) {
 					cron "`+importBase+`/pogo/cron"
 					report "`+importBase+`/pogo/report"
 					standup "`+importBase+`/pogo/standup"
+					question "`+importBase+`/pogo/question"
 					teammate "`+importBase+`/pogo/teammate"
 					standupteammate "`+importBase+`/pogo/standup-teammate"
 				)
