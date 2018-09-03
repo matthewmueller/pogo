@@ -22,6 +22,18 @@ type {{$.Table.Pascal}} struct {
   {{- end }}
 }
 
+var _ pogo.Row = (*{{$.Table.Pascal}})(nil)
+
+// Decode implements pogo.Row
+func ({{$.Table.Short}} *{{$.Table.Pascal}}) Decode({{$.Table.Camel}} interface{}) error {
+  _{{$.Table.Camel}}, ok := {{$.Table.Camel}}.(*{{$.Table.Pascal}})
+  if !ok {
+    return fmt.Errorf(`{{$.Table.Camel}} decode: "%T" is not a "*{{$.Table.Pascal}}"`, {{$.Table.Camel}})
+  }
+  *_{{$.Table.Camel}} = *{{$.Table.Short}}
+  return nil
+}
+
 // New "{{$.Schema.Name}}"."{{$.Table.Name}}" input
 func New() *Input {
   return &Input{}
@@ -36,6 +48,8 @@ type Input struct {
   {{- end }}
   {{- end }}
 }
+
+var _ pogo.Insertable = (*Input)(nil)
 
 {{ range $col := $.Table.Columns }}
 // {{$col.Pascal}} sets the "{{$col.Name}}"
@@ -82,6 +96,11 @@ func ({{$.Table.Short}} *Input) columns() map[string]interface{} {
   {{ end }}
 
   return columns
+}
+
+// Insert implements pogo.Insertable
+func ({{$.Table.Short}} *Input) Insert(db pogo.DB) (pogo.Row, error) {
+  return Insert(db, {{$.Table.Short}})
 }
 
 // NewFilter creates a new filter
