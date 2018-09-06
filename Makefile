@@ -17,4 +17,4 @@ templates:
 .PHONY: templates
 
 install: templates
-	@go install ./cmd/...
+	@go install ./cmd/pogo
