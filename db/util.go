@@ -51,7 +51,7 @@ func coerce(schema *Schema, dt string) (kind string, err error) {
 		return "float32", nil
 	case "double", "float":
 		return "float64", nil
-	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
+	case "date", "timestamp with time zone", "timestamp without time zone":
 		return "time.Time", nil
 	case "json", "jsonb":
 		return "json.RawMessage", nil

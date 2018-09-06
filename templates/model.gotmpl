@@ -158,11 +158,17 @@ func (f *Filter) {{ $field.Pascal }}(v {{ $field.Type $.Schema }}) *Filter {
 	}
   f.formats = append(f.formats, fmt.Sprintf(`{{ $field.Format }}`, strings.Join(rs, `{{ $field.Spread }}`)))
   for _, i := range v {
-    f.values = append(f.values, i)
+    f.values = append(f.values, {{ $field.Coerce "i" }})
   }
   {{- else }}
+  {{- if $field.Nullable }}
+  if v == nil {
+    f.formats = append(f.formats, `{{ $field.NullFormat }}`)
+    return f
+  }
+  {{- end }}
   f.formats = append(f.formats, `{{ $field.Format }}`)
-	f.values = append(f.values, v)
+	f.values = append(f.values, {{ $field.Coerce "v" }})
   {{- end }}
 	return f
 }
@@ -236,7 +242,7 @@ func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 
 // InsertMany "{{$.Table.Name}}" into the "{{$.Schema.Name}}"."{{$.Table.Name}}"
 func InsertMany(db pogo.DB, {{$.Table.PluralCamel}} ...*Input) ([]*{{$.Table.Pascal}}, error) {
-	var _{{$.Table.PluralCamel}} []*{{$.Table.Pascal}}
+	_{{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
 	for _, {{$.Table.Camel}} := range {{$.Table.PluralCamel}} {
 		_{{$.Table.Camel}}, err := Insert(db, {{$.Table.Camel}})
 		if err != nil {
@@ -342,7 +348,7 @@ func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pas
 {{/* FindMany by a condition */}}
 // FindMany finds many "{{$.Schema.Name}}"."{{$.Table.Name}}" by a condition
 func FindMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
-  var {{$.Table.PluralCamel}} []*{{$.Table.Pascal}}
+  {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
 
   _s, _v, err := pogo.Conditions(conds...)
 	if err != nil {
@@ -434,7 +440,7 @@ func Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$
 {{/* Update matching rows by a condition, returning 1 result */}}
 // UpdateMany updates "{{$.Table.Name}}" rows in "{{$.Schema.Name}}"."{{$.Table.Name}}" by conditions, returning all results
 func UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
-  var {{$.Table.PluralCamel}} []*{{$.Table.Pascal}}
+  {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
 
   _s, _v, err := pogo.Conditions(conds...)
 	if err != nil {
@@ -638,7 +644,7 @@ func Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
 {{/* Find a row by a set of conditions */}}
 // DeleteMany `{{$.Table.Pascal}}`s by some conditions, returning all results.
 func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
-  var {{$.Table.PluralCamel}} []*{{$.Table.Pascal}}
+  {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
 
   _s, _v, err := pogo.Conditions(conds...)
 	if err != nil {

@@ -27,7 +27,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name,
 			Description: f.Name + " equals",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
 		})
 
@@ -36,7 +35,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Not",
 			Description: f.Name + " doesn't equal",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
 		})
 
@@ -45,7 +43,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Contains",
 			Description: f.Name + " contains",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" LIKE '%%%%' || %%s || '%%%%'`, f.Name),
 		})
 
@@ -54,7 +51,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotContains",
 			Description: f.Name + " doesn't contain",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" NOT LIKE '%%%%' || %%s || '%%%%'`, f.Name),
 		})
 
@@ -63,7 +59,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "StartsWith",
 			Description: f.Name + " starts with",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" LIKE %%s || '%%%%'`, f.Name),
 		})
 
@@ -72,7 +67,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotStartsWith",
 			Description: f.Name + " doesn't start with",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" NOT LIKE %%s || '%%%%'`, f.Name),
 		})
 
@@ -81,7 +75,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "EndsWith",
 			Description: f.Name + " ends with",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" LIKE '%%%%' || %%s`, f.Name),
 		})
 
@@ -90,7 +83,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotEndsWith",
 			Description: f.Name + " doesn't end with",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" NOT LIKE '%%%%' || %%s`, f.Name),
 		})
 
@@ -99,7 +91,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Lt",
 			Description: f.Name + " is less than",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" < %%s`, f.Name),
 		})
 
@@ -108,7 +99,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Lte",
 			Description: f.Name + " is less than or equal",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" <= %%s`, f.Name),
 		})
 
@@ -117,7 +107,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Gt",
 			Description: f.Name + " is greater than",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" > %%s`, f.Name),
 		})
 
@@ -126,7 +115,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Gte",
 			Description: f.Name + " is greater than or equal",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" >= %%s`, f.Name),
 		})
 
@@ -135,7 +123,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "In",
 			Description: f.Name + " is in",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" IN (%%s)`, f.Name),
 			Spread:      `, `,
 		})
@@ -145,10 +132,30 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotIn",
 			Description: f.Name + " is not in",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" NOT IN (%%s)`, f.Name),
 			Spread:      `, `,
 		})
+
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+			})
+		}
 
 	case "Int":
 		// field equals
@@ -156,7 +163,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name,
 			Description: f.Name + " equals",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
 		})
 
@@ -165,7 +171,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Not",
 			Description: f.Name + " doesn't equal",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
 		})
 
@@ -174,7 +179,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Lt",
 			Description: f.Name + " is less than",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" < %%s`, f.Name),
 		})
 
@@ -183,7 +187,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Lte",
 			Description: f.Name + " is less than or equal",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" <= %%s`, f.Name),
 		})
 
@@ -192,7 +195,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Gt",
 			Description: f.Name + " is greater than",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" > %%s`, f.Name),
 		})
 
@@ -201,7 +203,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Gte",
 			Description: f.Name + " is greater than or equal",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" >= %%s`, f.Name),
 		})
 
@@ -210,7 +211,6 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "In",
 			Description: f.Name + " is in",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" IN (%%s)`, f.Name),
 			Spread:      `, `,
 		})
@@ -220,10 +220,30 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "NotIn",
 			Description: f.Name + " is not in",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" NOT IN (%%s)`, f.Name),
 			Spread:      `, `,
 		})
+
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+			})
+		}
 
 	case "Float":
 		// field equals
@@ -278,13 +298,33 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Format:   fmt.Sprintf(`"%s" NOT IN (%%s)`, f.Name),
 		})
 
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+			})
+		}
+
 	case "Boolean":
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name,
 			Description: f.Name + " is equal to",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
 		})
 
@@ -293,9 +333,29 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Not",
 			Description: f.Name + " is not equal to",
 			DataType:    f.DataType,
-			NotNull:     f.NotNull,
 			Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
 		})
+
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+			})
+		}
 
 	case "DateTime":
 		// field equals
@@ -303,6 +363,8 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name,
 			Description: f.Name + " is equal to",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field doesn't equal
@@ -310,6 +372,8 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Not",
 			Description: f.Name + " is not equal to",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field is in list
@@ -319,6 +383,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			DataType:    f.DataType,
 			Spread:      `, `,
 			Format:      fmt.Sprintf(`"%s" IN (%%s)`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field is not in list
@@ -328,6 +393,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			DataType:    f.DataType,
 			Spread:      `, `,
 			Format:      fmt.Sprintf(`"%s" NOT IN (%%s)`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field is less than
@@ -335,6 +401,8 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Lt",
 			Description: f.Name + " is less than",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" < %%s`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field is less than or equal
@@ -342,6 +410,8 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Lte",
 			Description: f.Name + " is less than or equal",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" <= %%s`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field is greater than
@@ -349,6 +419,8 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Gt",
 			Description: f.Name + " is greater than",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" > %%s`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
 
 		// field is greater than or equal
@@ -356,7 +428,32 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Gte",
 			Description: f.Name + " is greater than or equal",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" >= %%s`, f.Name),
+			Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
 		})
+
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+				Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+				Value:       `%s.Format("2006-01-02 15:04:05.999999999Z07:00")`,
+			})
+		}
 
 	case "Enum":
 		// field equals
@@ -391,6 +488,27 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Format:      fmt.Sprintf(`"%s" NOT IN (%%s)`, f.Name),
 		})
 
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+			})
+		}
+
 	case "List":
 		// field equals
 		fields = append(fields, &FilterField{
@@ -398,6 +516,27 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Description: f.Name + " contains",
 			DataType:    f.DataType,
 		})
+
+		// if nullable
+		if !f.NotNull {
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name,
+				Description: "nullable " + f.Name + " equals",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NULL`, f.Name),
+			})
+
+			fields = append(fields, &FilterField{
+				Name:        "nullable_" + f.Name + "_not",
+				Description: "nullable " + f.Name + " is not equal",
+				Nullable:    true,
+				DataType:    f.DataType,
+				Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
+				NullFormat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.Name),
+			})
+		}
 
 		// // field equals
 		// fields = append(fields, &FilterField{
@@ -432,9 +571,11 @@ type FilterField struct {
 	Name        string
 	Description string
 	DataType    string
-	NotNull     bool
+	Nullable    bool
 	Format      string
+	NullFormat  string
 	Spread      string
+	Value       string
 }
 
 // Pascal case
@@ -454,9 +595,22 @@ func (f *FilterField) Type(schema *Schema) (string, error) {
 		return "", err
 	}
 
-	if f.Spread != "" {
-		return "..." + dt, nil
+	ptr := ""
+	if f.Nullable {
+		ptr = "*"
 	}
 
-	return dt, nil
+	if f.Spread != "" {
+		return "..." + ptr + dt, nil
+	}
+
+	return ptr + dt, nil
+}
+
+// Coerce the value of the filter field
+func (f *FilterField) Coerce(value string) (string, error) {
+	if f.Value == "" {
+		return value, nil
+	}
+	return fmt.Sprintf(f.Value, value), nil
 }

@@ -15,6 +15,7 @@ import (
 )
 
 var url = os.Getenv("JACK_POSTGRES_URL")
+var log = os.Getenv("LOG")
 
 var up = `
 	-- Schema
@@ -116,6 +117,12 @@ var up = `
 		id serial not null primary key,
 		"job" text unique not null,
 		frequency text
+	);
+
+	-- cron event
+	create table if not exists jack.events (
+		id serial not null primary key,
+		"time" timestamp with time zone
 	);
 
 	-- convos
@@ -484,6 +491,66 @@ func TestPogo(t *testing.T) {
 			)`,
 			Expected: `[{"id":1,"standup_id":1,"order":2,"question":"what's my name?"},{"id":2,"standup_id":1,"order":1,"question":"what's my age?"}]`,
 		},
+		{
+			Setup: `
+				insert into jack.events ("time") values ('2018-09-04 00:00:00+00');
+			`,
+			Function: `event.Find(db, event.NewFilter().TimeLte(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
+			Expected: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values ('2018-09-04 00:00:00+00');
+			`,
+			Function: `event.Find(db, event.NewFilter().TimeLt(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
+			Expected: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values ('2018-09-04 00:00:00+00');
+			`,
+			Function: `event.Find(db, event.NewFilter().TimeGte(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))`,
+			Expected: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values ('2018-09-04 00:00:00+00');
+			`,
+			Function: `event.Find(db, event.NewFilter().TimeGt(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))`,
+			Expected: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values ('2018-09-04 00:00:00+00');
+			`,
+			Function: `event.Find(db, event.NewFilter().Time(time.Date(2018, 9, 4, 0, 0, 0, 0, time.UTC)))`,
+			Expected: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values ('2018-09-04 00:00:00+00');
+			`,
+			Function: `event.Find(db, event.NewFilter().TimeNot(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
+			Expected: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values (NULL);
+				insert into jack.events ("time") values (NULL);
+				insert into jack.events ("time") values (NULL);
+			`,
+			Function: `event.FindMany(db, event.NewFilter().NullableTime(nil))`,
+			Expected: `[{"id":1},{"id":2},{"id":3}]`,
+		},
+		{
+			Setup: `
+				insert into jack.events ("time") values (NULL);
+				insert into jack.events ("time") values (NULL);
+				insert into jack.events ("time") values (NULL);
+			`,
+			Function: `event.FindMany(db, event.NewFilter().NullableTime(&now))`,
+			Expected: `[]`,
+		},
 	}
 
 	gopath := build.Default.GOPATH
@@ -528,6 +595,8 @@ func TestPogo(t *testing.T) {
 				package main
 
 				import (
+					"time"
+
 					"`+importBase+`/pogo/enum"
 					pogo "`+importBase+`/pogo"
 					team "`+importBase+`/pogo/team"
@@ -540,6 +609,9 @@ func TestPogo(t *testing.T) {
 				)
 
 				func main() {
+					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
+					_ = now
+
 					cfg, err := pgx.ParseConnectionString("`+url+`")
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())

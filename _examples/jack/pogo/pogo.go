@@ -102,3 +102,16 @@ type Clause struct {
 	Format string
 	Params []interface{}
 }
+
+// Insertable can be inserted into the DB
+// This is a convenience function for simple
+// insert operations
+type Insertable interface {
+	Insert(db DB) (Row, error)
+}
+
+// Row interface allows you to pull out
+// the specific models in a generic way
+type Row interface {
+	Decode(v interface{}) error
+}
