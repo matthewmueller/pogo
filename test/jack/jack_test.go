@@ -251,6 +251,20 @@ func TestPogo(t *testing.T) {
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
 				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+				insert into jack.reports (teammate_id, standup_id) values (1, 1);
+				insert into jack.reports (teammate_id, standup_id) values (1, 1);
+				insert into jack.reports (teammate_id, standup_id, status) values (1, 1, 'COMPLETE');
+				insert into jack.reports (teammate_id, standup_id, status) values (2, 1, 'COMPLETE');
+			`,
+			Function: `report.FindMany(db, report.NewFilter().Status(enum.ReportStatusAsked))`,
+			Expected: `[{"id":1,"teammate_id":1,"standup_id":1,"status":"ASKED","timestamp":1},{"id":2,"teammate_id":1,"standup_id":1,"status":"ASKED","timestamp":2}]`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
 			Function: `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
 			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,

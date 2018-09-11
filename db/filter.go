@@ -250,36 +250,42 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		fields = append(fields, &FilterField{
 			Name:     f.Name,
 			DataType: f.DataType,
+			Format:   fmt.Sprintf(`"%s" = %%s`, f.Name),
 		})
 
 		// field doesn't equal
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "Not",
 			DataType: f.DataType,
+			Format:   fmt.Sprintf(`"%s" != %%s`, f.Name),
 		})
 
 		// field is less than
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "Lt",
 			DataType: f.DataType,
+			Format:   fmt.Sprintf(`"%s" < %%s`, f.Name),
 		})
 
 		// field is less than or equal
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "Lte",
 			DataType: f.DataType,
+			Format:   fmt.Sprintf(`"%s" <= %%s`, f.Name),
 		})
 
 		// field is greater than
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "Gt",
 			DataType: f.DataType,
+			Format:   fmt.Sprintf(`"%s" > %%s`, f.Name),
 		})
 
 		// field is greater than or equal
 		fields = append(fields, &FilterField{
 			Name:     f.Name + "Gte",
 			DataType: f.DataType,
+			Format:   fmt.Sprintf(`"%s" >= %%s`, f.Name),
 		})
 
 		// field is in list
@@ -461,6 +467,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name,
 			Description: f.Name + " is equal to",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" = %%s`, f.Name),
 		})
 
 		// field doesn't equal
@@ -468,6 +475,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			Name:        f.Name + "Not",
 			Description: f.Name + " is not equal to",
 			DataType:    f.DataType,
+			Format:      fmt.Sprintf(`"%s" != %%s`, f.Name),
 		})
 
 		// field is in list
