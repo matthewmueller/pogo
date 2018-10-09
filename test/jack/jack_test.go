@@ -178,6 +178,7 @@ func TestPogo(t *testing.T) {
 	testutil.Exec(t, conn, up)
 
 	var tests = []struct {
+		Name     string
 		Setup    string
 		Function string
 		Expected string
@@ -565,6 +566,15 @@ func TestPogo(t *testing.T) {
 			Function: `event.FindMany(db, event.NewFilter().NullableTime(&now))`,
 			Expected: `[]`,
 		},
+		{
+			Name: "empty_in",
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teams (token, team_name) values (22, 'b');
+			`,
+			Function: `team.FindMany(db, team.NewFilter().IDIn())`,
+			Error:    `team.IDIn(...) filter must have atleast 1 parameter`,
+		},
 	}
 
 	gopath := build.Default.GOPATH
@@ -592,9 +602,12 @@ func TestPogo(t *testing.T) {
 	// defer cleanup()
 
 	for _, test := range tests {
-		name := truncate(test.Function, 20)
-		if i := strings.Index(test.Function, "("); i >= 0 {
-			name = truncate(test.Function, i)
+		name := test.Name
+		if name == "" {
+			name = truncate(test.Function, 20)
+			if i := strings.Index(test.Function, "("); i >= 0 {
+				name = truncate(test.Function, i)
+			}
 		}
 
 		t.Run(name, func(t *testing.T) {

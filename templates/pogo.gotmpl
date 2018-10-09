@@ -31,6 +31,9 @@ func Conditions(conds ...Condition) (sql string, params []interface{}, err error
 
 	for _, cond := range conds {
 		clause := cond.Clause()
+		if clause.Error != nil {
+			return sql, params, clause.Error
+		}
 		switch clause.Type {
 		case "WHERE":
 			var refs []interface{}
@@ -97,6 +100,7 @@ type Clause struct {
 	Type   string
 	Format string
 	Params []interface{}
+	Error  error
 }
 
 // Insertable can be inserted into the DB

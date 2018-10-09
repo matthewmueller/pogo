@@ -112,6 +112,7 @@ func NewFilter() *Filter {
 type Filter struct {
 	formats []string
 	values  []interface{}
+  error   error
 }
 
 var _ pogo.Condition = (*Filter)(nil)
@@ -122,6 +123,7 @@ func (f *Filter) Clause() *pogo.Clause {
 		Type:   "WHERE",
 		Format: strings.Join(f.formats, " AND "),
 		Params: f.values,
+    Error:  f.error,
 	}
 }
 
@@ -153,6 +155,10 @@ func (f *Filter) Clause() *pogo.Clause {
 func (f *Filter) {{ $field.Pascal }}(v {{ $field.Type $.Schema }}) *Filter {
   {{- if $field.Spread }}
   var rs []string
+  if len(v) == 0 {
+    f.error = errors.New(`{{ $.Table.Camel }}.{{ $field.Pascal }}(...) filter must have atleast 1 parameter`)
+    return f
+  }
 	for range v {
 		rs = append(rs, "%s")
 	}
