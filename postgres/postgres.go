@@ -246,11 +246,6 @@ func getIndexes(conn *pgx.Conn, schema string, table string) (indexes []*db.Inde
 
 // get the column indexes
 func getIndexColumns(conn *pgx.Conn, schema string, table string, index string) ([]*db.IndexColumn, error) {
-	allcols, err := getColumns(conn, schema, table)
-	if err != nil {
-		return nil, err
-	}
-
 	// load columns
 	cols, err := indexColumns(conn, schema, index)
 	if err != nil {
@@ -296,14 +291,6 @@ func getIndexColumns(conn *pgx.Conn, schema string, table string, index string) 
 		ret = append(ret, c)
 	}
 
-	for _, col := range ret {
-		for _, allcol := range allcols {
-			if col.Name == allcol.Name {
-				col.DataType = allcol.DataType
-			}
-		}
-	}
-
 	return ret, nil
 }
 
@@ -311,17 +298,15 @@ func getIndexColumns(conn *pgx.Conn, schema string, table string, index string) 
 func indexColumns(conn *pgx.Conn, schema string, index string) ([]*db.IndexColumn, error) {
 	var err error
 
-	// sql query
-	const sqlstr = `SELECT ` +
-		`(row_number() over()), ` + // ::integer AS seq_no
-		`a.attnum, ` + // ::integer AS cid
-		`a.attname ` + // ::varchar AS column_name
-		`FROM pg_index i ` +
-		`JOIN ONLY pg_class c ON c.oid = i.indrelid ` +
-		`JOIN ONLY pg_namespace n ON n.oid = c.relnamespace ` +
-		`JOIN ONLY pg_class ic ON ic.oid = i.indexrelid ` +
-		`LEFT JOIN pg_attribute a ON i.indrelid = a.attrelid AND a.attnum = ANY(i.indkey) AND a.attisdropped = false ` +
-		`WHERE i.indkey <> '0' AND n.nspname = $1 AND ic.relname = $2`
+	// query the index columns
+	const sqlstr = `
+		SELECT (row_number() over()), a.attnum, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull FROM pg_index i
+		JOIN ONLY pg_class c ON c.oid = i.indrelid
+		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
+		JOIN ONLY pg_class ic ON ic.oid = i.indexrelid
+		LEFT JOIN pg_attribute a ON i.indrelid = a.attrelid AND a.attnum = ANY(i.indkey) AND a.attisdropped = false
+		WHERE i.indkey <> '0' AND n.nspname = $1 AND ic.relname = $2
+	`
 
 	// run query
 	// DBLog(sqlstr, schema, index)
@@ -337,7 +322,7 @@ func indexColumns(conn *pgx.Conn, schema string, index string) ([]*db.IndexColum
 		ic := db.IndexColumn{}
 
 		// scan
-		err = q.Scan(&ic.SeqNo, &ic.Cid, &ic.Name)
+		err = q.Scan(&ic.SeqNo, &ic.Cid, &ic.Name, &ic.DataType, &ic.NotNull)
 		if err != nil {
 			return nil, err
 		}

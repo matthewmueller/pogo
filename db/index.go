@@ -95,6 +95,7 @@ type IndexColumn struct {
 	SeqNo    int    // seq_no
 	Cid      int    // cid
 	Name     string // column_name
+	NotNull  bool
 	DataType string
 }
 

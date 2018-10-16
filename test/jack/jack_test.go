@@ -76,6 +76,13 @@ var up = `
 		unique(standup_id, "order")
 	);
 
+	-- posts table
+	create table if not exists jack.posts (
+		id serial primary key,
+		standup_id integer not null references jack.standups(id) on delete cascade on update cascade,
+		created_at timestamp with time zone default (now() at time zone 'utc')
+	);
+
 	-- REPORTS
 
 	create type jack.report_status as enum ('ASKED', 'SKIP', 'COMPLETE');
@@ -85,6 +92,10 @@ var up = `
 		id serial primary key not null,
 		teammate_id integer not null references jack.teammates(id) on delete cascade,
 		standup_id integer not null references jack.standups(id) on delete cascade,
+
+		-- post groups our reports
+		post_id integer references jack.posts(id) on delete cascade on update cascade,
+		unique("teammate_id", post_id),
 
 		"status" jack.report_status not null default 'ASKED',
 		"timestamp" serial not null
@@ -574,6 +585,23 @@ func TestPogo(t *testing.T) {
 			`,
 			Function: `team.FindMany(db, team.NewFilter().IDIn())`,
 			Error:    `team.IDIn(...) filter must have atleast 1 parameter`,
+		},
+		{
+			Name: "nullable_fk",
+			Setup: `
+				insert into jack.teams (token, team_name) values (11, 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+				insert into jack.posts (standup_id) values (1);
+				insert into jack.posts (standup_id) values (1);
+				insert into jack.reports (teammate_id, standup_id, post_id) values (1, 1, 1);
+				insert into jack.reports (teammate_id, standup_id, post_id) values (1, 1, 2);
+				insert into jack.reports (teammate_id, standup_id, status) values (1, 1, 'COMPLETE');
+				insert into jack.reports (teammate_id, standup_id, status) values (2, 1, 'COMPLETE');
+			`,
+			Function: `report.Find(db, report.NewFilter().NullablePostID(nil).TeammateID(1))`,
+			Expected: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
 		},
 	}
 
