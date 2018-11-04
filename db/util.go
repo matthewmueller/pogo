@@ -51,6 +51,8 @@ func coerce(schema *Schema, dt string) (kind string, err error) {
 		return "float32", nil
 	case "double", "float":
 		return "float64", nil
+	case "time with time zone", "time without time zone":
+		return "string", nil
 	case "date", "timestamp with time zone", "timestamp without time zone":
 		return "time.Time", nil
 	case "json", "jsonb":
@@ -83,7 +85,7 @@ func coerceFilter(schema *Schema, dt string) (kind string, err error) {
 	}
 
 	switch dt {
-	case "text":
+	case "text", "citext":
 		return "String", nil
 	case "boolean":
 		return "Boolean", nil
@@ -93,7 +95,9 @@ func coerceFilter(schema *Schema, dt string) (kind string, err error) {
 		return "Float", nil
 	case "double", "float":
 		return "Float", nil
-	case "date", "timestamp with time zone", "time with time zone", "time without time zone", "timestamp without time zone":
+	case "time with time zone", "time without time zone":
+		return "String", nil
+	case "date", "timestamp with time zone", "timestamp without time zone":
 		return "DateTime", nil
 	case "json", "jsonb":
 		return "JSON", nil

@@ -19,6 +19,7 @@ var log = os.Getenv("LOG")
 
 var up = `
 	-- Schema
+	create extension if not exists citext;
 
 	create schema jack;
 
@@ -31,7 +32,7 @@ var up = `
 		token integer unique not null,
 		team_name text not null,
 		scope text[] not null default '{}',
-		email text,
+		email citext,
 		stripe_id text,
 		active boolean not null default true,
 		free_teammates integer not null default 4,
@@ -119,7 +120,7 @@ var up = `
 		unique(standup_id, teammate_id),
 
 		"status" jack.standup_teammate_status not null,
-		"time" text not null,
+		"time" time without time zone not null,
 		owner bool not null default 'false'
 	);
 
@@ -179,6 +180,8 @@ var down = `
 	drop function if exists jack.add(int, int);
 
 	drop schema if exists jack cascade;
+
+	drop extension if exists citext;
 `
 
 func TestPogo(t *testing.T) {
@@ -279,7 +282,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
 			Function: `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -289,7 +292,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
 			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Status(enum.StandupTeammateStatusActive).Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -301,7 +304,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups_teammates (standup_id, teammate_id, "time", "status", owner) values (1, 2, '12:00', 'ACTIVE', false);
 			`,
 			Function: `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Status(enum.StandupTeammateStatusInvited).Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"INVITED","time":"1:00","owner":true}`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"INVITED","time":"01:00:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -313,7 +316,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 2, 'ACTIVE', '12:00', false);
 			`,
 			Function: `standupteammate.UpdateByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"1:00","owner":true}`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -374,7 +377,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 3, 'ACTIVE', '1:00', true);
 			`,
 			Function: `standupteammate.FindMany(db, standupteammate.NewFilter().StandupID(1))`,
-			Expected: `[{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"12:00"},{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"1:00","owner":true}]`,
+			Expected: `[{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"12:00:00"},{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"01:00:00","owner":true}]`,
 		},
 		{
 			Setup: `
@@ -446,7 +449,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups_teammates (standup_id, teammate_id, "status", "time", owner) values (1, 3, 'ACTIVE', '1:00', true);
 			`,
 			Function: `standupteammate.Find(db, standupteammate.NewFilter().Owner(true).StandupIDIn(1, 3))`,
-			Expected: `{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"1:00","owner":true}`,
+			Expected: `{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -503,7 +506,7 @@ func TestPogo(t *testing.T) {
 				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
 			`,
 			Function: `standupteammate.New().StandupID(1).TeammateID(1).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true).Insert(db)`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"1:00","owner":true}`,
+			Expected: `{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 		},
 		{
 			Setup: `
@@ -602,6 +605,13 @@ func TestPogo(t *testing.T) {
 			`,
 			Function: `report.Find(db, report.NewFilter().NullablePostID(nil).TeammateID(1))`,
 			Expected: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
+		},
+		{
+			Setup: `
+				insert into jack.teams (token, email, team_name) values (11, 'mattmuelle@gmail.com', 'a');
+			`,
+			Function: `team.Find(db, team.NewFilter().Email("maTTMuelle@gmail.com"))`,
+			Expected: `{"id":1,"token":11,"team_name":"a","email":"mattmuelle@gmail.com","active":true,"free_teammates":4,"cost_per_user":1}`,
 		},
 	}
 
