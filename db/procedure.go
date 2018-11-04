@@ -9,6 +9,6 @@ type Procedure struct {
 
 // ProcedureParam represents a stored procedure.
 type ProcedureParam struct {
-	Name string // param name
-	Type string // param type
+	Name *string // param name
+	Type string  // param type
 }

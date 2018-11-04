@@ -367,12 +367,7 @@ func colOrder(conn *pgx.Conn, schema string, index string) (*columnOrder, error)
 
 func getProcedures(conn *pgx.Conn, schema string) (procs []*db.Procedure, err error) {
 	// sql query
-	const sqlstr = `SELECT ` +
-		`p.proname, ` + // ::varchar AS proc_name
-		`pg_get_function_result(p.oid) ` + // ::varchar AS return_type
-		`FROM pg_proc p ` +
-		`JOIN ONLY pg_namespace n ON p.pronamespace = n.oid ` +
-		`WHERE n.nspname = $1`
+	const sqlstr = `SELECT p.proname, pg_get_function_result(p.oid) FROM pg_proc p JOIN ONLY pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = $1`
 
 	// run query
 	q, err := conn.Query(sqlstr, schema)
