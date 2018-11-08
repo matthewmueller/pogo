@@ -581,13 +581,13 @@ func TestPogo(t *testing.T) {
 			Expected: `[]`,
 		},
 		{
-			Name: "empty_in",
+			Name: "empty_in_finds_nothing",
 			Setup: `
 				insert into jack.teams (token, team_name) values (11, 'a');
 				insert into jack.teams (token, team_name) values (22, 'b');
 			`,
-			Function: `team.FindMany(db, team.NewFilter().IDIn())`,
-			Error:    `team.IDIn(...) filter must have atleast 1 parameter`,
+			Function: `team.FindMany(db, team.NewFilter().IDIn().TokenIn(11, 22))`,
+			Expected: `[]`,
 		},
 		{
 			Name: "nullable_fk",

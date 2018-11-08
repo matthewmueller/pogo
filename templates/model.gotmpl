@@ -156,7 +156,7 @@ func (f *Filter) {{ $field.Pascal }}(v {{ $field.Type $.Schema }}) *Filter {
   {{- if $field.Spread }}
   var rs []string
   if len(v) == 0 {
-    f.error = errors.New(`{{ $.Table.Camel }}.{{ $field.Pascal }}(...) filter must have atleast 1 parameter`)
+    f.formats = append(f.formats, `false`)
     return f
   }
 	for range v {
