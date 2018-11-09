@@ -220,6 +220,13 @@ func (o *Order) {{ $field.Pascal }}(order OrderBy) *Order {
 }
 {{- end }}
 
+{{/* Model struct */}}
+// Model is an empty struct that has all the methods.
+// It's primarly used for embedding the methods
+// into higher-level models.
+type Model struct { }
+
+{{/* Function: Insert */}}
 // Insert a "{{$.Table.Name}}" into the "{{$.Schema.Name}}"."{{$.Table.Name}}"
 func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // get all the non-nil columns and prepare them for the query
@@ -246,6 +253,33 @@ func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   return &_{{$.Table.Camel}}, nil
 }
 
+{{/* Model: Insert */}}
+func (*Model) Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+  // get all the non-nil columns and prepare them for the query
+  _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
+
+  // sql insert query, primary key provided by sequence
+  sqlstr := `
+    INSERT INTO "{{$.Schema.Name}}"."{{$.Table.Name}}" (` + strings.Join(_c, ", ") + `)
+    VALUES (` + strings.Join(_i, ", ") + `)
+    RETURNING {{$.Table.Returning}}
+  `
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, _v...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
+
+{{/* Function: InsertMany */}}
 // InsertMany "{{$.Table.Name}}" into the "{{$.Schema.Name}}"."{{$.Table.Name}}"
 func InsertMany(db pogo.DB, {{$.Table.PluralCamel}} ...*Input) ([]*{{$.Table.Pascal}}, error) {
 	_{{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
@@ -259,9 +293,53 @@ func InsertMany(db pogo.DB, {{$.Table.PluralCamel}} ...*Input) ([]*{{$.Table.Pas
 	return _{{$.Table.PluralCamel}}, nil
 }
 
-{{/* Find a row by a set of conditions */}}
+{{/* Model: InsertMany */}}
+// InsertMany "{{$.Table.Name}}" into the "{{$.Schema.Name}}"."{{$.Table.Name}}"
+func (*Model) InsertMany(db pogo.DB, {{$.Table.PluralCamel}} ...*Input) ([]*{{$.Table.Pascal}}, error) {
+	_{{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
+	for _, {{$.Table.Camel}} := range {{$.Table.PluralCamel}} {
+		_{{$.Table.Camel}}, err := Insert(db, {{$.Table.Camel}})
+		if err != nil {
+			return _{{$.Table.PluralCamel}}, err
+		}
+		_{{$.Table.PluralCamel}} = append(_{{$.Table.PluralCamel}}, _{{$.Table.Camel}})
+	}
+	return _{{$.Table.PluralCamel}}, nil
+}
+
+{{/* Function: Find a row by a set of conditions */}}
 // Find a `{{$.Table.Pascal}}` by some conditions.
 func Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
+  _s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return nil, err
+	}
+
+  // sql select query, primary key provided by sequence
+  sqlstr := `SELECT {{.Table.Select}} ` +
+    `FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+    _s
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, _v...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil, Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
+
+{{/* Model: Find a row by a set of conditions */}}
+// Find a `{{$.Table.Pascal}}` by some conditions.
+func (*Model) Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
   _s, _v, err := pogo.Conditions(conds...)
 	if err != nil {
 		return nil, err
@@ -292,8 +370,36 @@ func Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
 {{/* FindBy Primary Key */}}
 {{ if .Table.PrimaryKey }}
 {{ $pk := .Table.PrimaryKey }}
+{{/* Function: FindBy(PK) */}}
 // FindBy{{$pk.Pascal}} a `{{$.Table.Pascal}}` by some conditions.
 func FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
+  // sql select query, primary key provided by sequence
+  sqlstr := `
+    SELECT {{.Table.Select}}
+    FROM "{{$.Schema.Name}}"."{{$.Table.Name}}"
+    WHERE "{{$pk.Name}}" = $1
+  `
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, &{{$pk.Camel}})
+  }
+
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, &{{$pk.Camel}})
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil, Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
+
+{{/* Model: FindBy(PK) */}}
+// FindBy{{$pk.Pascal}} a `{{$.Table.Pascal}}` by some conditions.
+func (*Model) FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
   // sql select query, primary key provided by sequence
   sqlstr := `
     SELECT {{.Table.Select}}
@@ -322,6 +428,7 @@ func FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$
 {{/* FindBy Unique column */}}
 {{ range $idx := .Table.Indexes }}
 {{- if (and $idx.IsUnique (not $idx.IsPrimary)) }}
+{{/* Function: FindBy(FK) */}}
 // FindBy{{$idx.Method}} find a {{$.Table.Camel}} by {{$idx.Description}}
 func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
   // sql select query, primary key provided by sequence
@@ -348,10 +455,37 @@ func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pas
 
   return &_{{$.Table.Camel}}, nil
 }
+
+{{/* Model: FindBy(FK) */}}
+// FindBy{{$idx.Method}} find a {{$.Table.Camel}} by {{$idx.Description}}
+func (*Model) FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
+  // sql select query, primary key provided by sequence
+  sqlstr := `
+    SELECT {{$.Table.Select}}
+    FROM "{{$.Schema.Name}}"."{{$.Table.Name}}"
+    WHERE {{$idx.Where}}
+  `
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, {{$idx.Variables}})
+  }
+
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, {{$idx.Variables}})
+  err := row.Scan({{$.Table.Scan}})
+  if err != nil {
+    if err == pgx.ErrNoRows {
+      return nil,  Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, err
+  }
+  return &_{{$.Table.Camel}}, nil
+}
 {{- end }}
 {{ end }}
 
-{{/* FindMany by a condition */}}
+{{/* Function: FindMany by a condition */}}
 // FindMany finds many "{{$.Schema.Name}}"."{{$.Table.Name}}" by a condition
 func FindMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
   {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
@@ -394,7 +528,50 @@ func FindMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error
   return {{$.Table.PluralCamel}}, nil
 }
 
-{{/* Update matching rows by a condition, returning 1 result */}}
+{{/* Model: FindMany by a condition */}}
+// FindMany finds many "{{$.Schema.Name}}"."{{$.Table.Name}}" by a condition
+func (*Model) FindMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
+  {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
+
+  _s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return {{$.Table.PluralCamel}}, err
+	}
+
+  // sql select query, primary key provided by sequence
+  sqlstr := `SELECT {{.Table.Select}} ` +
+    `FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+    _s
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  rows, err := db.Query(sqlstr, _v...)
+  if err != nil {
+    return {{$.Table.PluralCamel}}, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+    var _{{$.Table.Camel}} {{$.Table.Pascal}}
+    if e := rows.Scan({{$.Table.Scan}}); e != nil {
+      if e == pgx.ErrNoRows {
+        return {{$.Table.PluralCamel}}, Err{{$.Table.Pascal}}NotFound
+      }
+      return {{$.Table.PluralCamel}}, err
+    }
+    {{$.Table.PluralCamel}} = append({{$.Table.PluralCamel}}, &_{{$.Table.Camel}})
+  }
+  if rows.Err() != nil {
+    return {{$.Table.PluralCamel}}, rows.Err()
+  }
+
+  return {{$.Table.PluralCamel}}, nil
+}
+
+{{/* Function: Update matching rows by a condition, returning 1 result */}}
 // Update "{{$.Table.Name}}" rows in "{{$.Schema.Name}}"."{{$.Table.Name}}" by a condition, returning 1 result
 func Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
   _s, _v, err := pogo.Conditions(conds...)
@@ -443,7 +620,56 @@ func Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$
   return &_{{$.Table.Camel}}, nil
 }
 
-{{/* Update matching rows by a condition, returning 1 result */}}
+{{/* Model: Update matching rows by a condition, returning 1 result */}}
+// Update "{{$.Table.Name}}" rows in "{{$.Schema.Name}}"."{{$.Table.Name}}" by a condition, returning 1 result
+func (*Model) Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
+  _s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return nil, err
+	}
+
+  fields := {{$.Table.Camel}}.columns()
+
+  // prepare the slices
+  _c, _i, _v2 := slice(fields, len(_v))
+  _v = append(_v, _v2...)
+
+  // setup the update fields
+	var _u []string
+	for i, c := range _c {
+		_u = append(_u, c+" = "+_i[i])
+	}
+
+  // return an error if no update input is provided
+  if len(_u) == 0 {
+    return nil, errors.New("{{$.Path.Package}}.Update: no input provided")
+  }
+
+	// sql query
+	sqlstr := `UPDATE "{{$.Schema.Name}}"."{{$.Table.Name}}" SET ` +
+		strings.Join(_u, ", ") + ` ` +
+		_s + ` ` +
+		`RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  // run the query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, _v...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil,  Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
+
+{{/* Function: Update matching rows by a condition, returning 1 result */}}
 // UpdateMany updates "{{$.Table.Name}}" rows in "{{$.Schema.Name}}"."{{$.Table.Name}}" by conditions, returning all results
 func UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
   {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
@@ -504,9 +730,71 @@ func UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (
   return {{$.Table.PluralCamel}}, nil
 }
 
-{{/* UpdateBy Primary Key */}}
+{{/* Model: Update matching rows by a condition, returning 1 result */}}
+// UpdateMany updates "{{$.Table.Name}}" rows in "{{$.Schema.Name}}"."{{$.Table.Name}}" by conditions, returning all results
+func (*Model) UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
+  {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
+
+  _s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return nil, err
+	}
+
+  fields := {{$.Table.Camel}}.columns()
+
+  // prepare the slices
+  _c, _i, _v2 := slice(fields, len(_v))
+  _v = append(_v, _v2...)
+
+  // setup the update fields
+	var _u []string
+	for i, c := range _c {
+		_u = append(_u, c+" = "+_i[i])
+	}
+
+  // return an error if no update input is provided
+  if len(_u) == 0 {
+    return nil, errors.New("{{$.Path.Package}}.UpdateMany: no input provided")
+  }
+
+	// sql query
+	sqlstr := `UPDATE "{{$.Schema.Name}}"."{{$.Table.Name}}" SET ` +
+		strings.Join(_u, ", ") + ` ` +
+		_s + ` ` +
+		`RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  rows, err := db.Query(sqlstr, _v...)
+  if err != nil {
+    return {{$.Table.PluralCamel}}, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+    var _{{$.Table.Camel}} {{$.Table.Pascal}}
+    if e := rows.Scan({{$.Table.Scan}}); e != nil {
+      if e == pgx.ErrNoRows {
+        return {{$.Table.PluralCamel}}, Err{{$.Table.Pascal}}NotFound
+      }
+      return {{$.Table.PluralCamel}}, err
+    }
+    {{$.Table.PluralCamel}} = append({{$.Table.PluralCamel}}, &_{{$.Table.Camel}})
+  }
+  if rows.Err() != nil {
+    return {{$.Table.PluralCamel}}, rows.Err()
+  }
+
+  return {{$.Table.PluralCamel}}, nil
+}
+
+{{/* Update by primary key */}}
 {{ if .Table.PrimaryKey }}
 {{ $pk := .Table.PrimaryKey }}
+{{/* Function: UpdateBy(PK) */}}
 // UpdateBy{{$pk.Pascal}} a "{{$.Table.Camel}}" in "{{$.Schema.Name}}"."{{$.Table.Name}}" by its "{{$pk.Name}}"
 func UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   fields := {{$.Table.Camel}}.columns()
@@ -554,10 +842,60 @@ func UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$
 
   return &_{{$.Table.Camel}}, nil
 }
+
+{{/* Model: UpdateBy(PK) */}}
+// UpdateBy{{$pk.Pascal}} a "{{$.Table.Camel}}" in "{{$.Schema.Name}}"."{{$.Table.Name}}" by its "{{$pk.Name}}"
+func (*Model) UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+  fields := {{$.Table.Camel}}.columns()
+
+  // don't update the primary key
+  delete(fields, "{{$pk.Name}}")
+
+  // prepare the slices
+  _c, _i, _v := slice(fields, 1)
+
+  // setup the update fields
+	var _u []string
+	for i, c := range _c {
+		_u = append(_u, c+" = "+_i[i])
+	}
+
+  // return an error if no update input is provided
+  if len(_u) == 0 {
+    return nil, errors.New("{{$.Path.Package}}.UpdateBy{{$pk.Pascal}}: no input provided")
+  }
+
+	// sql query
+	sqlstr := `UPDATE "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+		`SET ` + strings.Join(_u, ", ") + ` ` +
+		`WHERE "{{$pk.Name}}" = $1 ` +
+		`RETURNING {{$.Table.Returning}}`
+
+  // setup query
+  values := append([]interface{}{&{{$pk.Camel}}}, _v...)
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, values...)
+  }
+
+  // run the query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, values...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil,  Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
 {{ end }}
 
-{{/* UpdateBy unique indexes */}}
+{{/* Update by unique indexes */}}
 {{ range $idx := .Table.Uniques }}
+{{/* Function: UpdateBy(FK) */}}
 // UpdateBy{{$idx.Method}} find a {{$.Table.Pascal}}
 func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // add values to input, overriding existing keys if present in the input
@@ -615,10 +953,70 @@ func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Cam
 
   return &_{{$.Table.Camel}}, nil
 }
+
+{{/* Function: UpdateBy(FK) */}}
+// UpdateBy{{$idx.Method}} find a {{$.Table.Pascal}}
+func (*Model) UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+  // add values to input, overriding existing keys if present in the input
+  {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
+
+  // get the columns
+  fields := {{$.Table.Camel}}.columns()
+
+  // don't update the keys
+  {{- range $idx.Columns}}
+  delete(fields, "{{.Name}}")
+  {{- end }}
+
+  // prepare the slices
+  _c, _i, _v := slice(fields, {{len $idx.Columns}})
+
+  // setup the update fields
+	var _u []string
+	for i, c := range _c {
+		_u = append(_u, c+" = "+_i[i])
+	}
+
+  // return an error if no update input is provided
+  if len(_u) == 0 {
+    return nil, errors.New("{{$.Path.Package}}.UpdateBy{{$idx.Method}}: no input provided")
+  }
+
+  // sql query
+  sqlstr := `UPDATE "{{$.Schema.Name}}"."{{$.Table.Name}}" SET ` +
+    strings.Join(_u, ", ") + ` ` +
+    `WHERE {{$idx.Where}} ` +
+    `RETURNING {{$.Table.Returning}}`
+
+  // setup the query
+  values := []interface{}{}
+  {{- range $col := $idx.Columns}}
+  values = append(values, {{$col.Camel}})
+  {{- end }}
+  values = append(values, _v...)
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, values...)
+  }
+
+  // run the query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, values...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil, Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
 {{ end }}
 
-{{/* Find a row by a set of conditions */}}
+{{/* Function: Delete row(s) by a set of conditions, returning the first result */}}
 // Delete `{{$.Table.Pascal}}`s by some conditions. Returns the first result.
+// Warning: This can delete more than 1 row
 func Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
   _s, _v, err := pogo.Conditions(conds...)
 	if err != nil {
@@ -647,7 +1045,38 @@ func Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
   return &_{{$.Table.Camel}}, nil
 }
 
-{{/* Find a row by a set of conditions */}}
+{{/* Model: Delete row(s) by a set of conditions, returning the first result */}}
+// Delete `{{$.Table.Pascal}}`s by some conditions. Returns the first result.
+// Warning: This can delete more than 1 row
+func (*Model) Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
+  _s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return nil, err
+	}
+
+  // sql delete query
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+    _s + ` ` +
+    `RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, _v...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil, Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
+
+{{/* Function: Delete many rows by a condiation, returning all of them */}}
 // DeleteMany `{{$.Table.Pascal}}`s by some conditions, returning all results.
 func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
   {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
@@ -690,8 +1119,52 @@ func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, err
   return {{$.Table.PluralCamel}}, nil
 }
 
+{{/* Model: Find a row by a set of conditions */}}
+// DeleteMany `{{$.Table.Pascal}}`s by some conditions, returning all results.
+func (*Model) DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error) {
+  {{$.Table.PluralCamel}} := []*{{$.Table.Pascal}}{}
+
+  _s, _v, err := pogo.Conditions(conds...)
+	if err != nil {
+		return {{$.Table.PluralCamel}}, err
+	}
+
+  // sql delete query
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+    _s + ` ` +
+    `RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  rows, err := db.Query(sqlstr, _v...)
+  if err != nil {
+    return {{$.Table.PluralCamel}}, err
+  }
+  defer rows.Close()
+
+  for rows.Next() {
+    var _{{$.Table.Camel}} {{$.Table.Pascal}}
+    if e := rows.Scan({{$.Table.Scan}}); e != nil {
+      if e == pgx.ErrNoRows {
+        return {{$.Table.PluralCamel}}, Err{{$.Table.Pascal}}NotFound
+      }
+      return {{$.Table.PluralCamel}}, err
+    }
+    {{$.Table.PluralCamel}} = append({{$.Table.PluralCamel}}, &_{{$.Table.Camel}})
+  }
+  if rows.Err() != nil {
+    return {{$.Table.PluralCamel}}, rows.Err()
+  }
+
+  return {{$.Table.PluralCamel}}, nil
+}
+
 {{ if .Table.PrimaryKey }}
 {{ $pk := .Table.PrimaryKey }}
+{{/* Function: DeleteBy(PK) */}}
 // DeleteBy{{$pk.Pascal}} a "{{$.Table.Camel}}" from the "{{$.Schema.Name}}"."{{$.Table.Name}}" table
 func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
@@ -716,9 +1189,37 @@ func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{
 
   return &_{{$.Table.Camel}}, nil
 }
+
+{{/* Model: DeleteBy(PK) */}}
+// DeleteBy{{$pk.Pascal}} a "{{$.Table.Camel}}" from the "{{$.Schema.Name}}"."{{$.Table.Name}}" table
+func (*Model) DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
+  // sql delete query
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+    `WHERE "{{$pk.Name}}" = $1 ` +
+    `RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, {{$pk.Camel}})
+  }
+
+  // run the query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, {{$pk.Camel}})
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil, Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
 {{ end }}
 
+{{/* Delete by unique indices */}}
 {{ range $idx := .Table.Uniques }}
+{{/* Function: DeleteBy(FK) */}}
 // DeleteBy{{$idx.Method}} deletes a "{{$.Table.Camel}}"
 func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
@@ -743,11 +1244,38 @@ func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.P
 
   return &_{{$.Table.Camel}}, nil
 }
+
+{{/* Model: DeleteBy(FK) */}}
+// DeleteBy{{$idx.Method}} deletes a "{{$.Table.Camel}}"
+func (*Model) DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
+  // sql delete query
+  sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
+    `WHERE {{$idx.Where}} ` +
+    `RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, {{$idx.Variables}})
+  }
+
+  // run the query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, {{$idx.Variables}})
+  if e := row.Scan({{$.Table.Scan}}); e != nil {
+    if e == pgx.ErrNoRows {
+      return nil, Err{{$.Table.Pascal}}NotFound
+    }
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
 {{ end }}
 
-
+{{/* Upsert by a primary key */}}
 {{ if .Table.PrimaryKey }}
 {{ $pk := .Table.PrimaryKey }}
+{{/* Function: UpsertBy(PK) */}}
 // UpsertBy{{$pk.Pascal}} inserts a `{{$.Table.Name}}`, updating the row if `{{$pk.Pascal}}` already exists.
 func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 	// add values to input, overriding existing keys if present in the input
@@ -790,11 +1318,88 @@ func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$
 
   return &_{{$.Table.Camel}}, nil
 }
+
+{{/* Model: UpsertBy(PK) */}}
+// UpsertBy{{$pk.Pascal}} inserts a `{{$.Table.Name}}`, updating the row if `{{$pk.Pascal}}` already exists.
+func (*Model) UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+	// add values to input, overriding existing keys if present in the input
+	{{$.Table.Camel}} = {{$.Table.Camel}}.{{$pk.Pascal}}({{$pk.Camel}})
+
+	fields := {{$.Table.Camel}}.columns()
+
+	// prepare the slices
+	_c, _i, _v := slice(fields, 0)
+
+	// setup the update fields
+	var _u []string
+	for _, c := range _c {
+		_u = append(_u, c+" = EXCLUDED."+c)
+	}
+
+  // return an error if no update input is provided
+  if len(_u) == 0 {
+    return nil, errors.New("{{$.Path.Package}}.UpsertBy{{$pk.Pascal}}: no input provided")
+  }
+
+  // sql query
+  sqlstr := `INSERT INTO "{{$.Schema.Name}}"."{{$.Table.Name}}" (` + strings.Join(_c, ", ") + `) ` +
+  `VALUES (` + strings.Join(_i, ", ") + `) ` +
+  `ON CONFLICT ({{$pk.Name}}) ` +
+  `DO UPDATE SET ` + strings.Join(_u, ", ") + ` ` +
+  `RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  // run query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, _v...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil && e != pgx.ErrNoRows {
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
 {{ end }}
 
+{{/* Upsert by indices */}}
 {{ range $idx := .Table.Uniques }}
+{{/* Function: UpsertBy(FK) */}}
 // UpsertBy{{$idx.Method}} inserts a `{{$.Table.Name}}`, updating the row if `{{$idx.ColumnList}}` already exists.
 func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+  // add values to input, overriding existing keys if present in the input
+  {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
+
+  // get all the non-nil columns and prepare them for the query
+  _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
+
+  // sql query
+  sqlstr := `INSERT INTO "{{$.Schema.Name}}"."{{$.Table.Name}}" (` + strings.Join(_c, ", ") + `) ` +
+  `VALUES (` + strings.Join(_i, ", ") + `) ` +
+  `ON CONFLICT ({{$idx.ColumnList}}) ` +
+  `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) ` +
+  `RETURNING {{$.Table.Returning}}`
+
+  // log query if we've provided a logger
+  if pogo.Log != nil {
+    pogo.Log(sqlstr, _v...)
+  }
+
+  // run query
+  var _{{$.Table.Camel}} {{$.Table.Pascal}}
+  row := db.QueryRow(sqlstr, _v...)
+  if e := row.Scan({{$.Table.Scan}}); e != nil && e != pgx.ErrNoRows {
+    return nil, e
+  }
+
+  return &_{{$.Table.Camel}}, nil
+}
+
+{{/* Model: UpsertBy(FK) */}}
+// UpsertBy{{$idx.Method}} inserts a `{{$.Table.Name}}`, updating the row if `{{$idx.ColumnList}}` already exists.
+func (*Model) UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // add values to input, overriding existing keys if present in the input
   {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
 

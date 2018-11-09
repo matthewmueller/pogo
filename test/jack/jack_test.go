@@ -636,8 +636,11 @@ func TestPogo(t *testing.T) {
 	}
 
 	cleanup := testutil.Build(t, url, "jack", "./pogo")
-	_ = cleanup
-	// defer cleanup()
+	defer func() {
+		if !t.Failed() {
+			cleanup()
+		}
+	}()
 
 	for _, test := range tests {
 		name := test.Name
@@ -648,7 +651,8 @@ func TestPogo(t *testing.T) {
 			}
 		}
 
-		t.Run(name, func(t *testing.T) {
+		// run the functions
+		t.Run(name+"/function", func(t *testing.T) {
 			testutil.Exec(t, conn, down)
 			testutil.Exec(t, conn, up)
 
@@ -698,7 +702,101 @@ func TestPogo(t *testing.T) {
 
 					buf, err := json.Marshal(actual)
 					if err != nil {
-						fmt.Fprintln(os.Stderr, err.Error())
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					fmt.Fprintf(os.Stdout, "%s", string(buf))
+				}
+			`)
+
+			if stderr != "" {
+				if test.Error != "" {
+					if test.Error == stderr {
+						return
+					}
+					fmt.Println("# Expected:")
+					fmt.Println(test.Error)
+					fmt.Println()
+					fmt.Println("# Actual:")
+					fmt.Println(stderr)
+					fmt.Println()
+					t.Fatal(diff(test.Error, stderr))
+				}
+				t.Fatal(errors.New(stderr))
+			}
+
+			if test.Expected != stdout {
+				fmt.Println("# Expected:")
+				fmt.Println(test.Expected)
+				fmt.Println()
+				fmt.Println("# Actual:")
+				fmt.Println(stdout)
+				fmt.Println()
+				t.Fatal(diff(test.Expected, stdout))
+			}
+
+			remove()
+		})
+
+		// run the models
+		parts := strings.SplitN(test.Function, ".", 2)
+		model := parts[0]
+		call := parts[1]
+
+		// run the functions
+		t.Run(name+"/model", func(t *testing.T) {
+			testutil.Exec(t, conn, down)
+			testutil.Exec(t, conn, up)
+
+			if test.Setup != "" {
+				testutil.Exec(t, conn, test.Setup)
+			}
+
+			stdout, stderr, remove := testutil.Run(t, name, `
+				package main
+
+				import (
+					"time"
+
+					"`+importBase+`/pogo/enum"
+					pogo "`+importBase+`/pogo"
+					team "`+importBase+`/pogo/team"
+					cron "`+importBase+`/pogo/cron"
+					report "`+importBase+`/pogo/report"
+					standup "`+importBase+`/pogo/standup"
+					question "`+importBase+`/pogo/question"
+					teammate "`+importBase+`/pogo/teammate"
+					standupteammate "`+importBase+`/pogo/standup-teammate"
+				)
+
+				func main() {
+					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
+					_ = now
+
+					cfg, err := pgx.ParseConnectionString("`+url+`")
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					db, err := pgx.Connect(cfg)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+					defer db.Close()
+
+					var model `+model+`.Model
+					actual, err := model.`+call+`
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					buf, err := json.Marshal(actual)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
 
@@ -735,8 +833,6 @@ func TestPogo(t *testing.T) {
 			remove()
 		})
 	}
-
-	// cleanup()
 }
 
 func diff(expected, actual string) string {
