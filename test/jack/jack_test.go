@@ -495,19 +495,20 @@ func TestPogo(t *testing.T) {
 			Function: `convo.FindMany(db, convo.NewFilter().UserIn("U0QS7USPJ", "U0QS890N5"))`,
 			Expected: `[{"user":"U0QS7USPJ","intent":"standup_join","state":{}},{"user":"U0QS890N5","intent":"standup_join","state":{}}]`,
 		},
-		{
-			Function: `convo.New().User("U0QS7USPJ").Intent("standup_join").Insert(db)`,
-			Expected: `{"user":"U0QS7USPJ","intent":"standup_join","state":{}}`,
-		},
-		{
-			Setup: `
-				insert into jack.teams (token, team_name) values (11, 'a');
-				insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
-				insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
-			`,
-			Function: `standupteammate.New().StandupID(1).TeammateID(1).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true).Insert(db)`,
-			Expected: `{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"01:00:00","owner":true}`,
-		},
+		// TODO: move elsewhere
+		// {
+		// 	Function: `convo.New().User("U0QS7USPJ").Intent("standup_join").Insert(db)`,
+		// 	Expected: `{"user":"U0QS7USPJ","intent":"standup_join","state":{}}`,
+		// },
+		// {
+		// 	Setup: `
+		// 		insert into jack.teams (token, team_name) values (11, 'a');
+		// 		insert into jack.teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+		// 		insert into jack.standups (team_id, "name", channel, "time", timezone) values (1, 'a', 'a', 'a', 'a');
+		// 	`,
+		// 	Function: `standupteammate.New().StandupID(1).TeammateID(1).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true).Insert(db)`,
+		// 	Expected: `{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"01:00:00","owner":true}`,
+		// },
 		{
 			Setup: `
 				insert into jack.teams (token, team_name) values (11, 'a');
