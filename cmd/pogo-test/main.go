@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	url := os.Getenv("JACK_POSTGRES_URL")
+	url := os.Getenv("POSTGRES_URL")
 
 	cfg, err := pgx.ParseURI(url)
 	if err != nil {

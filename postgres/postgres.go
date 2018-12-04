@@ -188,7 +188,7 @@ func getForeignKeys(conn *pgx.Conn, schema string, table string) (fks []*db.Fore
 		fk := db.ForeignKey{}
 
 		// scan
-		err = q.Scan(&fk.Name, &fk.DataType, &fk.ForeignKeyName, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
+		err = q.Scan(&fk.Name, &fk.DataType, &fk.FullName, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
 		if err != nil {
 			return fks, err
 		}

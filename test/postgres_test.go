@@ -15,7 +15,7 @@ import (
 )
 
 func TestPostgres(t *testing.T) {
-	url := os.Getenv("JACK_POSTGRES_URL")
+	url := os.Getenv("POSTGRES_URL")
 
 	up := `
 	-- Schema

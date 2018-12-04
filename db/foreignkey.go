@@ -7,6 +7,7 @@ import (
 // ForeignKey struct
 type ForeignKey struct {
 	Name          string // column_name
+	FullName      string
 	DataType      string // ref_data_type
 	RefIndexName  string // ref_index_name
 	RefTableName  string // ref_table_name

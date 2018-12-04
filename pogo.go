@@ -11,8 +11,8 @@ import (
 )
 
 var pogoTemplate = gen.MustCompile("pogo", templates.MustAssetString("templates/pogo.gotmpl"))
-var modelTemplate = gen.MustCompile("model", templates.MustAssetString("templates/model.gotmpl"))
-var enumTemplate = gen.MustCompile("enum", templates.MustAssetString("templates/enum.gotmpl"))
+var pgModelTemplate = gen.MustCompile("model", templates.MustAssetString("templates/pg_model.gotmpl"))
+var pgEnumTemplate = gen.MustCompile("enum", templates.MustAssetString("templates/pg_enum.gotmpl"))
 
 // template data
 type data map[string]interface{}
@@ -79,7 +79,7 @@ func (p *Pogo) Generate() (files map[string]string, err error) {
 		}
 
 		relpath := path.Rel(table.Slug() + ".go")
-		files[relpath], err = modelTemplate(data{
+		files[relpath], err = pgModelTemplate(data{
 			"Path":   path,
 			"Schema": schema,
 			"Table":  table,
@@ -95,7 +95,7 @@ func (p *Pogo) Generate() (files map[string]string, err error) {
 	}
 	for _, enum := range schema.Enums {
 		relpath := enumpath.Rel(enum.Slug() + ".go")
-		files[relpath], err = enumTemplate(data{
+		files[relpath], err = pgEnumTemplate(data{
 			"Path":   enumpath,
 			"Schema": schema,
 			"Enum":   enum,
