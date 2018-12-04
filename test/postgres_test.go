@@ -1,4 +1,4 @@
-package jack_test
+package test
 
 import (
 	"bytes"
@@ -14,10 +14,10 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-var url = os.Getenv("JACK_POSTGRES_URL")
-var log = os.Getenv("LOG")
+func TestPostgres(t *testing.T) {
+	url := os.Getenv("JACK_POSTGRES_URL")
 
-var up = `
+	up := `
 	-- Schema
 	create extension if not exists citext;
 
@@ -154,7 +154,7 @@ var up = `
 	$$ language plpgsql immutable strict;
 `
 
-var down = `
+	down := `
 	drop table if exists jack.convos cascade;
 
 	drop table if exists jack.crons cascade;
@@ -184,7 +184,6 @@ var down = `
 	drop extension if exists citext;
 `
 
-func TestPogo(t *testing.T) {
 	conn, teardown := testutil.Connect(t, url)
 	defer teardown()
 

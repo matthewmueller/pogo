@@ -6,17 +6,16 @@ import (
 
 // ForeignKey struct
 type ForeignKey struct {
-	Name           string // column_name
-	DataType       string // ref_data_type
-	RefIndexName   string // ref_index_name
-	RefTableName   string // ref_table_name
-	RefColumnName  string // ref_column_name
-	ForeignKeyName string // foreign_key_name
-	KeyID          int    // key_id
-	SeqNo          int    // seq_no
-	OnUpdate       string // on_update
-	OnDelete       string // on_delete
-	Match          string // match
+	Name          string // column_name
+	DataType      string // ref_data_type
+	RefIndexName  string // ref_index_name
+	RefTableName  string // ref_table_name
+	RefColumnName string // ref_column_name
+	KeyID         int    // key_id
+	SeqNo         int    // seq_no
+	OnUpdate      string // on_update
+	OnDelete      string // on_delete
+	Match         string // match
 }
 
 // Pascal case

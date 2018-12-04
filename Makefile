@@ -7,7 +7,7 @@ precommit: test
 examples: jack.example
 
 jack.test: templates
-	@go test -v ./test/jack/jack_test.go -run $(GREP)
+	@go test -v ./test/... -run $(GREP)
 
 jack.example: templates
 	@go run cmd/pogo/main.go --db $(JACK_POSTGRES_URL) --schema jack --dir _examples/jack/pogo
