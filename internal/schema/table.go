@@ -20,7 +20,7 @@ type Table struct {
 
 // Slug generates the slug case
 func (t *Table) Slug() string {
-	return gen.Lower(gen.Slug(util.Singular(t.Name)))
+	return gen.Lower(gen.Pascal(util.Singular(t.Name)))
 }
 
 // Pascal generates the pascal case

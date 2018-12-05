@@ -1,11 +1,16 @@
 package pogo_test
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/matthewmueller/pogo/internal/vfs"
+
+	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo/internal/postgres"
 	"github.com/matthewmueller/pogo/internal/sqlite"
 	"github.com/matthewmueller/pogo/internal/testutil"
@@ -22,7 +27,7 @@ type test struct {
 	err    string
 }
 
-func name(t test) string {
+func formatName(t test) string {
 	name := t.name
 	if name == "" {
 		name = testutil.Truncate(t.call, 20)
@@ -50,12 +55,13 @@ func filter(tt []test, db string) (tests []test) {
 	return tests
 }
 
-func TestPostgres(t *testing.T) {
+func TestPG(t *testing.T) {
 	url := os.Getenv("POSTGRES_URL")
 	assert.NotEmpty(t, url)
 	tests := filter(tests, "pg")
 	for _, test := range tests {
-		t.Run(name(test), func(t *testing.T) {
+		name := formatName(test)
+		t.Run(name, func(t *testing.T) {
 			pg, err := postgres.Open(url)
 			assert.NoError(t, err)
 			defer pg.Close()
@@ -69,9 +75,96 @@ func TestPostgres(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			vfs, err := pg.Generate([]string{"public"})
+			cwd, err := os.Getwd()
 			assert.NoError(t, err)
-			fmt.Println(vfs.ReadDir("/"))
+			testpath := filepath.Join(cwd, "tmp", text.Snake(name))
+			err = os.MkdirAll(testpath, 0755)
+			assert.NoError(t, err)
+
+			fs, err := pg.Generate([]string{"public"})
+			assert.NoError(t, err)
+			err = vfs.Write(fs, filepath.Join(testpath, "pogo"))
+			assert.NoError(t, err)
+
+			imp := testutil.GoImport(t, testpath)
+			mainpath := filepath.Join(testpath, "main.go")
+			stdout, stderr, remove := testutil.GoRun(t, mainpath, `
+				package main
+
+				import (
+					"time"
+
+					`+imp(`pogo`)+`
+					`+imp(`pogo/enum`)+`
+					`+imp(`pogo/team`)+`
+					`+imp(`pogo/cron`)+`
+					`+imp(`pogo/report`)+`
+					`+imp(`pogo/standup`)+`
+					`+imp(`pogo/question`)+`
+					`+imp(`pogo/teammate`)+`
+					`+imp(`pogo/standupteammate`)+`
+				)
+
+				func main() {
+					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
+					_ = now
+
+					cfg, err := pgx.ParseConnectionString("`+url+`")
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					db, err := pgx.Connect(cfg)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+					defer db.Close()
+
+					actual, err := `+test.call+`
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					buf, err := json.Marshal(actual)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					fmt.Fprintf(os.Stdout, "%s", string(buf))
+				}
+			`)
+
+			if stderr != "" {
+				if test.err != "" {
+					if test.err == stderr {
+						return
+					}
+					fmt.Println("# Expected:")
+					fmt.Println(test.err)
+					fmt.Println()
+					fmt.Println("# Actual:")
+					fmt.Println(stderr)
+					fmt.Println()
+					t.Fatal(testutil.Diff(test.err, stderr))
+				}
+				t.Fatal(errors.New(stderr))
+			}
+
+			if test.expect != stdout {
+				fmt.Println("# Expected:")
+				fmt.Println(test.expect)
+				fmt.Println()
+				fmt.Println("# Actual:")
+				fmt.Println(stdout)
+				fmt.Println()
+				t.Fatal(testutil.Diff(test.expect, stdout))
+			}
+
+			remove()
 		})
 	}
 }
@@ -81,7 +174,7 @@ func TestSQLite(t *testing.T) {
 	assert.NotEmpty(t, url)
 	tests := filter(tests, "sqlite")
 	for _, test := range tests {
-		t.Run(name(test), func(t *testing.T) {
+		t.Run(formatName(test), func(t *testing.T) {
 			sq, err := sqlite.Open(url)
 			assert.NoError(t, err)
 			defer sq.Close()

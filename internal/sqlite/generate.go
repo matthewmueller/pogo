@@ -6,8 +6,7 @@ import (
 
 	"github.com/matthewmueller/pogo/internal/template"
 	"github.com/matthewmueller/pogo/internal/templates"
-	"golang.org/x/tools/godoc/vfs"
-	"golang.org/x/tools/godoc/vfs/mapfs"
+	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
 var pogot = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
@@ -46,5 +45,5 @@ func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 		}
 	}
 
-	return mapfs.New(files), nil
+	return vfs.Map(files), nil
 }

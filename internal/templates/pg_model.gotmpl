@@ -1,4 +1,4 @@
-package {{$.Path.Package}}
+package {{$.Package}}
 
 import (
   "context"
@@ -254,6 +254,7 @@ func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 }
 
 {{/* Model: Insert */}}
+// Insert a "{{$.Table.Name}}" into the "{{$.Schema.Name}}"."{{$.Table.Name}}"
 func (*Model) Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
@@ -593,7 +594,7 @@ func Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.Update: no input provided")
+    return nil, errors.New("{{$.Package}}.Update: no input provided")
   }
 
 	// sql query
@@ -642,7 +643,7 @@ func (*Model) Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Conditi
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.Update: no input provided")
+    return nil, errors.New("{{$.Package}}.Update: no input provided")
   }
 
 	// sql query
@@ -693,7 +694,7 @@ func UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpdateMany: no input provided")
+    return nil, errors.New("{{$.Package}}.UpdateMany: no input provided")
   }
 
 	// sql query
@@ -754,7 +755,7 @@ func (*Model) UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Con
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpdateMany: no input provided")
+    return nil, errors.New("{{$.Package}}.UpdateMany: no input provided")
   }
 
 	// sql query
@@ -813,7 +814,7 @@ func UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpdateBy{{$pk.Pascal}}: no input provided")
+    return nil, errors.New("{{$.Package}}.UpdateBy{{$pk.Pascal}}: no input provided")
   }
 
 	// sql query
@@ -862,7 +863,7 @@ func (*Model) UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Sche
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpdateBy{{$pk.Pascal}}: no input provided")
+    return nil, errors.New("{{$.Package}}.UpdateBy{{$pk.Pascal}}: no input provided")
   }
 
 	// sql query
@@ -920,7 +921,7 @@ func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Cam
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpdateBy{{$idx.Method}}: no input provided")
+    return nil, errors.New("{{$.Package}}.UpdateBy{{$idx.Method}}: no input provided")
   }
 
   // sql query
@@ -979,7 +980,7 @@ func (*Model) UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpdateBy{{$idx.Method}}: no input provided")
+    return nil, errors.New("{{$.Package}}.UpdateBy{{$idx.Method}}: no input provided")
   }
 
   // sql query
@@ -1294,7 +1295,7 @@ func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpsertBy{{$pk.Pascal}}: no input provided")
+    return nil, errors.New("{{$.Package}}.UpsertBy{{$pk.Pascal}}: no input provided")
   }
 
   // sql query
@@ -1338,7 +1339,7 @@ func (*Model) UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Sche
 
   // return an error if no update input is provided
   if len(_u) == 0 {
-    return nil, errors.New("{{$.Path.Package}}.UpsertBy{{$pk.Pascal}}: no input provided")
+    return nil, errors.New("{{$.Package}}.UpsertBy{{$pk.Pascal}}: no input provided")
   }
 
   // sql query

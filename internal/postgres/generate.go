@@ -4,10 +4,10 @@ import (
 	"errors"
 	"path/filepath"
 
+	gen "github.com/matthewmueller/go-gen"
 	"github.com/matthewmueller/pogo/internal/template"
 	"github.com/matthewmueller/pogo/internal/templates"
-	"golang.org/x/tools/godoc/vfs"
-	"golang.org/x/tools/godoc/vfs/mapfs"
+	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
 var pogot = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
@@ -60,5 +60,14 @@ func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 		}
 	}
 
-	return mapfs.New(files), nil
+	// format all the code
+	for path, code := range files {
+		formatted, err := gen.Format(code)
+		if err != nil {
+			return nil, err
+		}
+		files[path] = formatted
+	}
+
+	return vfs.Map(files), nil
 }

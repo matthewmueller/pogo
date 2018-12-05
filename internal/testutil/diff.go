@@ -8,11 +8,12 @@ import (
 )
 
 // Diff fn
-func Diff(t, a interface{}, b interface{}) {
+// func Diff(t, a interface{}, b interface{}) {
 
-}
+// }
 
-func diff(expected, actual string) string {
+// Diff fn
+func Diff(expected, actual string) string {
 
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(expected, actual, false)
