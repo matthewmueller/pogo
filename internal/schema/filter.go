@@ -670,7 +670,7 @@ func (f *FilterField) Format() string {
 
 // NullFormat fn
 func (f *FilterField) NullFormat() string {
-	return f.format
+	return f.nullformat
 }
 
 // Type of filter

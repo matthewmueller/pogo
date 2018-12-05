@@ -172,8 +172,7 @@ func TestPG(t *testing.T) {
 			}
 
 			if !t.Failed() {
-				_ = remove
-				// remove()
+				remove()
 			}
 		})
 	}

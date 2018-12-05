@@ -394,7 +394,7 @@ func getType(schemaName, sqlType string) (schema.DataType, error) {
 		return &schema.List{DataType: t}, nil
 	}
 
-	switch sqlType {
+	switch strings.ToLower(sqlType) {
 	case "text", "uuid", "citext":
 		return &schema.String{}, nil
 	case "boolean":
