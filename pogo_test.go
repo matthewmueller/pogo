@@ -12,7 +12,6 @@ import (
 
 	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo/internal/postgres"
-	"github.com/matthewmueller/pogo/internal/sqlite"
 	"github.com/matthewmueller/pogo/internal/testutil"
 	"github.com/tj/assert"
 )
@@ -169,32 +168,32 @@ func TestPG(t *testing.T) {
 	}
 }
 
-func TestSQLite(t *testing.T) {
-	url := os.Getenv("SQLITE_URL")
-	assert.NotEmpty(t, url)
-	tests := filter(tests, "sqlite")
-	for _, test := range tests {
-		t.Run(formatName(test), func(t *testing.T) {
-			sq, err := sqlite.Open(url)
-			assert.NoError(t, err)
-			defer sq.Close()
-			fmt.Println(sq)
+// func TestSQLite(t *testing.T) {
+// 	url := os.Getenv("SQLITE_URL")
+// 	assert.NotEmpty(t, url)
+// 	tests := filter(tests, "sqlite")
+// 	for _, test := range tests {
+// 		t.Run(formatName(test), func(t *testing.T) {
+// 			sq, err := sqlite.Open(url)
+// 			assert.NoError(t, err)
+// 			defer sq.Close()
+// 			fmt.Println(sq)
 
-			if test.after != "" {
-				_, err = sq.Exec(test.after)
-				assert.NoError(t, err)
-			}
-			if test.before != "" {
-				_, err = sq.Exec(test.before)
-				assert.NoError(t, err)
-			}
+// 			if test.after != "" {
+// 				_, err = sq.Exec(test.after)
+// 				assert.NoError(t, err)
+// 			}
+// 			if test.before != "" {
+// 				_, err = sq.Exec(test.before)
+// 				assert.NoError(t, err)
+// 			}
 
-			vfs, err := sq.Generate([]string{"public"})
-			assert.NoError(t, err)
-			fmt.Println(vfs.ReadDir("/"))
-		})
-	}
-}
+// 			vfs, err := sq.Generate([]string{"public"})
+// 			assert.NoError(t, err)
+// 			fmt.Println(vfs.ReadDir("/"))
+// 		})
+// 	}
+// }
 
 var tests = []test{
 	{

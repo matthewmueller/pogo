@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/matthewmueller/go-gen"
-	"github.com/matthewmueller/pogo/util"
 )
 
 // Table struct
@@ -20,27 +19,27 @@ type Table struct {
 
 // Slug generates the slug case
 func (t *Table) Slug() string {
-	return gen.Lower(gen.Pascal(util.Singular(t.Name)))
+	return gen.Lower(gen.Pascal(singular(t.Name)))
 }
 
 // Pascal generates the pascal case
 func (t *Table) Pascal() string {
-	return gen.Pascal(util.Singular(t.Name))
+	return gen.Pascal(singular(t.Name))
 }
 
 // Short generates a short variable
 func (t *Table) Short() string {
-	return gen.Lower(gen.Short(util.Singular(t.Name)))
+	return gen.Lower(gen.Short(singular(t.Name)))
 }
 
 // Camel generates the camel case
 func (t *Table) Camel() string {
-	return gen.Camel(util.Singular(t.Name))
+	return gen.Camel(singular(t.Name))
 }
 
 // PluralCamel generates the camel case
 func (t *Table) PluralCamel() string {
-	return gen.Camel(util.Plural(t.Name))
+	return gen.Camel(plural(t.Name))
 }
 
 // PrimaryKey fn
@@ -86,7 +85,7 @@ func (t *Table) Returning() string {
 
 // Scan builds the DB.Scan(...) params
 func (t *Table) Scan() string {
-	camel := gen.Camel(util.Singular(t.Name))
+	camel := gen.Camel(singular(t.Name))
 
 	var cols []string
 	for _, col := range t.Columns {
