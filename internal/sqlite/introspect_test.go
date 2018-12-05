@@ -42,8 +42,8 @@ func TestIntrospect(t *testing.T) {
 		);
 
 		create table if not exists posts (
-			blog_id integer not null references blogs (rowid) on delete cascade on update cascade,
-			is_draft boolean not null default true,
+			blog_id integer not null references blogs(rowid) on delete cascade on update cascade,
+			is_draft integer not null default true,
 			title text not null,
 			slug text not null,
 			unique(blog_id, slug)
@@ -89,7 +89,7 @@ func TestIntrospect(t *testing.T) {
 
 	assert.Equal(t, 5, len(posts.Columns))
 	assert.Equal(t, "is_draft", posts.Columns[2].Name)
-	assert.Equal(t, "BOOLEAN", posts.Columns[2].DataType)
+	assert.Equal(t, "INTEGER", posts.Columns[2].DataType)
 	assert.Equal(t, true, posts.Columns[2].NotNull)
 	assert.Equal(t, "true", *posts.Columns[2].DefaultValue)
 	assert.Equal(t, false, posts.Columns[2].IsPrimaryKey)

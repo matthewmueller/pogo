@@ -111,5 +111,5 @@ func (c *IndexColumn) Camel() string {
 
 // Type of the column
 func (c *IndexColumn) Type(schema *Schema) (string, error) {
-	return coerce(schema, c.DataType)
+	return schema.Coerce.Type(c.DataType)
 }

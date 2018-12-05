@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"github.com/matthewmueller/errors"
 	"github.com/matthewmueller/go-gen"
 )
 
@@ -32,7 +33,11 @@ func (c *Column) Snake() string {
 
 // Type of column
 func (c *Column) Type(schema *Schema) (string, error) {
-	return coerce(schema, c.DataType)
+	dt, err := schema.Coerce.Type(c.DataType)
+	if err != nil {
+		return "", errors.Wrapf(err, "column %q", c.Name)
+	}
+	return dt, nil
 }
 
 // Nullable of column

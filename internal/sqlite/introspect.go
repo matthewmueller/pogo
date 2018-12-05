@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/matthewmueller/errors"
@@ -53,9 +54,12 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		table.Indexes = indexes
 	}
 
+	coercer := &Coercer{}
+
 	return &schema.Schema{
 		Name:   schemaName,
 		Tables: tables,
+		Coerce: coercer,
 	}, nil
 }
 
@@ -153,6 +157,14 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*schema.Column,
 
 	// map columns into []schema.Column
 	for _, c := range cc {
+		switch strings.ToUpper(c.DataType) {
+		case "NULL", "INTEGER", "REAL", "TEXT", "BLOB":
+		case "":
+			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) needs an explicit type", schemaName, table, c.ColumnName)
+		default:
+			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) invalid data type %q", schemaName, table, c.ColumnName, c.DataType)
+		}
+
 		var col schema.Column
 		col.FieldOrdinal = shift + c.FieldOrdinal
 		col.Name = c.ColumnName
@@ -186,15 +198,15 @@ func (d *DB) getForeignKeys(allTables []*schema.Table, schemaName string, table 
 	// load results
 	for q.Next() {
 		var f struct {
-			ColumnName    string // column_name
-			RefIndexName  string // ref_index_name
-			RefTableName  string // ref_table_name
-			RefColumnName string // ref_column_name
-			KeyID         int    // key_id
-			SeqNo         int    // seq_no
-			OnUpdate      string // on_update
-			OnDelete      string // on_delete
-			Match         string // match
+			ColumnName    string  // column_name
+			RefIndexName  string  // ref_index_name
+			RefTableName  string  // ref_table_name
+			RefColumnName *string // ref_column_name
+			KeyID         int     // key_id
+			SeqNo         int     // seq_no
+			OnUpdate      string  // on_update
+			OnDelete      string  // on_delete
+			Match         string  // match
 		}
 
 		// scan
@@ -203,12 +215,17 @@ func (d *DB) getForeignKeys(allTables []*schema.Table, schemaName string, table 
 			return nil, err
 		}
 
+		// make introspection a bit stricter for better compatibility with other dbs
+		if f.RefColumnName == nil {
+			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) references an unknown foreign column %q.(?)", schemaName, table, f.ColumnName, f.RefTableName)
+		}
+
 		// map to schema.ForeignKey
 		var fk schema.ForeignKey
 		fk.Name = f.ColumnName
 		fk.RefIndexName = f.RefIndexName
 		fk.RefTableName = f.RefTableName
-		fk.RefColumnName = f.RefColumnName
+		fk.RefColumnName = *f.RefColumnName
 		fk.KeyID = f.KeyID
 		fk.SeqNo = f.SeqNo
 		fk.OnUpdate = f.OnUpdate
@@ -221,7 +238,7 @@ func (d *DB) getForeignKeys(allTables []*schema.Table, schemaName string, table 
 				continue
 			}
 			for _, col := range t.Columns {
-				if col.Name != f.RefColumnName {
+				if col.Name != fk.RefColumnName {
 					continue
 				}
 				fk.DataType = col.DataType

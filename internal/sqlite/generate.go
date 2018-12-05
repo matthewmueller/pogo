@@ -9,8 +9,8 @@ import (
 	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
-var pogot = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
-var modelt = template.MustCompile("model", templates.MustAssetString("internal/templates/sq_model.gotmpl"))
+var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
+var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/sq_model.gotmpl"))
 
 // Generate the filesystem
 func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {
@@ -24,7 +24,7 @@ func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 	}
 
 	files := make(map[string]string)
-	files["pogo.go"], err = pogot(template.Map{
+	files["pogo.go"], err = pogoT(template.Map{
 		"Package": "pogo",
 		"Schema":  schema,
 	})
@@ -35,7 +35,7 @@ func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 	for _, table := range schema.Tables {
 		slug := table.Slug()
 		path := filepath.Join(slug, slug+".go")
-		files[path], err = modelt(template.Map{
+		files[path], err = modelT(template.Map{
 			"Package": slug,
 			"Schema":  schema,
 			"Table":   table,

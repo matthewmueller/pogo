@@ -3,16 +3,17 @@ package pogo_test
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	gen "github.com/matthewmueller/go-gen"
-	"github.com/matthewmueller/pogo/internal/vfs"
+	"github.com/matthewmueller/pogo"
 
 	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo/internal/postgres"
+	"github.com/matthewmueller/pogo/internal/sqlite"
 	"github.com/matthewmueller/pogo/internal/testutil"
 	"github.com/tj/assert"
 )
@@ -88,11 +89,8 @@ func TestPG(t *testing.T) {
 				schema = test.schema
 			}
 
-			fs, err := pg.Generate([]string{schema})
-			assert.NoError(t, err)
-			err = vfs.Write(fs, filepath.Join(testpath, "pogo"))
-			assert.NoError(t, err)
-			err = gen.FormatAll(filepath.Join(testpath, "pogo"))
+			pogopath := filepath.Join(testpath, "pogo")
+			err = pogo.Generate(url, pogopath, schema)
 			assert.NoError(t, err)
 
 			imp := testutil.GoImport(t, testpath)
@@ -179,32 +177,125 @@ func TestPG(t *testing.T) {
 	assert.NoError(t, os.RemoveAll(tmpdir))
 }
 
-// func TestSQLite(t *testing.T) {
-// 	url := os.Getenv("SQLITE_URL")
-// 	assert.NotEmpty(t, url)
-// 	tests := filter(tests, "sqlite")
-// 	for _, test := range tests {
-// 		t.Run(formatName(test), func(t *testing.T) {
-// 			sq, err := sqlite.Open(url)
-// 			assert.NoError(t, err)
-// 			defer sq.Close()
-// 			fmt.Println(sq)
+func TestSQLite(t *testing.T) {
+	uri := os.Getenv("SQLITE_URL")
+	assert.NotEmpty(t, uri)
+	tests := filter(tests, "sqlite")
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+	tmpdir := filepath.Join(cwd, "tmp")
 
-// 			if test.after != "" {
-// 				_, err = sq.Exec(test.after)
-// 				assert.NoError(t, err)
-// 			}
-// 			if test.before != "" {
-// 				_, err = sq.Exec(test.before)
-// 				assert.NoError(t, err)
-// 			}
+	u, err := url.Parse(uri)
+	assert.NoError(t, err)
+	path := filepath.Join(tmpdir, u.Path)
+	err = os.MkdirAll(filepath.Dir(path), 0755)
+	assert.NoError(t, err)
+	dbpath := path + "?" + u.Query().Encode()
 
-// 			vfs, err := sq.Generate([]string{"public"})
-// 			assert.NoError(t, err)
-// 			fmt.Println(vfs.ReadDir("/"))
-// 		})
-// 	}
-// }
+	for _, test := range tests {
+		name := formatName(test)
+		t.Run(name, func(t *testing.T) {
+			sq, err := sqlite.Open(dbpath)
+			assert.NoError(t, err)
+			defer sq.Close()
+
+			if test.after != "" {
+				_, err = sq.Exec(test.after)
+				assert.NoError(t, err)
+			}
+			if test.before != "" {
+				_, err = sq.Exec(test.before)
+				assert.NoError(t, err)
+			}
+
+			testpath := filepath.Join(tmpdir, text.Snake(name))
+			err = os.MkdirAll(testpath, 0755)
+			assert.NoError(t, err)
+
+			schema := "public"
+			if test.schema != "" {
+				schema = test.schema
+			}
+
+			pogopath := filepath.Join(testpath, "pogo")
+			err = pogo.Generate(dbpath, pogopath, schema)
+			assert.NoError(t, err)
+
+			imp := testutil.GoImport(t, testpath)
+			mainpath := filepath.Join(testpath, "main.go")
+			stdout, stderr, remove := testutil.GoRun(t, mainpath, `
+				package main
+
+				import (
+					"time"
+					"database/sql"
+
+					// sqlite db
+					_ "github.com/mattn/go-sqlite3"
+
+					`+imp(`pogo`)+`
+					`+imp(`pogo/blog`)+`
+					`+imp(`pogo/post`)+`
+				)
+
+				func main() {
+					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
+					_ = now
+
+					// open the database
+					db, err := sql.Open("sqlite3", "`+dbpath+`")
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					actual, err := `+test.call+`
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					buf, err := json.Marshal(actual)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					fmt.Fprintf(os.Stdout, "%s", string(buf))
+				}
+			`)
+
+			if stderr != "" {
+				if test.err != "" {
+					if test.err == stderr {
+						return
+					}
+					fmt.Println("# expect:")
+					fmt.Println(test.err)
+					fmt.Println()
+					fmt.Println("# Actual:")
+					fmt.Println(stderr)
+					fmt.Println()
+					t.Fatal(testutil.Diff(test.err, stderr))
+				}
+				t.Fatal(errors.New(stderr))
+			}
+
+			if test.expect != stdout {
+				fmt.Println("# expect:")
+				fmt.Println(test.expect)
+				fmt.Println()
+				fmt.Println("# Actual:")
+				fmt.Println(stdout)
+				fmt.Println()
+				t.Fatal(testutil.Diff(test.expect, stdout))
+			}
+
+			remove()
+		})
+	}
+	assert.NoError(t, os.RemoveAll(tmpdir))
+}
 
 var tests = []test{
 	{
@@ -758,6 +849,7 @@ var tests = []test{
 		expect: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -774,6 +866,7 @@ var tests = []test{
 		expect: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -790,6 +883,7 @@ var tests = []test{
 		expect: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -826,6 +920,7 @@ var tests = []test{
 		expect: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -862,6 +957,7 @@ var tests = []test{
 		expect: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -909,6 +1005,7 @@ var tests = []test{
 		expect: `[{"id":2,"team_id":2,"name":"b","channel":"b","time":"b","timezone":"b"},{"id":1,"team_id":2,"name":"a","channel":"a","time":"a","timezone":"a"}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -971,6 +1068,7 @@ var tests = []test{
 		expect: `[{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"12:00:00"},{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"01:00:00","owner":true}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -988,6 +1086,7 @@ var tests = []test{
 		expect: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -1005,6 +1104,7 @@ var tests = []test{
 		expect: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -1022,6 +1122,7 @@ var tests = []test{
 		expect: `[{"id":2,"job":"j20","frequency":"* * * * 1-5"},{"id":3,"job":"j21","frequency":"* * * * 1-5"}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1149,6 +1250,7 @@ var tests = []test{
 		expect: `[{"id":1,"token":11,"team_name":"a","active":true,"free_teammates":4,"cost_per_user":1},{"id":2,"token":22,"team_name":"b","active":true,"free_teammates":4,"cost_per_user":1}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1259,6 +1361,7 @@ var tests = []test{
 		expect: `[{"id":1,"token":11,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1},{"id":2,"token":22,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -1276,6 +1379,7 @@ var tests = []test{
 		err:  `cron.UpdateByID: no input provided`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists crons (
 				id serial not null primary key,
@@ -1315,6 +1419,7 @@ var tests = []test{
 		expect: `[{"user":"U0QS7USPJ","intent":"standup_join","state":{}},{"user":"U0QS890N5","intent":"standup_join","state":{}}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1359,6 +1464,7 @@ var tests = []test{
 		expect: `[{"id":1,"standup_id":1,"order":2,"question":"what's my name?"},{"id":2,"standup_id":1,"order":1,"question":"what's my age?"}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1373,6 +1479,7 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1387,6 +1494,7 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1401,6 +1509,7 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1415,6 +1524,7 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1429,6 +1539,7 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1443,6 +1554,7 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1459,6 +1571,7 @@ var tests = []test{
 		expect: `[{"id":1},{"id":2},{"id":3}]`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1475,8 +1588,8 @@ var tests = []test{
 		expect: `[]`,
 	},
 	{
-		name: "empty_in_finds_nothing",
 		dbs:  `pg`,
+		name: "empty_in_finds_nothing",
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1499,8 +1612,8 @@ var tests = []test{
 		expect: `[]`,
 	},
 	{
-		name: "nullable_fk",
 		dbs:  `pg`,
+		name: "nullable_fk",
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1571,6 +1684,7 @@ var tests = []test{
 		expect: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
 	},
 	{
+		dbs: `pg`,
 		before: `
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1591,19 +1705,34 @@ var tests = []test{
 		call:   `team.Find(db, team.NewFilter().Email("maTTMuelle@gmail.com"))`,
 		expect: `{"id":1,"token":11,"team_name":"a","email":"mattmuelle@gmail.com","active":true,"free_teammates":4,"cost_per_user":1}`,
 	},
-	// {
-	// 	dbs: `sqlite`,
-	// 	before: `
-	// 		create table if not exists blogs (
-	// 			name text not null
-	// 		);
-	// 		insert into blogs (name) values ('a');
-	// 		insert into blogs (name) values ('b');
-	// 	`,
-	// 	after: `
-	// 		drop table if exists blogs;
-	// 	`,
-	// 	call:   `blog.FindByID(db, 2)`,
-	// 	expect: `{"id":2,"name":"b"}`,
-	// },
+	{
+		dbs: `sqlite`,
+		before: `
+			create table if not exists blogs (
+				name text not null
+			);
+			create table if not exists posts (
+				title text not null,
+				is_draft integer not null default true
+			);
+			create table if not exists posts (
+				post_id integer references blogs (rowid) on delete cascade on update cascade,
+				is_draft integer not null default true,
+				slug text not null,
+				title text not null,
+				body text not null,
+				created_at text not null default (now()),
+				updated_at text not null default (now()),
+				unique(slug)
+			);
+			insert into blogs (name) values ('a');
+			insert into blogs (name) values ('b');
+		`,
+		after: `
+			drop table if exists blogs;
+			drop table if exists posts;
+		`,
+		call:   `blog.FindByID(db, 2)`,
+		expect: `{"id":2,"name":"b"}`,
+	},
 }

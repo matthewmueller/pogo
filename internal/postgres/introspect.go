@@ -63,11 +63,17 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		return nil, errors.Wrap(err, "unable to get the enums")
 	}
 
+	coercer := &Coercer{
+		SchemaName: schemaName,
+		Enums:      enums,
+	}
+
 	return &schema.Schema{
 		Name:       schemaName,
 		Tables:     tables,
 		Enums:      enums,
 		Procedures: procedures,
+		Coerce:     coercer,
 	}, nil
 }
 

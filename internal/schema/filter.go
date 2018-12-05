@@ -13,15 +13,37 @@ type Filter struct {
 	NotNull  bool   // column can't be null
 }
 
+// FilterType string
+type FilterType string
+
+// Field Types
+var (
+	Null       FilterType = "NULL"
+	ID         FilterType = "ID"
+	String     FilterType = "String"
+	Int        FilterType = "Int"
+	Float      FilterType = "Float"
+	Enumerable FilterType = "Enum"
+	Boolean    FilterType = "Boolean"
+	DateTime   FilterType = "DateTime"
+	List       FilterType = "List"
+	JSON       FilterType = "JSON"
+)
+
 // Fields gets the filter fields
+//
+// TODO: this is really goofy, coercing from sqlType to some intermediate
+// type representation for the the fields, these should just be Go types.
 func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
-	kind, err := coerceFilter(schema, f.DataType)
+	kind, err := schema.Coerce.FilterType(f.DataType)
 	if err != nil {
 		return fields, err
 	}
 
-	switch kind {
-	case "ID", "String":
+	switch FilterType(kind) {
+	case Null:
+		// add no filters
+	case ID, String:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name,
@@ -157,7 +179,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			})
 		}
 
-	case "Int":
+	case Int:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name,
@@ -245,7 +267,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			})
 		}
 
-	case "Float":
+	case Float:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:     f.Name,
@@ -325,7 +347,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			})
 		}
 
-	case "Boolean":
+	case Boolean:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name,
@@ -363,7 +385,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			})
 		}
 
-	case "DateTime":
+	case DateTime:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name,
@@ -461,7 +483,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			})
 		}
 
-	case "Enum":
+	case Enumerable:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name,
@@ -517,7 +539,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 			})
 		}
 
-	case "List":
+	case List:
 		// field equals
 		fields = append(fields, &FilterField{
 			Name:        f.Name + "Contains",
@@ -564,7 +586,7 @@ func (f *Filter) Fields(schema *Schema) (fields []*FilterField, err error) {
 		// 	// Format:   fmt.Sprintf(`%s NOT IN (%%s)`, f.Name),
 		// })
 
-	case "JSON":
+	case JSON:
 		// nothing to do atm
 
 	default:
@@ -598,7 +620,7 @@ func (f *FilterField) Camel() string {
 
 // Type of filter
 func (f *FilterField) Type(schema *Schema) (string, error) {
-	dt, err := coerce(schema, f.DataType)
+	dt, err := schema.Coerce.Type(f.DataType)
 	if err != nil {
 		return "", err
 	}

@@ -9,9 +9,9 @@ import (
 	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
-var pogot = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
-var modelt = template.MustCompile("model", templates.MustAssetString("internal/templates/pg_model.gotmpl"))
-var enumt = template.MustCompile("enum", templates.MustAssetString("internal/templates/pg_enum.gotmpl"))
+var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
+var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/pg_model.gotmpl"))
+var enumT = template.MustCompile("enum", templates.MustAssetString("internal/templates/pg_enum.gotmpl"))
 
 // Generate the database binding
 func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
@@ -25,7 +25,7 @@ func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 	}
 
 	files := make(map[string]string)
-	files["pogo.go"], err = pogot(template.Map{
+	files["pogo.go"], err = pogoT(template.Map{
 		"Package": "pogo",
 		"Schema":  schema,
 	})
@@ -36,7 +36,7 @@ func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 	for _, table := range schema.Tables {
 		slug := table.Slug()
 		path := filepath.Join(slug, slug+".go")
-		files[path], err = modelt(template.Map{
+		files[path], err = modelT(template.Map{
 			"Package": slug,
 			"Schema":  schema,
 			"Table":   table,
@@ -49,7 +49,7 @@ func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 	for _, enum := range schema.Enums {
 		slug := enum.Slug()
 		path := filepath.Join("enum/", slug+".go")
-		files[path], err = enumt(template.Map{
+		files[path], err = enumT(template.Map{
 			"Package": "enum",
 			"Schema":  schema,
 			"Enum":    enum,

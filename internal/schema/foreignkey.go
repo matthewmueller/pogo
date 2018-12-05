@@ -36,5 +36,5 @@ func (f *ForeignKey) Snake() string {
 
 // Type of column
 func (f *ForeignKey) Type(schema *Schema) (string, error) {
-	return coerce(schema, f.DataType)
+	return schema.Coerce.Type(f.DataType)
 }
