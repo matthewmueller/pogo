@@ -27,7 +27,6 @@ func NewColumn(
 
 // Column struct
 type Column struct {
-	// FieldOrdinal int    // field_ordinal
 	name         string // column_name
 	alias        string
 	dataType     DataType // data_type
