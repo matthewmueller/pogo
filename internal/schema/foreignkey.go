@@ -4,37 +4,39 @@ import (
 	"github.com/matthewmueller/go-gen"
 )
 
+// NewForeignKey fn
+func NewForeignKey(
+	name string,
+	dataType DataType,
+) *ForeignKey {
+	return &ForeignKey{
+		name,
+		dataType,
+	}
+}
+
 // ForeignKey struct
 type ForeignKey struct {
-	Name          string // column_name
-	FullName      string
-	DataType      DataType // ref_data_type
-	RefIndexName  string   // ref_index_name
-	RefTableName  string   // ref_table_name
-	RefColumnName string   // ref_column_name
-	KeyID         int      // key_id
-	SeqNo         int      // seq_no
-	OnUpdate      string   // on_update
-	OnDelete      string   // on_delete
-	Match         string   // match
+	name     string // column_name
+	dataType DataType
 }
 
 // Pascal case
 func (f *ForeignKey) Pascal() string {
-	return gen.Pascal(f.Name)
+	return gen.Pascal(f.name)
 }
 
 // Camel case
 func (f *ForeignKey) Camel() string {
-	return gen.Camel(f.Name)
+	return gen.Camel(f.name)
 }
 
 // Snake case
 func (f *ForeignKey) Snake() string {
-	return gen.Snake(f.Name)
+	return gen.Snake(f.name)
 }
 
 // Type of column
 func (f *ForeignKey) Type() string {
-	return f.DataType.String()
+	return f.dataType.String()
 }

@@ -9,22 +9,49 @@ import (
 	gen "github.com/matthewmueller/go-gen"
 )
 
+// NewIndex fn
+func NewIndex(
+	name string,
+	isUnique bool,
+	isPrimary bool,
+	columns []*IndexColumn,
+) *Index {
+	return &Index{
+		name,
+		isUnique,
+		isPrimary,
+		columns,
+	}
+}
+
 // Index data
 type Index struct {
-	Name      string // index_name
-	IsUnique  bool   // is_unique
-	IsPrimary bool   // is_primary
-	SeqNo     int    // seq_no
-	Origin    string // origin
-	IsPartial bool   // is_partial
-	Columns   []*IndexColumn
+	name      string // index_name
+	isUnique  bool   // is_unique
+	isPrimary bool   // is_primary
+	columns   []*IndexColumn
+}
+
+// IsUnique fn
+func (i *Index) IsUnique() bool {
+	return i.isUnique
+}
+
+// IsPrimary fn
+func (i *Index) IsPrimary() bool {
+	return i.isPrimary
+}
+
+// Columns fn
+func (i *Index) Columns() []*IndexColumn {
+	return i.columns
 }
 
 // Method for the index
 func (i *Index) Method() string {
 	var cols []string
-	for _, col := range i.Columns {
-		cols = append(cols, gen.Pascal(col.Name))
+	for _, col := range i.columns {
+		cols = append(cols, gen.Pascal(col.name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, "And")
@@ -33,8 +60,8 @@ func (i *Index) Method() string {
 // Description fn
 func (i *Index) Description() string {
 	var cols []string
-	for _, col := range i.Columns {
-		cols = append(cols, col.Name)
+	for _, col := range i.columns {
+		cols = append(cols, col.name)
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, " and ")
@@ -43,8 +70,8 @@ func (i *Index) Description() string {
 // Params fn
 func (i *Index) Params() (string, error) {
 	var cols []string
-	for _, col := range i.Columns {
-		cols = append(cols, gen.Camel(col.Name)+" "+col.DataType.String())
+	for _, col := range i.columns {
+		cols = append(cols, gen.Camel(col.name)+" "+col.dataType.String())
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", "), nil
@@ -55,22 +82,21 @@ func (i *Index) Where() string {
 	var cols []string
 
 	// sort the column names
-	for _, col := range i.Columns {
-		cols = append(cols, col.Name)
+	for _, col := range i.columns {
+		cols = append(cols, col.name)
 	}
 	sort.Strings(cols)
 	for i, col := range cols {
 		cols[i] = fmt.Sprintf("%s = $%d", strconv.Quote(col), i+1)
 	}
-
 	return strings.Join(cols, " AND ")
 }
 
 // Variables fn
 func (i *Index) Variables() string {
 	var cols []string
-	for _, col := range i.Columns {
-		cols = append(cols, gen.Camel(col.Name))
+	for _, col := range i.columns {
+		cols = append(cols, gen.Camel(col.name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", ")
@@ -79,33 +105,9 @@ func (i *Index) Variables() string {
 // ColumnList is string-friendly the list of the columns
 func (i *Index) ColumnList() string {
 	var cols []string
-	for _, col := range i.Columns {
-		cols = append(cols, strconv.Quote(col.Name))
+	for _, col := range i.columns {
+		cols = append(cols, strconv.Quote(col.name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", ")
-}
-
-// IndexColumn represents index column info.
-type IndexColumn struct {
-	SeqNo    int    // seq_no
-	Cid      int    // cid
-	Name     string // column_name
-	NotNull  bool
-	DataType DataType
-}
-
-// Pascal case
-func (c *IndexColumn) Pascal() string {
-	return gen.Pascal(c.Name)
-}
-
-// Camel case
-func (c *IndexColumn) Camel() string {
-	return gen.Camel(c.Name)
-}
-
-// Type of the column
-func (c *IndexColumn) Type() string {
-	return c.DataType.String()
 }

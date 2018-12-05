@@ -9,58 +9,119 @@ import (
 	"github.com/matthewmueller/pogo/internal/schema"
 )
 
+// Table struct
+type Table struct {
+	Name string
+}
+
+// Index struct
+type Index struct {
+	IndexName string // index_name
+	IsUnique  bool   // is_unique
+	SeqNo     int    // seq_no
+	Origin    string // origin
+	IsPartial bool   // is_partial
+}
+
+// IndexColumn struct
+type IndexColumn struct {
+	SeqNo      int    // seq_no
+	Cid        int    // cid
+	ColumnName string // column_name
+}
+
+// Column struct
+type Column struct {
+	FieldOrdinal int     // field_ordinal
+	ColumnName   string  // column_name
+	DataType     string  // data_type
+	NotNull      bool    // not_null
+	DefaultValue *string // default_value
+	IsPrimaryKey bool    // pk_col_index
+}
+
+// ForeignKey struct
+type ForeignKey struct {
+	ColumnName    string  // column_name
+	RefIndexName  string  // ref_index_name
+	RefTableName  string  // ref_table_name
+	RefColumnName *string // ref_column_name
+	KeyID         int     // key_id
+	SeqNo         int     // seq_no
+	OnUpdate      string  // on_update
+	OnDelete      string  // on_delete
+	Match         string  // match
+}
+
 // Introspect a sqlite database
 // TODO: support views
 func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
-	tables, err := d.getTables(schemaName, "table")
+	var tables []*schema.Table
+
+	// get all the tables
+	tt, err := d.getTables(schemaName, "table")
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get tables from schema")
 	}
 
-	// get all columns in all tables first
-	for _, table := range tables {
-		// get the columns
-		columns, err := d.getColumns(schemaName, table.Name)
+	// build a map of tables to a list of columns
+	colmap := make(map[string][]*Column)
+	for _, table := range tt {
+		cols, err := d.getColumns(schemaName, table.Name)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get columns for '%s' from schema", table.Name)
+			return nil, errors.Wrapf(err, "unable to get cols for '%s' from schema", table.Name)
 		}
-		table.Columns = columns
-	}
-
-	// get the foreign keys
-	for _, table := range tables {
-		fks, err := d.getForeignKeys(tables, schemaName, table.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get the foreign keys for '%s' from schema", table.Name)
+		for _, col := range cols {
+			colmap[table.Name] = append(colmap[table.Name], col)
 		}
-		table.ForeignKeys = fks
 	}
 
 	// get the indexes
-	for _, table := range tables {
-		indexes, err := d.getIndexes(schemaName, table.Name)
+	for _, table := range tt {
+		// turn columns into schema.Column
+		var columns []*schema.Column
+		for _, col := range colmap[table.Name] {
+			dt, err := getType(schemaName, col.DataType)
+			if err != nil {
+				return nil, err
+			}
+			columns = append(columns, schema.NewColumn(col.ColumnName, "", dt, col.NotNull, nil, col.DefaultValue, col.IsPrimaryKey))
+		}
+
+		// get the foreign keys
+		fks, err := d.getForeignKeys(schemaName, table.Name, colmap[table.Name])
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to get the foreign keys for '%s' from schema", table.Name)
+		}
+
+		idxs, err := d.getIndexes(schemaName, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the indexes for '%s' from schema", table.Name)
 		}
+
 		// get each of the index columns
-		for _, index := range indexes {
-			// get the index columns
-			icols, err := d.getIndexColumns(tables, schemaName, table.Name, index.Name)
+		var indexes []*schema.Index
+		for _, index := range idxs {
+			icols, err := d.getIndexColumns(schemaName, table.Name, colmap[table.Name], index.IndexName)
 			if err != nil {
-				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.Name)
+				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.IndexName)
 			}
-			index.Columns = icols
+			indexes = append(indexes, schema.NewIndex(index.IndexName, index.IsUnique, false, icols))
 		}
-		table.Indexes = indexes
+
+		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, fks, indexes))
 	}
 
-	return &schema.Schema{
-		Name:   schemaName,
-		Tables: tables,
-	}, nil
+	return schema.New(
+		"sqlite",
+		schemaName,
+		tables,
+		[]*schema.Enum{},
+		[]*schema.Procedure{},
+	), nil
 }
 
-func (d *DB) getTables(schemaName, relkind string) (tables []*schema.Table, err error) {
+func (d *DB) getTables(schemaName, relkind string) (tables []*Table, err error) {
 	conn := d.DB
 
 	// sql query
@@ -77,21 +138,20 @@ func (d *DB) getTables(schemaName, relkind string) (tables []*schema.Table, err 
 	defer q.Close()
 
 	// load results
-	var res []*schema.Table
 	for q.Next() {
-		var t schema.Table
+		var t Table
 		// scan
 		err = q.Scan(&t.Name)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, &t)
+		tables = append(tables, &t)
 	}
 
-	return res, nil
+	return tables, nil
 }
 
-func (d *DB) getColumns(schemaName string, table string) (cols []*schema.Column, err error) {
+func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err error) {
 	conn := d.DB
 
 	// sql query
@@ -104,29 +164,30 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*schema.Column,
 	}
 	defer q.Close()
 
-	type column struct {
-		FieldOrdinal int            // field_ordinal
-		ColumnName   string         // column_name
-		DataType     string         // data_type
-		NotNull      bool           // not_null
-		DefaultValue sql.NullString // default_value
-		PkColIndex   int            // pk_col_index
-	}
-	var cc []column
+	var cc []Column
 	var hasPrimaryKey bool
 
 	// load results
 	for q.Next() {
-		var c column
+		var c Column
+		var defaultValue sql.NullString
+		var primaryKey int
 
 		// scan
-		err = q.Scan(&c.FieldOrdinal, &c.ColumnName, &c.DataType, &c.NotNull, &c.DefaultValue, &c.PkColIndex)
+		err = q.Scan(&c.FieldOrdinal, &c.ColumnName, &c.DataType, &c.NotNull, &defaultValue, &primaryKey)
 		if err != nil {
 			return cols, err
 		}
 
-		if c.PkColIndex == 1 {
+		if defaultValue.Valid {
+			// TODO: not sure why i need to copy it in first
+			s := defaultValue.String
+			c.DefaultValue = &s
+		}
+
+		if primaryKey == 1 {
 			hasPrimaryKey = true
+			c.IsPrimaryKey = true
 		}
 
 		cc = append(cc, c)
@@ -141,49 +202,36 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*schema.Column,
 	// if we don't have an explicit primary key,
 	// sqlite assigns a 64bit integer named "rowid"
 	if !hasPrimaryKey {
-		shift++
-		cols = append(cols, &schema.Column{
-			// TODO: consider an alias to id
-			FieldOrdinal: shift,
-			Name:         "rowid",
-			DataType:     &schema.Integer{},
+		cols = append(cols, &Column{
+			FieldOrdinal: 0,
+			ColumnName:   "row_id",
+			DataType:     "INTEGER",
 			NotNull:      true,
+			DefaultValue: nil,
 			IsPrimaryKey: true,
 		})
+		shift++
 	}
 
 	// map columns into []schema.Column
-	for _, c := range cc {
-		dt, err := getType(schemaName, c.DataType)
-		if err != nil {
-			return nil, err
-		}
-		// switch strings.ToUpper(c.DataType) {
-		// case "NULL", "INTEGER", "REAL", "TEXT", "BLOB":
-		// case "":
-		// 	return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) needs an explicit type", schemaName, table, c.ColumnName)
-		// default:
-		// 	return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) invalid data type %q", schemaName, table, c.ColumnName, c.DataType)
-		// }
-
-		var col schema.Column
-		col.FieldOrdinal = shift + c.FieldOrdinal
-		col.Name = c.ColumnName
-		col.DataType = dt
-		col.NotNull = c.NotNull
-		col.IsPrimaryKey = c.PkColIndex == 1
-		if c.DefaultValue.Valid {
-			// TODO: not sure why i need to copy it in first
-			s := c.DefaultValue.String
-			col.DefaultValue = &s
-		}
-		cols = append(cols, &col)
-	}
+	// for _, c := range cc {
+	// 	dt, err := getType(schemaName, c.DataType)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	var dv *string
+	// 	if c.DefaultValue.Valid {
+	// 		// TODO: not sure why i need to copy it in first
+	// 		s := c.DefaultValue.String
+	// 		dv = &s
+	// 	}
+	// 	cols = append(cols, schema.NewColumn(c.ColumnName, "", dt, c.NotNull, nil, dv, c.PkColIndex == 1))
+	// }
 
 	return cols, nil
 }
 
-func (d *DB) getForeignKeys(allTables []*schema.Table, schemaName string, table string) (fks []*schema.ForeignKey, err error) {
+func (d *DB) getForeignKeys(schemaName string, table string, cols []*Column) (fks []*schema.ForeignKey, err error) {
 	conn := d.DB
 
 	// sql query
@@ -198,17 +246,7 @@ func (d *DB) getForeignKeys(allTables []*schema.Table, schemaName string, table 
 
 	// load results
 	for q.Next() {
-		var f struct {
-			ColumnName    string  // column_name
-			RefIndexName  string  // ref_index_name
-			RefTableName  string  // ref_table_name
-			RefColumnName *string // ref_column_name
-			KeyID         int     // key_id
-			SeqNo         int     // seq_no
-			OnUpdate      string  // on_update
-			OnDelete      string  // on_delete
-			Match         string  // match
-		}
+		var f ForeignKey
 
 		// scan
 		err = q.Scan(&f.KeyID, &f.SeqNo, &f.RefTableName, &f.ColumnName, &f.RefColumnName, &f.OnUpdate, &f.OnDelete, &f.Match)
@@ -221,38 +259,30 @@ func (d *DB) getForeignKeys(allTables []*schema.Table, schemaName string, table 
 			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) references an unknown foreign column %q.(?)", schemaName, table, f.ColumnName, f.RefTableName)
 		}
 
-		// map to schema.ForeignKey
-		var fk schema.ForeignKey
-		fk.Name = f.ColumnName
-		fk.RefIndexName = f.RefIndexName
-		fk.RefTableName = f.RefTableName
-		fk.RefColumnName = *f.RefColumnName
-		fk.KeyID = f.KeyID
-		fk.SeqNo = f.SeqNo
-		fk.OnUpdate = f.OnUpdate
-		fk.OnDelete = f.OnDelete
-		fk.Match = f.Match
-
-		// find the datatype
-		for _, t := range allTables {
-			if t.Name != table {
+		var c *Column
+		for _, col := range cols {
+			if col.ColumnName != *f.RefColumnName {
 				continue
 			}
-			for _, col := range t.Columns {
-				if col.Name != fk.RefColumnName {
-					continue
-				}
-				fk.DataType = col.DataType
-			}
+			c = col
+			break
+		}
+		if c == nil {
+			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q)", table, f.ColumnName)
 		}
 
-		fks = append(fks, &fk)
+		dt, err := getType(schemaName, c.DataType)
+		if err != nil {
+			return nil, err
+		}
+
+		fks = append(fks, schema.NewForeignKey(f.ColumnName, dt))
 	}
 
 	return fks, nil
 }
 
-func (d *DB) getIndexes(schemaName string, table string) (idxs []*schema.Index, err error) {
+func (d *DB) getIndexes(schemaName string, table string) (idxs []*Index, err error) {
 	conn := d.DB
 
 	// sql query
@@ -268,13 +298,7 @@ func (d *DB) getIndexes(schemaName string, table string) (idxs []*schema.Index, 
 
 	// load results
 	for q.Next() {
-		var i struct {
-			IndexName string // index_name
-			IsUnique  bool   // is_unique
-			SeqNo     int    // seq_no
-			Origin    string // origin
-			IsPartial bool   // is_partial
-		}
+		var i Index
 
 		// scan
 		err = q.Scan(&i.SeqNo, &i.IndexName, &i.IsUnique, &i.Origin, &i.IsPartial)
@@ -282,15 +306,15 @@ func (d *DB) getIndexes(schemaName string, table string) (idxs []*schema.Index, 
 			return nil, err
 		}
 
-		// map to schema.Index
-		var idx schema.Index
-		idx.Name = i.IndexName
-		idx.IsUnique = i.IsUnique
-		idx.IsPrimary = false
-		idx.SeqNo = i.SeqNo
-		idx.Origin = i.Origin
-		idx.IsPartial = i.IsPartial
-		idxs = append(idxs, &idx)
+		// // map to schema.Index
+		// var idx schema.Index
+		// idx.Name = i.IndexName
+		// idx.IsUnique = i.IsUnique
+		// idx.IsPrimary = false
+		// idx.SeqNo = i.SeqNo
+		// idx.Origin = i.Origin
+		// idx.IsPartial = i.IsPartial
+		idxs = append(idxs, &i)
 	}
 	if e := q.Err(); e != nil {
 		return nil, e
@@ -300,7 +324,7 @@ func (d *DB) getIndexes(schemaName string, table string) (idxs []*schema.Index, 
 }
 
 // get the column indexes
-func (d *DB) getIndexColumns(allTables []*schema.Table, schemaName string, table string, index string) (ics []*schema.IndexColumn, err error) {
+func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, index string) (ics []*schema.IndexColumn, err error) {
 	conn := d.DB
 
 	// query the index columns
@@ -315,11 +339,7 @@ func (d *DB) getIndexColumns(allTables []*schema.Table, schemaName string, table
 
 	// load results
 	for q.Next() {
-		var ic struct {
-			SeqNo      int    // seq_no
-			Cid        int    // cid
-			ColumnName string // column_name
-		}
+		var ic IndexColumn
 
 		// scan
 		err = q.Scan(&ic.SeqNo, &ic.Cid, &ic.ColumnName)
@@ -327,26 +347,24 @@ func (d *DB) getIndexColumns(allTables []*schema.Table, schemaName string, table
 			return nil, err
 		}
 
-		var idxc schema.IndexColumn
-		idxc.Name = ic.ColumnName
-		idxc.SeqNo = ic.SeqNo
-		idxc.Cid = ic.Cid
-
 		// find the datatype
-		for _, t := range allTables {
-			if t.Name != table {
+		var c *Column
+		for _, col := range cols {
+			if col.ColumnName != ic.ColumnName {
 				continue
 			}
-			for _, col := range t.Columns {
-				if col.Name != ic.ColumnName {
-					continue
-				}
-				idxc.DataType = col.DataType
-				idxc.NotNull = col.NotNull
-			}
+			c = col
+			break
+		}
+		if c == nil {
+			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q)", table, ic.ColumnName)
 		}
 
-		ics = append(ics, &idxc)
+		dt, err := getType(schemaName, c.DataType)
+		if err != nil {
+			return nil, err
+		}
+		ics = append(ics, schema.NewIndexColumn(ic.ColumnName, dt))
 	}
 	if e := q.Err(); e != nil {
 		return nil, e

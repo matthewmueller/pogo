@@ -171,7 +171,10 @@ func TestPG(t *testing.T) {
 				t.Fatal(testutil.Diff(test.expect, stdout))
 			}
 
-			remove()
+			if !t.Failed() {
+				_ = remove
+				// remove()
+			}
 		})
 	}
 	if !t.Failed() {
@@ -292,7 +295,9 @@ func TestSQLite(t *testing.T) {
 				t.Fatal(testutil.Diff(test.expect, stdout))
 			}
 
-			remove()
+			if !t.Failed() {
+				remove()
+			}
 		})
 	}
 	if !t.Failed() {
@@ -1557,7 +1562,8 @@ var tests = []test{
 		expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
-		dbs: `pg`,
+		name: "nullable_time_nil",
+		dbs:  `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
@@ -1574,7 +1580,8 @@ var tests = []test{
 		expect: `[{"id":1},{"id":2},{"id":3}]`,
 	},
 	{
-		dbs: `pg`,
+		name: "nullable_time_ok",
+		dbs:  `pg`,
 		before: `
 			create table if not exists events (
 				id serial not null primary key,
