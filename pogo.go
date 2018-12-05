@@ -25,6 +25,7 @@ type Generator interface {
 }
 
 // Generate function
+// TODO: finish Generate
 func Generate(uri string, outdir string, schemas ...string) error {
 	u, err := url.Parse(uri)
 	if err != nil {

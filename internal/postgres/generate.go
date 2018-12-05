@@ -4,7 +4,6 @@ import (
 	"errors"
 	"path/filepath"
 
-	gen "github.com/matthewmueller/go-gen"
 	"github.com/matthewmueller/pogo/internal/template"
 	"github.com/matthewmueller/pogo/internal/templates"
 	"github.com/matthewmueller/pogo/internal/vfs"
@@ -51,22 +50,13 @@ func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
 		slug := enum.Slug()
 		path := filepath.Join("enum/", slug+".go")
 		files[path], err = enumt(template.Map{
-			"Package": slug,
+			"Package": "enum",
 			"Schema":  schema,
 			"Enum":    enum,
 		})
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// format all the code
-	for path, code := range files {
-		formatted, err := gen.Format(code)
-		if err != nil {
-			return nil, err
-		}
-		files[path] = formatted
 	}
 
 	return vfs.Map(files), nil
