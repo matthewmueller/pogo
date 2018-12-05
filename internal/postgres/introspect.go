@@ -19,16 +19,27 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		return nil, errors.Wrap(err, "unable to get tables from schema")
 	}
 
+	procedures, err := getProcedures(conn, schemaName)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get the stored procedures")
+	}
+
+	// get enums
+	enums, err := getEnums(conn, schemaName)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get the enums")
+	}
+
 	for _, table := range tables {
 		// get the columns
-		columns, err := getColumns(conn, schemaName, table.Name)
+		columns, err := getColumns(conn, enums, schemaName, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get columns for '%s' from schema", table.Name)
 		}
 		table.Columns = columns
 
 		// get the foreign keys
-		fks, err := getForeignKeys(conn, schemaName, table.Name)
+		fks, err := getForeignKeys(conn, enums, schemaName, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the foreign keys for '%s' from schema", table.Name)
 		}
@@ -43,7 +54,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		// get each of the index columns
 		for _, index := range indexes {
 			// get the index columns
-			icols, err := getIndexColumns(conn, schemaName, table.Name, index.Name)
+			icols, err := getIndexColumns(conn, enums, schemaName, table.Name, index.Name)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.Name)
 			}
@@ -53,27 +64,11 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		table.Indexes = indexes
 	}
 
-	procedures, err := getProcedures(conn, schemaName)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get the stored procedures")
-	}
-
-	enums, err := getEnums(conn, schemaName)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get the enums")
-	}
-
-	coercer := &Coercer{
-		SchemaName: schemaName,
-		Enums:      enums,
-	}
-
 	return &schema.Schema{
 		Name:       schemaName,
 		Tables:     tables,
 		Enums:      enums,
 		Procedures: procedures,
-		Coerce:     coercer,
 	}, nil
 }
 
@@ -115,7 +110,7 @@ func getTables(conn *pgx.Conn, schemaName string) (tables []*schema.Table, err e
 	return tables, nil
 }
 
-func getColumns(conn *pgx.Conn, schemaName string, table string) (columns []*schema.Column, err error) {
+func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (columns []*schema.Column, err error) {
 	// sql query
 	// TODO: support onDelete and onUpdate
 	const sqlstr = `
@@ -148,15 +143,18 @@ func getColumns(conn *pgx.Conn, schemaName string, table string) (columns []*sch
 	// load results
 	for q.Next() {
 		c := schema.Column{}
+		var dt string
 
 		// scan
-		err = q.Scan(&c.FieldOrdinal, &c.Name, &c.DataType, &c.NotNull, &c.Comment, &c.DefaultValue, &c.IsPrimaryKey)
+		err = q.Scan(&c.FieldOrdinal, &c.Name, &dt, &c.NotNull, &c.Comment, &c.DefaultValue, &c.IsPrimaryKey)
 		if err != nil {
 			return columns, err
 		}
 
-		// coerce column type into
-		// something we understand
+		c.DataType, err = getType(enums, schemaName, dt)
+		if err != nil {
+			return columns, err
+		}
 
 		columns = append(columns, &c)
 	}
@@ -167,7 +165,7 @@ func getColumns(conn *pgx.Conn, schemaName string, table string) (columns []*sch
 	return columns, nil
 }
 
-func getForeignKeys(conn *pgx.Conn, schemaName string, table string) (fks []*schema.ForeignKey, err error) {
+func getForeignKeys(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (fks []*schema.ForeignKey, err error) {
 	// sql query
 
 	const sqlstr = `
@@ -194,9 +192,15 @@ func getForeignKeys(conn *pgx.Conn, schemaName string, table string) (fks []*sch
 	// load results
 	for q.Next() {
 		fk := schema.ForeignKey{}
+		var dt string
 
 		// scan
-		err = q.Scan(&fk.Name, &fk.DataType, &fk.FullName, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
+		err = q.Scan(&fk.Name, &dt, &fk.FullName, &fk.RefIndexName, &fk.RefTableName, &fk.RefColumnName, &fk.KeyID, &fk.SeqNo, &fk.OnUpdate, &fk.OnDelete, &fk.Match)
+		if err != nil {
+			return fks, err
+		}
+
+		fk.DataType, err = getType(enums, schemaName, dt)
 		if err != nil {
 			return fks, err
 		}
@@ -253,9 +257,9 @@ func getIndexes(conn *pgx.Conn, schemaName string, table string) (indexes []*sch
 }
 
 // get the column indexes
-func getIndexColumns(conn *pgx.Conn, schemaName string, table string, index string) ([]*schema.IndexColumn, error) {
+func getIndexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string, index string) ([]*schema.IndexColumn, error) {
 	// load columns
-	cols, err := indexColumns(conn, schemaName, index)
+	cols, err := indexColumns(conn, enums, schemaName, index)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +307,7 @@ func getIndexColumns(conn *pgx.Conn, schemaName string, table string, index stri
 }
 
 // indexColumns runs a custom query, returning results as IndexColumn.
-func indexColumns(conn *pgx.Conn, schemaName string, index string) ([]*schema.IndexColumn, error) {
+func indexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, index string) ([]*schema.IndexColumn, error) {
 	var err error
 
 	// query the index columns
@@ -328,9 +332,15 @@ func indexColumns(conn *pgx.Conn, schemaName string, index string) ([]*schema.In
 	res := []*schema.IndexColumn{}
 	for q.Next() {
 		ic := schema.IndexColumn{}
+		var dt string
 
 		// scan
-		err = q.Scan(&ic.SeqNo, &ic.Cid, &ic.Name, &ic.DataType, &ic.NotNull)
+		err = q.Scan(&ic.SeqNo, &ic.Cid, &ic.Name, &dt, &ic.NotNull)
+		if err != nil {
+			return nil, err
+		}
+
+		ic.DataType, err = getType(enums, schemaName, dt)
 		if err != nil {
 			return nil, err
 		}
@@ -529,4 +539,62 @@ func getEnumValues(conn *pgx.Conn, schemaName string, enum string) ([]*schema.En
 	}
 
 	return res, nil
+}
+
+// getType takes an SQL type and returns a schema.Type
+func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType, error) {
+	// handle SETOF
+	if strings.HasPrefix(sqlType, "SETOF ") {
+		t, err := getType(enums, schemaName, sqlType[len("SETOF "):])
+		if err != nil {
+			return nil, err
+		}
+		return &schema.List{DataType: t}, nil
+	}
+
+	// determine if it's an array
+	if strings.HasSuffix(sqlType, "[]") {
+		sqlType = sqlType[:len(sqlType)-2]
+		t, err := getType(enums, schemaName, sqlType)
+		if err != nil {
+			return nil, err
+		}
+		return &schema.List{DataType: t}, nil
+	}
+
+	switch sqlType {
+	case "text", "uuid", "citext":
+		return &schema.String{}, nil
+	case "boolean":
+		return &schema.Boolean{}, nil
+	case "integer", "smallint", "bigint":
+		// TODO distinguish int32, int64, etc. with new types
+		return &schema.Integer{}, nil
+	case "real", "double", "float":
+		// TODO distinguish float32, float64, etc. with new types
+		return &schema.Float{}, nil
+	case "time with time zone", "time without time zone":
+		return &schema.String{}, nil
+	case "date", "timestamp with time zone", "timestamp without time zone":
+		return &schema.DateTime{}, nil
+	case "json", "jsonb":
+		return &schema.JSON{}, nil
+	}
+
+	// handle enums
+	unquoted := strings.Replace(sqlType, "\"", "", -1)
+	for _, enum := range enums {
+		name := enum.Name
+		if schemaName != "" && schemaName != "public" {
+			name = fmt.Sprintf(`%s.%s`, schemaName, name)
+		}
+		if name == unquoted {
+			return &schema.Enumerable{
+				Schema: schemaName,
+				Name:   enum.Name,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf(`postgres getType: unhandled data type: %q`, sqlType)
 }

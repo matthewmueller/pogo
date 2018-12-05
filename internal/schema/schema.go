@@ -10,11 +10,4 @@ type Schema struct {
 	Tables     []*Table
 	Enums      []*Enum
 	Procedures []*Procedure
-	Coerce     Coercer
-}
-
-// Coercer coerces SQL types into Go types
-type Coercer interface {
-	Type(sqlType string) (goType string, err error)
-	FilterType(sqlType string) (filterType FilterType, err error)
 }

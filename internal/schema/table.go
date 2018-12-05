@@ -120,13 +120,6 @@ func (t *Table) Filters() (filters []*Filter) {
 		})
 	}
 
-	// for _, fk := range t.ForeignKeys {
-	// 	filters = append(filters, &Filter{
-	// 		Name:        fk.Name,
-	// 		FKReference: fk.ForeignKeyName,
-	// 	})
-	// }
-
 	return filters
 }
 
@@ -138,13 +131,6 @@ func (t *Table) Orders() (orders []*OrderField) {
 			DataType: col.DataType,
 		})
 	}
-
-	// for _, fk := range t.ForeignKeys {
-	// 	orders = append(orders, &OrderField{
-	// 		Name:        fk.Name,
-	// 		FKReference: fk.ForeignKeyName,
-	// 	})
-	// }
 
 	return orders
 }

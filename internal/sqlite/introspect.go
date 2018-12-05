@@ -54,12 +54,9 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		table.Indexes = indexes
 	}
 
-	coercer := &Coercer{}
-
 	return &schema.Schema{
 		Name:   schemaName,
 		Tables: tables,
-		Coerce: coercer,
 	}, nil
 }
 
@@ -149,7 +146,7 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*schema.Column,
 			// TODO: consider an alias to id
 			FieldOrdinal: shift,
 			Name:         "rowid",
-			DataType:     "INTEGER",
+			DataType:     &schema.Integer{},
 			NotNull:      true,
 			IsPrimaryKey: true,
 		})
@@ -157,18 +154,22 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*schema.Column,
 
 	// map columns into []schema.Column
 	for _, c := range cc {
-		switch strings.ToUpper(c.DataType) {
-		case "NULL", "INTEGER", "REAL", "TEXT", "BLOB":
-		case "":
-			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) needs an explicit type", schemaName, table, c.ColumnName)
-		default:
-			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) invalid data type %q", schemaName, table, c.ColumnName, c.DataType)
+		dt, err := getType(schemaName, c.DataType)
+		if err != nil {
+			return nil, err
 		}
+		// switch strings.ToUpper(c.DataType) {
+		// case "NULL", "INTEGER", "REAL", "TEXT", "BLOB":
+		// case "":
+		// 	return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) needs an explicit type", schemaName, table, c.ColumnName)
+		// default:
+		// 	return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) invalid data type %q", schemaName, table, c.ColumnName, c.DataType)
+		// }
 
 		var col schema.Column
 		col.FieldOrdinal = shift + c.FieldOrdinal
 		col.Name = c.ColumnName
-		col.DataType = strings.ToUpper(c.DataType)
+		col.DataType = dt
 		col.NotNull = c.NotNull
 		col.IsPrimaryKey = c.PkColIndex == 1
 		if c.DefaultValue.Valid {
@@ -352,4 +353,47 @@ func (d *DB) getIndexColumns(allTables []*schema.Table, schemaName string, table
 	}
 
 	return ics, nil
+}
+
+// getType takes an SQL type and returns a schema.Type
+func getType(schemaName, sqlType string) (schema.DataType, error) {
+	// handle SETOF
+	if strings.HasPrefix(sqlType, "SETOF ") {
+		t, err := getType(schemaName, sqlType[len("SETOF "):])
+		if err != nil {
+			return nil, err
+		}
+		return &schema.List{DataType: t}, nil
+	}
+
+	// determine if it's an array
+	if strings.HasSuffix(sqlType, "[]") {
+		sqlType = sqlType[:len(sqlType)-2]
+		t, err := getType(schemaName, sqlType)
+		if err != nil {
+			return nil, err
+		}
+		return &schema.List{DataType: t}, nil
+	}
+
+	switch sqlType {
+	case "text", "uuid", "citext":
+		return &schema.String{}, nil
+	case "boolean":
+		return &schema.Boolean{}, nil
+	case "integer", "smallint", "bigint":
+		// TODO distinguish int32, int64, etc. with new types
+		return &schema.Integer{}, nil
+	case "real", "double", "float":
+		// TODO distinguish float32, float64, etc. with new types
+		return &schema.Float{}, nil
+	case "time with time zone", "time without time zone":
+		return &schema.String{}, nil
+	case "date", "timestamp with time zone", "timestamp without time zone":
+		return &schema.DateTime{}, nil
+	case "json", "jsonb":
+		return &schema.JSON{}, nil
+	}
+
+	return nil, fmt.Errorf(`postgres getType: unhandled data type: %q`, sqlType)
 }

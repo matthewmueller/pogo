@@ -10,7 +10,7 @@ import (
 )
 
 var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
-var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/sq_model.gotmpl"))
+var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/pg_model.gotmpl"))
 
 // Generate the filesystem
 func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {

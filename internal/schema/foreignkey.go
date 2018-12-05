@@ -8,15 +8,15 @@ import (
 type ForeignKey struct {
 	Name          string // column_name
 	FullName      string
-	DataType      string // ref_data_type
-	RefIndexName  string // ref_index_name
-	RefTableName  string // ref_table_name
-	RefColumnName string // ref_column_name
-	KeyID         int    // key_id
-	SeqNo         int    // seq_no
-	OnUpdate      string // on_update
-	OnDelete      string // on_delete
-	Match         string // match
+	DataType      DataType // ref_data_type
+	RefIndexName  string   // ref_index_name
+	RefTableName  string   // ref_table_name
+	RefColumnName string   // ref_column_name
+	KeyID         int      // key_id
+	SeqNo         int      // seq_no
+	OnUpdate      string   // on_update
+	OnDelete      string   // on_delete
+	Match         string   // match
 }
 
 // Pascal case
@@ -35,6 +35,6 @@ func (f *ForeignKey) Snake() string {
 }
 
 // Type of column
-func (f *ForeignKey) Type(schema *Schema) (string, error) {
-	return schema.Coerce.Type(f.DataType)
+func (f *ForeignKey) Type() string {
+	return f.DataType.String()
 }

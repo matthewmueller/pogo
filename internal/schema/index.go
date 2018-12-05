@@ -41,14 +41,10 @@ func (i *Index) Description() string {
 }
 
 // Params fn
-func (i *Index) Params(schema *Schema) (string, error) {
+func (i *Index) Params() (string, error) {
 	var cols []string
 	for _, col := range i.Columns {
-		typ, err := col.Type(schema)
-		if err != nil {
-			return "", err
-		}
-		cols = append(cols, gen.Camel(col.Name)+" "+typ)
+		cols = append(cols, gen.Camel(col.Name)+" "+col.DataType.String())
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", "), nil
@@ -96,7 +92,7 @@ type IndexColumn struct {
 	Cid      int    // cid
 	Name     string // column_name
 	NotNull  bool
-	DataType string
+	DataType DataType
 }
 
 // Pascal case
@@ -110,6 +106,6 @@ func (c *IndexColumn) Camel() string {
 }
 
 // Type of the column
-func (c *IndexColumn) Type(schema *Schema) (string, error) {
-	return schema.Coerce.Type(c.DataType)
+func (c *IndexColumn) Type() string {
+	return c.DataType.String()
 }

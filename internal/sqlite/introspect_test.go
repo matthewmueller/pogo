@@ -37,13 +37,13 @@ func TestIntrospect(t *testing.T) {
 	defer close()
 
 	_, err := db.Exec(`
+		pragma foreign_keys = 1;
 		create table if not exists blogs (
 			name text not null
 		);
-
 		create table if not exists posts (
 			blog_id integer not null references blogs(rowid) on delete cascade on update cascade,
-			is_draft integer not null default true,
+			is_draft integer not null default 1,
 			title text not null,
 			slug text not null,
 			unique(blog_id, slug)
@@ -91,7 +91,7 @@ func TestIntrospect(t *testing.T) {
 	assert.Equal(t, "is_draft", posts.Columns[2].Name)
 	assert.Equal(t, "INTEGER", posts.Columns[2].DataType)
 	assert.Equal(t, true, posts.Columns[2].NotNull)
-	assert.Equal(t, "true", *posts.Columns[2].DefaultValue)
+	assert.Equal(t, "1", *posts.Columns[2].DefaultValue)
 	assert.Equal(t, false, posts.Columns[2].IsPrimaryKey)
 
 	assert.Equal(t, "title", posts.Columns[3].Name)

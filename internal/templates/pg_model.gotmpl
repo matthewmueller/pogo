@@ -18,7 +18,7 @@ var Err{{$.Table.Pascal}}NotFound = errors.New("{{$.Table.Camel}} not found")
 // {{$.Table.Pascal}} result data for "{{$.Schema.Name}}"."{{$.Table.Name}}"
 type {{$.Table.Pascal}} struct {
   {{- range $col := $.Table.Columns }}
-  {{$col.Pascal}} {{ if $col.NotNull }}{{$col.Type $.Schema}}{{ else }}*{{$col.Type $.Schema}}{{ end }} `json:"{{$col.Snake}},omitempty"`
+  {{$col.Pascal}} {{ if $col.NotNull }}{{$col.Type}}{{ else }}*{{$col.Type}}{{ end }} `json:"{{$col.Snake}},omitempty"`
   {{- end }}
 }
 
@@ -42,9 +42,9 @@ func New() *Input {
 // Input data for "{{$.Schema.Name}}"."{{$.Table.Name}}"
 type Input struct {
   {{- range $col := $.Table.Columns }}
-  {{ $col.Camel }} *{{ $col.Type $.Schema }}
+  {{ $col.Camel }} *{{ $col.Type }}
   {{- if $col.Nullable }}
-    nullable{{ $col.Pascal }} **{{ $col.Type $.Schema }}
+    nullable{{ $col.Pascal }} **{{ $col.Type }}
   {{- end }}
   {{- end }}
 }
@@ -53,14 +53,14 @@ var _ pogo.Insertable = (*Input)(nil)
 
 {{ range $col := $.Table.Columns }}
 // {{$col.Pascal}} sets the "{{$col.Name}}"
-func ({{$.Table.Short}} *Input) {{$col.Pascal}}({{$col.Camel}} {{$col.Type $.Schema}}) *Input {
+func ({{$.Table.Short}} *Input) {{$col.Pascal}}({{$col.Camel}} {{$col.Type}}) *Input {
   {{$.Table.Short}}.{{$col.Camel}} = &{{$col.Camel}}
   return {{$.Table.Short}}
 }
 
 {{- if $col.Nullable }}
 // Nullable{{ $col.Pascal }} will set the `{{ $col.Name }}` to NULL if `{{$col.Camel}}` is null
-func ({{$.Table.Short}} *Input) Nullable{{ $col.Pascal }}({{$col.Camel}} *{{ $col.Type $.Schema }}) *Input {
+func ({{$.Table.Short}} *Input) Nullable{{ $col.Pascal }}({{$col.Camel}} *{{ $col.Type }}) *Input {
   {{$.Table.Short}}.nullable{{ $col.Pascal }} = &{{$col.Camel}}
   return {{$.Table.Short}}
 }
@@ -150,9 +150,9 @@ func (f *Filter) Clause() *pogo.Clause {
 // }
 
 {{ range $filter := $.Table.Filters }}
-{{ range $field := $filter.Fields $.Schema }}
+{{ range $field := $filter.Fields }}
 // {{ $field.Pascal }} {{ $field.Description }}
-func (f *Filter) {{ $field.Pascal }}(v {{ $field.Type $.Schema }}) *Filter {
+func (f *Filter) {{ $field.Pascal }}(v {{ $field.Type }}) *Filter {
   {{- if $field.Spread }}
   var rs []string
   if len(v) == 0 {
@@ -373,7 +373,7 @@ func (*Model) Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, er
 {{ $pk := .Table.PrimaryKey }}
 {{/* Function: FindBy(PK) */}}
 // FindBy{{$pk.Pascal}} a `{{$.Table.Pascal}}` by some conditions.
-func FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}) (*{{$.Table.Pascal}}, error) {
   // sql select query, primary key provided by sequence
   sqlstr := `
     SELECT {{.Table.Select}}
@@ -400,7 +400,7 @@ func FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$
 
 {{/* Model: FindBy(PK) */}}
 // FindBy{{$pk.Pascal}} a `{{$.Table.Pascal}}` by some conditions.
-func (*Model) FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func (*Model) FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}) (*{{$.Table.Pascal}}, error) {
   // sql select query, primary key provided by sequence
   sqlstr := `
     SELECT {{.Table.Select}}
@@ -431,7 +431,7 @@ func (*Model) FindBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema
 {{- if (and $idx.IsUnique (not $idx.IsPrimary)) }}
 {{/* Function: FindBy(FK) */}}
 // FindBy{{$idx.Method}} find a {{$.Table.Camel}} by {{$idx.Description}}
-func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pascal}}, error) {
   // sql select query, primary key provided by sequence
   sqlstr := `
     SELECT {{$.Table.Select}}
@@ -459,7 +459,7 @@ func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pas
 
 {{/* Model: FindBy(FK) */}}
 // FindBy{{$idx.Method}} find a {{$.Table.Camel}} by {{$idx.Description}}
-func (*Model) FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func (*Model) FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pascal}}, error) {
   // sql select query, primary key provided by sequence
   sqlstr := `
     SELECT {{$.Table.Select}}
@@ -797,7 +797,7 @@ func (*Model) UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Con
 {{ $pk := .Table.PrimaryKey }}
 {{/* Function: UpdateBy(PK) */}}
 // UpdateBy{{$pk.Pascal}} a "{{$.Table.Camel}}" in "{{$.Schema.Name}}"."{{$.Table.Name}}" by its "{{$pk.Name}}"
-func UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   fields := {{$.Table.Camel}}.columns()
 
   // don't update the primary key
@@ -846,7 +846,7 @@ func UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$
 
 {{/* Model: UpdateBy(PK) */}}
 // UpdateBy{{$pk.Pascal}} a "{{$.Table.Camel}}" in "{{$.Schema.Name}}"."{{$.Table.Name}}" by its "{{$pk.Name}}"
-func (*Model) UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func (*Model) UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   fields := {{$.Table.Camel}}.columns()
 
   // don't update the primary key
@@ -898,7 +898,7 @@ func (*Model) UpdateBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Sche
 {{ range $idx := .Table.Uniques }}
 {{/* Function: UpdateBy(FK) */}}
 // UpdateBy{{$idx.Method}} find a {{$.Table.Pascal}}
-func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // add values to input, overriding existing keys if present in the input
   {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
 
@@ -957,7 +957,7 @@ func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Cam
 
 {{/* Function: UpdateBy(FK) */}}
 // UpdateBy{{$idx.Method}} find a {{$.Table.Pascal}}
-func (*Model) UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func (*Model) UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // add values to input, overriding existing keys if present in the input
   {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
 
@@ -1167,7 +1167,7 @@ func (*Model) DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pasc
 {{ $pk := .Table.PrimaryKey }}
 {{/* Function: DeleteBy(PK) */}}
 // DeleteBy{{$pk.Pascal}} a "{{$.Table.Camel}}" from the "{{$.Schema.Name}}"."{{$.Table.Name}}" table
-func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
   sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     `WHERE "{{$pk.Name}}" = $1 ` +
@@ -1193,7 +1193,7 @@ func DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{
 
 {{/* Model: DeleteBy(PK) */}}
 // DeleteBy{{$pk.Pascal}} a "{{$.Table.Camel}}" from the "{{$.Schema.Name}}"."{{$.Table.Name}}" table
-func (*Model) DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func (*Model) DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
   sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     `WHERE "{{$pk.Name}}" = $1 ` +
@@ -1222,7 +1222,7 @@ func (*Model) DeleteBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Sche
 {{ range $idx := .Table.Uniques }}
 {{/* Function: DeleteBy(FK) */}}
 // DeleteBy{{$idx.Method}} deletes a "{{$.Table.Camel}}"
-func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
   sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     `WHERE {{$idx.Where}} ` +
@@ -1248,7 +1248,7 @@ func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.P
 
 {{/* Model: DeleteBy(FK) */}}
 // DeleteBy{{$idx.Method}} deletes a "{{$.Table.Camel}}"
-func (*Model) DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{$.Table.Pascal}}, error) {
+func (*Model) DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pascal}}, error) {
   // sql delete query
   sqlstr := `DELETE FROM "{{$.Schema.Name}}"."{{$.Table.Name}}" ` +
     `WHERE {{$idx.Where}} ` +
@@ -1278,7 +1278,7 @@ func (*Model) DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params $.Schema}}) (*{{
 {{ $pk := .Table.PrimaryKey }}
 {{/* Function: UpsertBy(PK) */}}
 // UpsertBy{{$pk.Pascal}} inserts a `{{$.Table.Name}}`, updating the row if `{{$pk.Pascal}}` already exists.
-func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 	// add values to input, overriding existing keys if present in the input
 	{{$.Table.Camel}} = {{$.Table.Camel}}.{{$pk.Pascal}}({{$pk.Camel}})
 
@@ -1322,7 +1322,7 @@ func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$
 
 {{/* Model: UpsertBy(PK) */}}
 // UpsertBy{{$pk.Pascal}} inserts a `{{$.Table.Name}}`, updating the row if `{{$pk.Pascal}}` already exists.
-func (*Model) UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func (*Model) UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 	// add values to input, overriding existing keys if present in the input
 	{{$.Table.Camel}} = {{$.Table.Camel}}.{{$pk.Pascal}}({{$pk.Camel}})
 
@@ -1369,7 +1369,7 @@ func (*Model) UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type $.Sche
 {{ range $idx := .Table.Uniques }}
 {{/* Function: UpsertBy(FK) */}}
 // UpsertBy{{$idx.Method}} inserts a `{{$.Table.Name}}`, updating the row if `{{$idx.ColumnList}}` already exists.
-func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // add values to input, overriding existing keys if present in the input
   {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
 
@@ -1400,7 +1400,7 @@ func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params $.Schema}}, {{$.Table.Ca
 
 {{/* Model: UpsertBy(FK) */}}
 // UpsertBy{{$idx.Method}} inserts a `{{$.Table.Name}}`, updating the row if `{{$idx.ColumnList}}` already exists.
-func (*Model) UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params $.Schema}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
+func (*Model) UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // add values to input, overriding existing keys if present in the input
   {{$.Table.Camel}} = {{$.Table.Camel}}{{ range $col := $idx.Columns }}.{{$col.Pascal}}({{$col.Camel}}){{ end }}
 

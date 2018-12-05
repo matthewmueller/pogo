@@ -174,7 +174,9 @@ func TestPG(t *testing.T) {
 			remove()
 		})
 	}
-	assert.NoError(t, os.RemoveAll(tmpdir))
+	if !t.Failed() {
+		assert.NoError(t, os.RemoveAll(tmpdir))
+	}
 }
 
 func TestSQLite(t *testing.T) {
@@ -220,7 +222,6 @@ func TestSQLite(t *testing.T) {
 			pogopath := filepath.Join(testpath, "pogo")
 			err = pogo.Generate(dbpath, pogopath, schema)
 			assert.NoError(t, err)
-
 			imp := testutil.GoImport(t, testpath)
 			mainpath := filepath.Join(testpath, "main.go")
 			stdout, stderr, remove := testutil.GoRun(t, mainpath, `
@@ -294,7 +295,9 @@ func TestSQLite(t *testing.T) {
 			remove()
 		})
 	}
-	assert.NoError(t, os.RemoveAll(tmpdir))
+	if !t.Failed() {
+		assert.NoError(t, os.RemoveAll(tmpdir))
+	}
 }
 
 var tests = []test{
@@ -1708,22 +1711,16 @@ var tests = []test{
 	{
 		dbs: `sqlite`,
 		before: `
+			pragma foreign_keys = 1;
 			create table if not exists blogs (
 				name text not null
 			);
 			create table if not exists posts (
+				blog_id integer not null references blogs(rowid) on delete cascade on update cascade,
+				is_draft integer not null default 1,
 				title text not null,
-				is_draft integer not null default true
-			);
-			create table if not exists posts (
-				post_id integer references blogs (rowid) on delete cascade on update cascade,
-				is_draft integer not null default true,
 				slug text not null,
-				title text not null,
-				body text not null,
-				created_at text not null default (now()),
-				updated_at text not null default (now()),
-				unique(slug)
+				unique(blog_id, slug)
 			);
 			insert into blogs (name) values ('a');
 			insert into blogs (name) values ('b');
