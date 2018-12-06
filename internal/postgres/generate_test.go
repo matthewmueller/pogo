@@ -22,6 +22,11 @@ func TestGo(t *testing.T) {
 	assert.NoError(t, err)
 	tmpdir := filepath.Join(cwd, "tmp")
 	assert.NoError(t, os.RemoveAll(tmpdir))
+	defer func() {
+		if !t.Failed() {
+			assert.NoError(t, os.RemoveAll(tmpdir))
+		}
+	}()
 
 	for _, test := range tests {
 		name := testutil.Name(test)
@@ -98,13 +103,15 @@ func TestGo(t *testing.T) {
 					fmt.Fprintf(os.Stdout, "%s", string(buf))
 				}
 			`)
+			defer func() {
+				if !t.Failed() {
+					remove()
+				}
+			}()
 
 			if stderr != "" {
 				if test.Error != "" {
 					if test.Error == stderr {
-						if !t.Failed() {
-							remove()
-						}
 						return
 					}
 					fmt.Println("# Expect:")
@@ -127,14 +134,7 @@ func TestGo(t *testing.T) {
 				fmt.Println()
 				t.Fatal(testutil.Diff(test.Expect, stdout))
 			}
-
-			if !t.Failed() {
-				remove()
-			}
 		})
-	}
-	if !t.Failed() {
-		assert.NoError(t, os.RemoveAll(tmpdir))
 	}
 }
 

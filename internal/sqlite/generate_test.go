@@ -23,6 +23,11 @@ func TestSQLite(t *testing.T) {
 	assert.NoError(t, err)
 	tmpdir := filepath.Join(cwd, "tmp")
 	assert.NoError(t, os.RemoveAll(tmpdir))
+	defer func() {
+		if !t.Failed() {
+			assert.NoError(t, os.RemoveAll(tmpdir))
+		}
+	}()
 
 	u, err := url.Parse(uri)
 	assert.NoError(t, err)
@@ -105,6 +110,11 @@ func TestSQLite(t *testing.T) {
 					fmt.Fprintf(os.Stdout, "%s", string(buf))
 				}
 			`)
+			defer func() {
+				if !t.Failed() {
+					remove()
+				}
+			}()
 
 			if stderr != "" {
 				if test.Error != "" {
@@ -131,14 +141,7 @@ func TestSQLite(t *testing.T) {
 				fmt.Println()
 				t.Fatal(testutil.Diff(test.Expect, stdout))
 			}
-
-			if !t.Failed() {
-				remove()
-			}
 		})
-	}
-	if !t.Failed() {
-		assert.NoError(t, os.RemoveAll(tmpdir))
 	}
 }
 
