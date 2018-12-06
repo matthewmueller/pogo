@@ -23,6 +23,10 @@ type IndexColumn struct {
 
 // Name of the index column
 func (c *IndexColumn) Name() string {
+	// for sqlite
+	if c.name == "rowid" {
+		return "RowID"
+	}
 	return c.name
 }
 

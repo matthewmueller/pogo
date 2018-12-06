@@ -1,20 +1,13 @@
 GREP?=""
 
-test: templates jack.test
+test: templates
+	@go test -v ./... -run $(GREP)
 
 precommit: test
 
-examples: jack.example
-
-jack.test: templates
-	@go test -v ./test/... -run $(GREP)
-
-jack.example: templates
-	@go run cmd/pogo/main.go --db $(POSTGRES_URL) --schema jack --dir _examples/jack/pogo
-
 templates:
-	@go-bindata -nometadata -o internal/templates/templates.go -pkg templates -ignore=templates.go internal/templates/...
+	@go-bindata -nometadata -o internal/templates/templates.go -pkg templates -ignore="templates\.go" internal/templates/...
 .PHONY: templates
 
-install: templates
+install: test
 	@go install ./cmd/pogo

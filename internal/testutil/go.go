@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"bytes"
+	"fmt"
 	"go/build"
 	"go/parser"
 	"go/token"
@@ -34,6 +35,7 @@ func GoRun(t testing.TB, path, main string) (string, string, func()) {
 		if !strings.Contains(path, "pogo") {
 			continue
 		}
+		fmt.Println(path, filepath.Base(dir))
 		if !strings.Contains(path, filepath.Base(dir)) {
 			t.Fatalf("path imported is not in the test directory: %s", path)
 		}

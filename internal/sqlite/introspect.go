@@ -38,6 +38,8 @@ type Column struct {
 	NotNull      bool    // not_null
 	DefaultValue *string // default_value
 	IsPrimaryKey bool    // pk_col_index
+
+	Alias string
 }
 
 // ForeignKey struct
@@ -57,6 +59,8 @@ type ForeignKey struct {
 // TODO: support views
 func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 	var tables []*schema.Table
+
+	paramPrefix := "?"
 
 	// get all the tables
 	tt, err := d.getTables(schemaName, "table")
@@ -85,11 +89,11 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 			if err != nil {
 				return nil, err
 			}
-			columns = append(columns, schema.NewColumn(col.ColumnName, "", dt, col.NotNull, nil, col.DefaultValue, col.IsPrimaryKey))
+			columns = append(columns, schema.NewColumn(col.ColumnName, col.Alias, dt, col.NotNull, nil, col.DefaultValue, col.IsPrimaryKey))
 		}
 
 		// get the foreign keys
-		fks, err := d.getForeignKeys(schemaName, table.Name, colmap[table.Name])
+		fks, err := d.getForeignKeys(schemaName, table.Name, colmap)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the foreign keys for '%s' from schema", table.Name)
 		}
@@ -106,7 +110,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.IndexName)
 			}
-			indexes = append(indexes, schema.NewIndex(index.IndexName, index.IsUnique, false, icols))
+			indexes = append(indexes, schema.NewIndex(index.IndexName, index.IsUnique, false, paramPrefix, icols))
 		}
 
 		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, fks, indexes))
@@ -164,7 +168,6 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err er
 	}
 	defer q.Close()
 
-	var cc []Column
 	var hasPrimaryKey bool
 
 	// load results
@@ -190,48 +193,38 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err er
 			c.IsPrimaryKey = true
 		}
 
-		cc = append(cc, c)
+		cols = append(cols, &c)
 	}
 	if e := q.Err(); e != nil {
 		return nil, e
 	}
 
 	// shift the fields
-	shift := 0
+	// shift := 0
 
 	// if we don't have an explicit primary key,
 	// sqlite assigns a 64bit integer named "rowid"
+	// prepend it to the existing columns
 	if !hasPrimaryKey {
-		cols = append(cols, &Column{
-			FieldOrdinal: 0,
-			ColumnName:   "row_id",
-			DataType:     "INTEGER",
-			NotNull:      true,
-			DefaultValue: nil,
-			IsPrimaryKey: true,
-		})
-		shift++
+		cols = append([]*Column{
+			{
+				FieldOrdinal: 0,
+				ColumnName:   "rowid",
+				// TODO: also check that id isn't already taken
+				// Alias:        "row_id",
+				DataType:     "INTEGER",
+				NotNull:      true,
+				DefaultValue: nil,
+				IsPrimaryKey: true,
+			},
+		}, cols...)
+		// shift++
 	}
-
-	// map columns into []schema.Column
-	// for _, c := range cc {
-	// 	dt, err := getType(schemaName, c.DataType)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	var dv *string
-	// 	if c.DefaultValue.Valid {
-	// 		// TODO: not sure why i need to copy it in first
-	// 		s := c.DefaultValue.String
-	// 		dv = &s
-	// 	}
-	// 	cols = append(cols, schema.NewColumn(c.ColumnName, "", dt, c.NotNull, nil, dv, c.PkColIndex == 1))
-	// }
 
 	return cols, nil
 }
 
-func (d *DB) getForeignKeys(schemaName string, table string, cols []*Column) (fks []*schema.ForeignKey, err error) {
+func (d *DB) getForeignKeys(schemaName string, table string, colmap map[string][]*Column) (fks []*schema.ForeignKey, err error) {
 	conn := d.DB
 
 	// sql query
@@ -255,8 +248,9 @@ func (d *DB) getForeignKeys(schemaName string, table string, cols []*Column) (fk
 		}
 
 		// make introspection a bit stricter for better compatibility with other dbs
-		if f.RefColumnName == nil {
-			return nil, fmt.Errorf("sqlite introspection: %q.%q(%q) references an unknown foreign column %q.(?)", schemaName, table, f.ColumnName, f.RefTableName)
+		cols, ok := colmap[f.RefTableName]
+		if !ok {
+			return nil, fmt.Errorf("sqlite introspect: couldn't find foreign table: %q", f.RefTableName)
 		}
 
 		var c *Column
@@ -268,7 +262,7 @@ func (d *DB) getForeignKeys(schemaName string, table string, cols []*Column) (fk
 			break
 		}
 		if c == nil {
-			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q)", table, f.ColumnName)
+			return nil, fmt.Errorf("sqlite introspect: couldn't find foreign column: %q.(%q)", table, f.ColumnName)
 		}
 
 		dt, err := getType(schemaName, c.DataType)
@@ -357,7 +351,7 @@ func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, in
 			break
 		}
 		if c == nil {
-			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q)", table, ic.ColumnName)
+			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q) while getting the index columns", table, ic.ColumnName)
 		}
 
 		dt, err := getType(schemaName, c.DataType)

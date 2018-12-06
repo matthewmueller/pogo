@@ -14,12 +14,14 @@ func NewIndex(
 	name string,
 	isUnique bool,
 	isPrimary bool,
+	paramPrefix string,
 	columns []*IndexColumn,
 ) *Index {
 	return &Index{
 		name,
 		isUnique,
 		isPrimary,
+		paramPrefix,
 		columns,
 	}
 }
@@ -29,7 +31,9 @@ type Index struct {
 	name      string // index_name
 	isUnique  bool   // is_unique
 	isPrimary bool   // is_primary
-	columns   []*IndexColumn
+
+	paramPrefix string
+	columns     []*IndexColumn
 }
 
 // IsUnique fn
@@ -86,8 +90,8 @@ func (i *Index) Where() string {
 		cols = append(cols, col.name)
 	}
 	sort.Strings(cols)
-	for i, col := range cols {
-		cols[i] = fmt.Sprintf("%s = $%d", strconv.Quote(col), i+1)
+	for j, col := range cols {
+		cols[j] = fmt.Sprintf("%s = %s%d", strconv.Quote(col), i.paramPrefix, j+1)
 	}
 	return strings.Join(cols, " AND ")
 }

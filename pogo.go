@@ -38,6 +38,14 @@ func Generate(uri string, outdir string, schemas ...string) error {
 		return err
 	}
 
+	var ss []string
+	for _, schema := range schemas {
+		if schema == "" {
+			continue
+		}
+		ss = append(ss, schema)
+	}
+
 	var generator Generator
 
 	// open the database
@@ -48,8 +56,12 @@ func Generate(uri string, outdir string, schemas ...string) error {
 			return err
 		}
 		generator = dr
-		// no schema is just a filepath
+		// add a schema if we don't have one
+		if len(ss) == 0 {
+			ss = append(ss, "public")
+		}
 	case "", "sqlite", "sqlite3":
+		// no schema is just a filepath
 		dr, err := sqlite.Open(u.String())
 		if err != nil {
 			return err
@@ -59,13 +71,8 @@ func Generate(uri string, outdir string, schemas ...string) error {
 		return fmt.Errorf("unsupported scheme: %s", u.Scheme)
 	}
 
-	// add a schema if we don't have one
-	if len(schemas) == 0 {
-		schemas = append(schemas, "public")
-	}
-
 	// generate the virtual filesystem
-	fs, err := generator.Generate(schemas)
+	fs, err := generator.Generate(ss)
 	if err != nil {
 		return err
 	}

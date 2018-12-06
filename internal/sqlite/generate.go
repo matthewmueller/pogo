@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"errors"
 	"path/filepath"
 
 	"github.com/matthewmueller/pogo/internal/template"
@@ -9,16 +8,13 @@ import (
 	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
-var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
-var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/pg_model.gotmpl"))
+var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/go_sq_pogo.gotext"))
+var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/go_sq_model.gotext"))
 
 // Generate the filesystem
 func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {
-	if len(schemas) == 0 {
-		return nil, errors.New("schema not specified")
-	}
-
-	schema, err := s.Introspect(schemas[0])
+	// TODO: remove this
+	schema, err := s.Introspect("")
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,6 @@ import (
 func Open(t testing.TB, uri string) (*sqlite.DB, func()) {
 	db, err := sqlite.Open(uri)
 	assert.NoError(t, err)
-
 	return db, func() {
 		assert.NoError(t, db.Close())
 		assert.NoError(t, os.Remove(uri))

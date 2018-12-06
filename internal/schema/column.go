@@ -16,7 +16,6 @@ func NewColumn(
 ) *Column {
 	return &Column{
 		name,
-		alias,
 		dataType,
 		notNull,
 		comment,
@@ -27,13 +26,14 @@ func NewColumn(
 
 // Column struct
 type Column struct {
-	name         string // column_name
-	alias        string
+	name         string   // column_name
 	dataType     DataType // data_type
 	notNull      bool     // not_null
 	comment      *string  // description
 	defaultValue *string  // default_value
 	isPrimaryKey bool     // is_primary_key
+
+	// alias string
 }
 
 // Name of the column
@@ -43,23 +43,35 @@ func (c *Column) Name() string {
 
 // Pascal case
 func (c *Column) Pascal() string {
-	if c.alias != "" {
-		return gen.Pascal(c.alias)
+	// for sqlite
+	if c.name == "rowid" {
+		return "RowID"
 	}
+	// if c.alias != "" {
+	// 	return gen.Pascal(c.alias)
+	// }
 	return gen.Pascal(c.name)
 }
 
 // Camel case
 func (c *Column) Camel() string {
-	if c.alias != "" {
-		return gen.Camel(c.alias)
-	}
+	// if c.alias != "" {
+	// 	return gen.Camel(c.alias)
+	// }
 	return gen.Camel(c.name)
 }
 
-// Snake case
-func (c *Column) Snake() string {
+// JSONKey fn
+func (c *Column) JSONKey() string {
+	// if c.alias != "" {
+	// 	return gen.Snake(c.alias)
+	// }
 	return gen.Snake(c.name)
+}
+
+// SQLName fn
+func (c *Column) SQLName() string {
+	return c.name
 }
 
 // Type of column

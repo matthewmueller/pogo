@@ -32,14 +32,10 @@ type Table struct {
 // e.g "public"."blogs"
 func (t *Table) SQLName() string {
 	if t.schema == "" {
-		return fmt.Sprintf("%q", t.schema)
+		return fmt.Sprintf("%q", t.name)
 	}
 	return fmt.Sprintf("%q.%q", t.schema, t.name)
 }
-
-// func (t *Table) Name() string {
-
-// }
 
 // Columns of the table
 func (t *Table) Columns() []*Column {
@@ -101,7 +97,7 @@ func (t *Table) Uniques() (uniques []*Index) {
 func (t *Table) Select() string {
 	var cols []string
 	for _, col := range t.cols {
-		cols = append(cols, `"`+col.Snake()+`"`)
+		cols = append(cols, `"`+col.SQLName()+`"`)
 	}
 	return strings.Join(cols, ", ")
 }
@@ -110,7 +106,7 @@ func (t *Table) Select() string {
 func (t *Table) Returning() string {
 	var cols []string
 	for _, col := range t.cols {
-		cols = append(cols, strconv.Quote(col.Snake()))
+		cols = append(cols, strconv.Quote(col.SQLName()))
 	}
 	return strings.Join(cols, ", ")
 }

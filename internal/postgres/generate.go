@@ -9,9 +9,9 @@ import (
 	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
-var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/pogo.gotmpl"))
-var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/pg_model.gotmpl"))
-var enumT = template.MustCompile("enum", templates.MustAssetString("internal/templates/pg_enum.gotmpl"))
+var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/go_pg_pogo.gotext"))
+var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/go_pg_model.gotext"))
+var enumT = template.MustCompile("enum", templates.MustAssetString("internal/templates/go_pg_enum.gotext"))
 
 // Generate the database binding
 func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {

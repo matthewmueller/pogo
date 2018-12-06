@@ -66,6 +66,8 @@ type ForeignKey struct {
 func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 	var tables []*schema.Table
 
+	paramPrefix := "$"
+
 	tt, err := getTables(d.Conn, schemaName)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get tables from schema")
@@ -109,7 +111,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.Name)
 			}
-			indexes = append(indexes, schema.NewIndex(index.Name, index.IsUnique, index.IsPrimary, columns))
+			indexes = append(indexes, schema.NewIndex(index.Name, index.IsUnique, index.IsPrimary, paramPrefix, columns))
 		}
 
 		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, fks, indexes))

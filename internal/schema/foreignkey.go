@@ -23,6 +23,10 @@ type ForeignKey struct {
 
 // Pascal case
 func (f *ForeignKey) Pascal() string {
+	// for sqlite
+	if f.name == "rowid" {
+		return "RowID"
+	}
 	return gen.Pascal(f.name)
 }
 
