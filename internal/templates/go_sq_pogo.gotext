@@ -11,20 +11,11 @@ import (
 // also copied into each of the table packages.
 //
 // This should work with database/sql.DB and database/sql.Tx.
-{{/* TODO: consider migrating off pgx's custom provider */}}
-{{ if eq .Schema.Provider "postgres" }}
-type DB interface {
-	Exec(string, ...interface{}) (pgx.CommandTag, error)
-	Query(string, ...interface{}) (*pgx.Rows, error)
-	QueryRow(string, ...interface{}) *pgx.Row
-}
-{{ else }}
 type DB interface {
 	Exec(string, ...interface{}) (sql.Result, error)
 	Query(string, ...interface{}) (*sql.Rows, error)
 	QueryRow(string, ...interface{}) *sql.Row
 }
-{{ end }}
 
 // Log function. Override this with the logger of your choice
 var Log = func(string, ...interface{}) {}
