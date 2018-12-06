@@ -13,7 +13,7 @@ func main() {
 
 	// flags
 	url := cmd.Flag("db", "database connection string").Required().String()
-	schema := cmd.Flag("schema", "database schema").Default("public").String()
+	schema := cmd.Flag("schema", "database schema").Default("").String()
 	out := cmd.Flag("dir", "output directory to write to").Default("pogo").String()
 
 	// run the generator
