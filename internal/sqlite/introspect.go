@@ -401,11 +401,11 @@ func getType(schemaName, sqlType string) (schema.DataType, error) {
 		return &schema.Float{}, nil
 	case "time with time zone", "time without time zone":
 		return &schema.String{}, nil
-	case "date", "timestamp with time zone", "timestamp without time zone":
+	case "date", "timestamp", "timestamp with time zone", "timestamp without time zone":
 		return &schema.DateTime{}, nil
 	case "json", "jsonb":
 		return &schema.JSON{}, nil
 	}
 
-	return nil, fmt.Errorf(`postgres getType: unhandled data type: %q`, sqlType)
+	return nil, fmt.Errorf(`sqlite getType: unhandled data type: %q`, sqlType)
 }

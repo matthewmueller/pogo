@@ -47,7 +47,6 @@ func Generate(uri string, outdir string, schemas ...string) error {
 	}
 
 	var generator Generator
-
 	// open the database
 	switch u.Scheme {
 	case "postgres":

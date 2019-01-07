@@ -624,7 +624,7 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		return &schema.Float{}, nil
 	case "time with time zone", "time without time zone":
 		return &schema.String{}, nil
-	case "date", "timestamp with time zone", "timestamp without time zone":
+	case "date", "timestamp", "timestamp with time zone", "timestamp without time zone":
 		return &schema.DateTime{}, nil
 	case "json", "jsonb":
 		return &schema.JSON{}, nil
