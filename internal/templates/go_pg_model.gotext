@@ -1278,12 +1278,9 @@ func (*Model) DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.P
 {{/* Upsert by a primary key */}}
 {{ if .Table.PrimaryKey }}
 {{ $pk := .Table.PrimaryKey }}
-{{/* Function: UpsertBy(PK) */}}
-// UpsertBy{{$pk.Pascal}} inserts a `{{$.Table.SQLName}}`, updating the row if `{{$pk.Pascal}}` already exists.
-func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
-	// add values to input, overriding existing keys if present in the input
-	{{$.Table.Camel}} = {{$.Table.Camel}}.{{$pk.Pascal}}({{$pk.Camel}})
-
+{{/* Function: Upsert(PK) */}}
+// Upsert inserts a `{{$.Table.SQLName}}`, updating the row if `{{$pk.Pascal}}` already exists.
+func Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 	fields := {{$.Table.Camel}}.columns()
 
 	// prepare the slices
@@ -1323,11 +1320,8 @@ func UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Ca
 }
 
 {{/* Model: UpsertBy(PK) */}}
-// UpsertBy{{$pk.Pascal}} inserts a `{{$.Table.SQLName}}`, updating the row if `{{$pk.Pascal}}` already exists.
-func (*Model) UpsertBy{{$pk.Pascal}}(db pogo.DB, {{$pk.Camel}} {{$pk.Type}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
-	// add values to input, overriding existing keys if present in the input
-	{{$.Table.Camel}} = {{$.Table.Camel}}.{{$pk.Pascal}}({{$pk.Camel}})
-
+// Upsert inserts a `{{$.Table.SQLName}}`, updating the row if `{{$pk.Pascal}}` already exists.
+func (*Model) Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 	fields := {{$.Table.Camel}}.columns()
 
 	// prepare the slices

@@ -826,8 +826,46 @@ var tests = []testutil.Test{
 			drop table if exists teammates cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `teammate.UpsertByID(db, 2, teammate.New().TeamID(2).SlackID("b").Username("b").Timezone("b"))`,
+		Func:   `teammate.Upsert(db, teammate.New().ID(2).TeamID(2).SlackID("b").Username("b").Timezone("b"))`,
 		Expect: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
+	},
+	{
+		Before: `
+			create extension if not exists citext;
+			create table if not exists teams (
+				id serial primary key not null,
+				token integer unique not null,
+				team_name text not null,
+				scope text[] not null default '{}',
+				email citext,
+				stripe_id text,
+				active boolean not null default true,
+				free_teammates integer not null default 4,
+				cost_per_user integer not null default 1
+			);
+			create table if not exists teammates (
+				id serial primary key not null,
+				team_id integer not null references teams(id) on delete cascade,
+				slack_id text unique not null,
+				username text not null,
+				first_name text,
+				last_name text,
+				email text,
+				avatar text,
+				timezone text not null
+			);
+			insert into teams (token, team_name) values (11, 'a');
+			insert into teams (token, team_name) values (22, 'b');
+			insert into teammates (team_id, slack_id, username, timezone) values (1, 'a', 'a', 'a');
+			insert into teammates (team_id, slack_id, username, timezone) values (1, 'b', 'b', 'b');
+		`,
+		After: `
+			drop table if exists teams cascade;
+			drop table if exists teammates cascade;
+			drop extension if exists citext cascade;
+		`,
+		Func:   `teammate.Upsert(db, teammate.New().TeamID(2).SlackID("c").Username("c").Timezone("c"))`,
+		Expect: `{"id":3,"team_id":2,"slack_id":"c","username":"c","timezone":"c"}`,
 	},
 	{
 		Before: `
