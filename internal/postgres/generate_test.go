@@ -141,6 +141,8 @@ func TestGo(t *testing.T) {
 var tests = []testutil.Test{
 	{
 		Before: `
+			create extension if not exists citext;
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -157,12 +159,15 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.FindByID(db, 2)`,
 		Expect: `{"id":2,"token":22,"team_name":"b","active":true,"free_teammates":4,"cost_per_user":1}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -177,12 +182,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.Insert(db, team.New().Token(11).TeamName("1"))`,
 		Expect: `{"id":1,"token":11,"team_name":"1","active":true,"free_teammates":4,"cost_per_user":1}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -199,12 +206,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.UpdateByID(db, 2, team.New().StripeID("stripey"))`,
 		Expect: `{"id":2,"token":22,"team_name":"b","stripe_id":"stripey","active":true,"free_teammates":4,"cost_per_user":1}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -221,12 +230,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.UpdateByID(db, 2, team.New().StripeID("stripey").Active(false))`,
 		Expect: `{"id":2,"token":22,"team_name":"b","stripe_id":"stripey","free_teammates":4,"cost_per_user":1}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -256,12 +267,14 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists teams cascade;
 			drop table if exists teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `teammate.FindBySlackID(db, "b")`,
 		Expect: `{"id":2,"team_id":1,"slack_id":"b","username":"b","timezone":"b"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -303,24 +316,28 @@ var tests = []testutil.Test{
 			drop table if exists teams cascade;
 			drop table if exists teammates cascade;
 			drop table if exists standups cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standup.FindByNameAndTeamID(db, "b", 1)`,
 		Expect: `{"id":2,"team_id":1,"name":"b","channel":"b","time":"a","timezone":"a"}`,
 	},
 	{
 		Before: `
-				create table if not exists blogs (
-					name text not null
-				);
+			create extension if not exists citext;
+			create table if not exists blogs (
+				name text not null
+			);
 			`,
 		After: `
 				drop table if exists blogs;
+				drop extension if exists citext cascade;
 			`,
 		Func:  `blog.Find(db)`,
 		Error: `blog not found`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -383,12 +400,14 @@ var tests = []testutil.Test{
 			drop type if exists report_status cascade;
 			drop table if exists reports cascade;
 			drop table if exists posts cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `report.Find(db, report.NewFilter().TeammateID(1), report.NewOrder().Timestamp(report.DESC))`,
 		Expect: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -451,12 +470,14 @@ var tests = []testutil.Test{
 			drop type if exists report_status cascade;
 			drop table if exists reports cascade;
 			drop table if exists posts cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `report.FindMany(db, report.NewFilter().Status(enum.ReportStatusAsked))`,
 		Expect: `[{"id":1,"teammate_id":1,"standup_id":1,"status":"ASKED","timestamp":1},{"id":2,"teammate_id":1,"standup_id":1,"status":"ASKED","timestamp":2}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -509,12 +530,14 @@ var tests = []testutil.Test{
 			drop table if exists standups cascade;
 			drop type if exists standup_teammate_status cascade;
 			drop table if exists standups_teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
 		Expect: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -567,12 +590,14 @@ var tests = []testutil.Test{
 			drop table if exists standups cascade;
 			drop type if exists standup_teammate_status cascade;
 			drop table if exists standups_teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Status(enum.StandupTeammateStatusActive).Owner(true))`,
 		Expect: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -626,12 +651,14 @@ var tests = []testutil.Test{
 			drop table if exists standups cascade;
 			drop type if exists standup_teammate_status cascade;
 			drop table if exists standups_teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Status(enum.StandupTeammateStatusInvited).Owner(true))`,
 		Expect: `{"id":1,"standup_id":1,"teammate_id":2,"status":"INVITED","time":"01:00:00","owner":true}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -685,12 +712,14 @@ var tests = []testutil.Test{
 			drop table if exists standups cascade;
 			drop type if exists standup_teammate_status cascade;
 			drop table if exists standups_teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.UpdateByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
 		Expect: `{"id":1,"standup_id":1,"teammate_id":2,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -701,12 +730,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `cron.DeleteByJob(db, "j2")`,
 		Expect: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -717,12 +748,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `cron.DeleteByID(db, 2)`,
 		Expect: `{"id":2,"job":"j2","frequency":"* * * * 1-5"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -753,12 +786,14 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists teams cascade;
 			drop table if exists teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `teammate.UpsertBySlackID(db, "b", teammate.New().TeamID(2).Username("b").Timezone("b"))`,
 		Expect: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -789,12 +824,14 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists teams cascade;
 			drop table if exists teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `teammate.UpsertByID(db, 2, teammate.New().TeamID(2).SlackID("b").Username("b").Timezone("b"))`,
 		Expect: `{"id":2,"team_id":2,"slack_id":"b","username":"b","timezone":"b"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -836,12 +873,14 @@ var tests = []testutil.Test{
 			drop table if exists teams cascade;
 			drop table if exists teammates cascade;
 			drop table if exists standups cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standup.FindMany(db, standup.NewFilter().TeamID(2), standup.NewOrder().Channel(standup.DESC))`,
 		Expect: `[{"id":2,"team_id":2,"name":"b","channel":"b","time":"b","timezone":"b"},{"id":1,"team_id":2,"name":"a","channel":"a","time":"a","timezone":"a"}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -898,12 +937,14 @@ var tests = []testutil.Test{
 			drop table if exists standups cascade;
 			drop type if exists standup_teammate_status cascade;
 			drop table if exists standups_teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.FindMany(db, standupteammate.NewFilter().StandupID(1))`,
 		Expect: `[{"id":1,"standup_id":1,"teammate_id":1,"status":"ACTIVE","time":"12:00:00"},{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"01:00:00","owner":true}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -915,12 +956,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `cron.Delete(db, cron.NewFilter().JobContains("j1"))`,
 		Expect: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -932,12 +975,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `cron.Delete(db, cron.NewFilter().JobStartsWith("j1"))`,
 		Expect: `{"id":1,"job":"j1","frequency":"* * * * *"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -949,12 +994,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `cron.DeleteMany(db, cron.NewFilter().JobContains("2"))`,
 		Expect: `[{"id":2,"job":"j20","frequency":"* * * * 1-5"},{"id":3,"job":"j21","frequency":"* * * * 1-5"}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -984,12 +1031,14 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists teams cascade;
 			drop table if exists teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `teammate.Find(db, teammate.NewFilter().SlackIDIn("b", "c"))`,
 		Expect: `{"id":2,"team_id":1,"slack_id":"b","username":"b","timezone":"b"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1052,12 +1101,14 @@ var tests = []testutil.Test{
 			drop type if exists report_status cascade;
 			drop table if exists reports cascade;
 			drop table if exists posts cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `report.Find(db, report.NewFilter().TeammateID(2).StandupID(1).TimestampGt(2), report.NewOrder().Timestamp(report.DESC))`,
 		Expect: `{"id":4,"teammate_id":2,"standup_id":1,"status":"COMPLETE","timestamp":4}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1074,12 +1125,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.FindMany(db)`,
 		Expect: `[{"id":1,"token":11,"team_name":"a","active":true,"free_teammates":4,"cost_per_user":1},{"id":2,"token":22,"team_name":"b","active":true,"free_teammates":4,"cost_per_user":1}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1136,12 +1189,14 @@ var tests = []testutil.Test{
 			drop table if exists standups cascade;
 			drop type if exists standup_teammate_status cascade;
 			drop table if exists standups_teammates cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.Find(db, standupteammate.NewFilter().Owner(true).StandupIDIn(1, 3))`,
 		Expect: `{"id":2,"standup_id":1,"teammate_id":3,"status":"ACTIVE","time":"01:00:00","owner":true}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1159,12 +1214,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.Update(db, team.New().TeamName("cool"), team.NewFilter().TokenIn(11, 44))`,
 		Expect: `{"id":1,"token":11,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null
@@ -1173,12 +1230,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:  `team.Update(db, team.New().Token(11), team.NewFilter().Token(10))`,
 		Error: `team not found`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1196,12 +1255,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.UpdateMany(db, team.New().TeamName("cool"), team.NewFilter().TokenIn(11, 22))`,
 		Expect: `[{"id":1,"token":11,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1},{"id":2,"token":22,"team_name":"cool","active":true,"free_teammates":4,"cost_per_user":1}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -1213,12 +1274,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:  `cron.UpdateByID(db, 1, cron.New())`,
 		Error: `cron.UpdateByID: no input provided`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists crons (
 				id serial not null primary key,
 				"job" text unique not null,
@@ -1230,6 +1293,7 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists crons;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `cron.UpdateByID(db, 1, cron.New().NullableFrequency(nil))`,
 		Expect: `{"id":1,"job":"j1"}`,
@@ -1237,7 +1301,8 @@ var tests = []testutil.Test{
 	{
 		Schema: "jack",
 		Before: `
-			create schema "jack";
+			create extension if not exists citext;
+			create schema if not exists jack;
 			create table jack.convos (
 				"user" text primary key,
 				"intent" text,
@@ -1250,13 +1315,15 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists jack.convos cascade;
-			drop schema "jack" cascade;
+			drop schema if exists jack cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `convo.FindMany(db, convo.NewFilter().UserIn("U0QS7USPJ", "U0QS890N5"))`,
 		Expect: `[{"user":"U0QS7USPJ","intent":"standup_join","state":{}},{"user":"U0QS890N5","intent":"standup_join","state":{}}]`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1291,6 +1358,7 @@ var tests = []testutil.Test{
 			drop table if exists teams cascade;
 			drop table if exists standups cascade;
 			drop table if exists questions cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func: `question.InsertMany(
 			db,
@@ -1301,6 +1369,7 @@ var tests = []testutil.Test{
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1309,12 +1378,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.Find(db, event.NewFilter().TimeLte(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
 		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1323,12 +1394,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.Find(db, event.NewFilter().TimeLt(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
 		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1337,12 +1410,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.Find(db, event.NewFilter().TimeGte(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))`,
 		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1351,12 +1426,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.Find(db, event.NewFilter().TimeGt(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))`,
 		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1365,12 +1442,14 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.Find(db, event.NewFilter().Time(time.Date(2018, 9, 4, 0, 0, 0, 0, time.UTC)))`,
 		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1379,6 +1458,7 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.Find(db, event.NewFilter().TimeNot(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
 		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
@@ -1386,6 +1466,7 @@ var tests = []testutil.Test{
 	{
 		Name: "nullable_time_nil",
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1396,6 +1477,7 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.FindMany(db, event.NewFilter().NullableTime(nil))`,
 		Expect: `[{"id":1},{"id":2},{"id":3}]`,
@@ -1403,6 +1485,7 @@ var tests = []testutil.Test{
 	{
 		Name: "nullable_time_ok",
 		Before: `
+			create extension if not exists citext;
 			create table if not exists events (
 				id serial not null primary key,
 				"time" timestamp with time zone
@@ -1413,6 +1496,7 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists events cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `event.FindMany(db, event.NewFilter().NullableTime(&now))`,
 		Expect: `[]`,
@@ -1420,6 +1504,7 @@ var tests = []testutil.Test{
 	{
 		Name: "empty_in_finds_nothing",
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1436,6 +1521,7 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.FindMany(db, team.NewFilter().IDIn().TokenIn(11, 22))`,
 		Expect: `[]`,
@@ -1443,6 +1529,7 @@ var tests = []testutil.Test{
 	{
 		Name: "nullable_fk",
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1507,12 +1594,14 @@ var tests = []testutil.Test{
 			drop type if exists report_status cascade;
 			drop table if exists reports cascade;
 			drop table if exists posts cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `report.Find(db, report.NewFilter().NullablePostID(nil).TeammateID(1))`,
 		Expect: `{"id":3,"teammate_id":1,"standup_id":1,"status":"COMPLETE","timestamp":3}`,
 	},
 	{
 		Before: `
+			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
 				token integer unique not null,
@@ -1528,6 +1617,7 @@ var tests = []testutil.Test{
 		`,
 		After: `
 			drop table if exists teams cascade;
+			drop extension if exists citext cascade;
 		`,
 		Func:   `team.Find(db, team.NewFilter().Email("maTTMuelle@gmail.com"))`,
 		Expect: `{"id":1,"token":11,"team_name":"a","email":"mattmuelle@gmail.com","active":true,"free_teammates":4,"cost_per_user":1}`,
