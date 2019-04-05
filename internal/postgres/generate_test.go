@@ -1674,4 +1674,17 @@ var tests = []testutil.Test{
 		Func:   `exercise.Find(db, exercise.NewFilter().Distance(12.213))`,
 		Expect: `{"id":1,"distance":12.213}`,
 	},
+	{
+		Before: `
+			create table if not exists exercises (
+				id serial primary key not null,
+				distance decimal(5, 3) not null
+			);
+		`,
+		After: `
+			drop table if exists exercises cascade;
+		`,
+		Func:   `exercise.Insert(db, exercise.New().Distance(12.213))`,
+		Expect: `{"id":1,"distance":12.213}`,
+	},
 }
