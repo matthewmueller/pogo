@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx"
-	"github.com/matthewmueller/errors"
+	"github.com/pkg/errors"
 	"github.com/matthewmueller/pogo/internal/schema"
 )
 

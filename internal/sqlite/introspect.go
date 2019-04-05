@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/matthewmueller/errors"
+	"github.com/pkg/errors"
 	"github.com/matthewmueller/pogo/internal/schema"
 )
 
