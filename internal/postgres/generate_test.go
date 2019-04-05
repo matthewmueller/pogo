@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pkg/errors"
 	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo"
 	"github.com/matthewmueller/pogo/internal/postgres"
 	"github.com/matthewmueller/pogo/internal/testutil"
+	"github.com/pkg/errors"
 	"github.com/tj/assert"
 )
 
@@ -69,6 +69,7 @@ func TestGo(t *testing.T) {
 					`+imp(`pogo/teammate`)+`
 					`+imp(`pogo/standupteammate`)+`
 					`+imp(`pogo/event`)+`
+					`+imp(`pogo/exercise`)+`
 				)
 
 				func main() {
@@ -141,7 +142,6 @@ func TestGo(t *testing.T) {
 var tests = []testutil.Test{
 	{
 		Before: `
-			create extension if not exists citext;
 			create extension if not exists citext;
 			create table if not exists teams (
 				id serial primary key not null,
@@ -1659,5 +1659,19 @@ var tests = []testutil.Test{
 		`,
 		Func:   `team.Find(db, team.NewFilter().Email("maTTMuelle@gmail.com"))`,
 		Expect: `{"id":1,"token":11,"team_name":"a","email":"mattmuelle@gmail.com","active":true,"free_teammates":4,"cost_per_user":1}`,
+	},
+	{
+		Before: `
+			create table if not exists exercises (
+				id serial primary key not null,
+				distance decimal(5, 3) not null
+			);
+			insert into exercises (distance) values (12.213);
+		`,
+		After: `
+			drop table if exists exercises cascade;
+		`,
+		Func:   `exercise.Find(db, exercise.NewFilter().Distance(12.213))`,
+		Expect: `{"id":1,"distance":12.213}`,
 	},
 }

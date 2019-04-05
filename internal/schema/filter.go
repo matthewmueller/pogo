@@ -273,7 +273,7 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 			})
 		}
 
-	case *Float:
+	case *Float32, *Float64:
 		// field equals
 		fields = append(fields, &FilterField{
 			name:     f.name,

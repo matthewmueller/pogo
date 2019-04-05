@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx"
-	"github.com/pkg/errors"
 	"github.com/matthewmueller/pogo/internal/schema"
+	"github.com/pkg/errors"
 )
 
 // Table struct
@@ -611,6 +611,13 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		return &schema.List{DataType: t}, nil
 	}
 
+	// treat numerics differently
+	// TODO: distinguish between different numerics
+	// e.g numeric(5, 3), numeric(7, 1), etc.
+	if strings.HasPrefix(sqlType, "numeric") {
+		return &schema.Float64{}, nil
+	}
+
 	switch sqlType {
 	case "text", "uuid", "citext":
 		return &schema.String{}, nil
@@ -621,7 +628,7 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		return &schema.Integer{}, nil
 	case "real", "double", "float":
 		// TODO distinguish float32, float64, etc. with new types
-		return &schema.Float{}, nil
+		return &schema.Float64{}, nil
 	case "time with time zone", "time without time zone":
 		return &schema.String{}, nil
 	case "date", "timestamp", "timestamp with time zone", "timestamp without time zone":

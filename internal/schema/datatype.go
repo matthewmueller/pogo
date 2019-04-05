@@ -42,11 +42,18 @@ func (*Integer) String() string {
 	return "int"
 }
 
-// Float type
-type Float struct{}
+// Float32 type
+type Float32 struct{}
 
-func (*Float) String() string {
-	return "float"
+func (*Float32) String() string {
+	return "float32"
+}
+
+// Float64 type
+type Float64 struct{}
+
+func (*Float64) String() string {
+	return "float64"
 }
 
 // DateTime type

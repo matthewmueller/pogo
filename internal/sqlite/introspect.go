@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/matthewmueller/pogo/internal/schema"
+	"github.com/pkg/errors"
 )
 
 // Table struct
@@ -398,7 +398,7 @@ func getType(schemaName, sqlType string) (schema.DataType, error) {
 		return &schema.Integer{}, nil
 	case "real", "double", "float":
 		// TODO distinguish float32, float64, etc. with new types
-		return &schema.Float{}, nil
+		return &schema.Float32{}, nil
 	case "time with time zone", "time without time zone":
 		return &schema.String{}, nil
 	case "date", "timestamp", "timestamp with time zone", "timestamp without time zone":
