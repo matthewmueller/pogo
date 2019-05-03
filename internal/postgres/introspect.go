@@ -456,15 +456,15 @@ func getProcedures(conn *pgx.Conn, schemaName string) (procs []*schema.Procedure
 		procs = append(procs, &p)
 	}
 
-	// range over the procs and get the parameters
-	for i, proc := range procs {
-		// get the params
-		params, err := getProcedureParams(conn, schemaName, proc.Name)
-		if err != nil {
-			return procs, err
-		}
-		procs[i].Params = append(procs[i].Params, params...)
-	}
+	// // range over the procs and get the parameters
+	// for i, proc := range procs {
+	// 	// get the params
+	// 	params, err := getProcedureParams(conn, schemaName, proc.Name)
+	// 	if err != nil {
+	// 		return procs, err
+	// 	}
+	// 	procs[i].Params = append(procs[i].Params, params...)
+	// }
 
 	return procs, nil
 }

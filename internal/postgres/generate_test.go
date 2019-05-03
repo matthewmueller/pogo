@@ -1687,4 +1687,23 @@ var tests = []testutil.Test{
 		Func:   `exercise.Insert(db, exercise.New().Distance(12.213))`,
 		Expect: `{"id":1,"distance":12.213}`,
 	},
+	// TODO: support uuids
+	// {
+	// 	Name: "Support uuids",
+	// 	Before: `
+	// 		create extension if not exists pgcrypto;
+	// 		create extension if not exists citext;
+	// 		create table if not exists users (
+	// 			id uuid primary key not null default gen_random_uuid(),
+	// 			email citext not null unique
+	// 		);
+	// 	`,
+	// 	After: `
+	// 		drop table if exists users cascade;
+	// 		drop extension if exists pgcrypto cascade;
+	// 		drop extension if exists citext cascade;
+	// 	`,
+	// 	Func:   `user.Insert(db, user.New().Email("mattmuelle@gmail.com"))`,
+	// 	Expect: `{"id":1,"email":"mattmuelle@gmail.com"}`,
+	// },
 }
