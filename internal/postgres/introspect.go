@@ -78,6 +78,16 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		return nil, errors.Wrap(err, "unable to get the stored procedures")
 	}
 
+	// range over the procs and get the parameters
+	for i, proc := range procedures {
+		// get the params
+		params, err := getProcedureParams(d.Conn, schemaName, proc.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to get the stored procedure params for '%s'", proc.Name)
+		}
+		procedures[i].Params = append(procedures[i].Params, params...)
+	}
+
 	// get enums
 	enums, err := getEnums(d.Conn, schemaName)
 	if err != nil {
@@ -445,26 +455,22 @@ func getProcedures(conn *pgx.Conn, schemaName string) (procs []*schema.Procedure
 
 	// load results
 	for q.Next() {
-		p := schema.Procedure{}
+		var p schema.Procedure
 
 		// scan
-		err = q.Scan(&p.Name, &p.ReturnType)
+		var name *string
+		err = q.Scan(&name, &p.ReturnType)
 		if err != nil {
 			return nil, err
 		}
+		// skip procedures that don't have a name
+		if name == nil {
+			continue
+		}
+		p.Name = *name
 
 		procs = append(procs, &p)
 	}
-
-	// // range over the procs and get the parameters
-	// for i, proc := range procs {
-	// 	// get the params
-	// 	params, err := getProcedureParams(conn, schemaName, proc.Name)
-	// 	if err != nil {
-	// 		return procs, err
-	// 	}
-	// 	procs[i].Params = append(procs[i].Params, params...)
-	// }
 
 	return procs, nil
 }
@@ -493,7 +499,6 @@ func getProcedureParams(conn *pgx.Conn, schemaName, procedure string) (params []
 		if err != nil {
 			return nil, err
 		}
-
 		params = append(params, &pp)
 	}
 
@@ -526,7 +531,7 @@ func getEnums(conn *pgx.Conn, schemaName string) (enums []*schema.Enum, err erro
 		// scan
 		err = q.Scan(&e.Name)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get enums")
 		}
 
 		enums = append(enums, &e)

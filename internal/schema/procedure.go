@@ -2,7 +2,7 @@ package schema
 
 // Procedure represents a stored procedure.
 type Procedure struct {
-	Name       *string // proc name
+	Name       string // proc name
 	Params     []*ProcedureParam
 	ReturnType string // return type
 }
@@ -10,5 +10,5 @@ type Procedure struct {
 // ProcedureParam represents a stored procedure.
 type ProcedureParam struct {
 	Name *string // param name
-	Type string  // param type
+	Type *string // param type
 }

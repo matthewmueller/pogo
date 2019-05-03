@@ -1,6 +1,7 @@
 GREP?=""
 
 test: templates
+	rm -rf internal/postgres/tmp internal/sqlite/tmp
 	@go test -v ./... -run $(GREP)
 
 precommit: test
