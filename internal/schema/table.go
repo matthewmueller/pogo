@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -12,20 +13,32 @@ import (
 func NewTable(
 	schema string,
 	name string,
-	cols []*Column,
+	columns []*Column,
+	pk *PrimaryKey,
 	fks []*ForeignKey,
 	idxs []*Index,
 ) *Table {
-	return &Table{schema, name, cols, fks, idxs}
+	sort.Slice(columns, func(i, j int) bool { return columns[i].name < columns[j].name })
+	sort.Slice(idxs, func(i, j int) bool { return idxs[i].name < idxs[j].name })
+	sort.Slice(fks, func(i, j int) bool { return fks[i].name < fks[j].name })
+	return &Table{
+		schema,
+		name,
+		columns,
+		pk,
+		fks,
+		idxs,
+	}
 }
 
 // Table struct
 type Table struct {
-	schema string
-	name   string
-	cols   []*Column
-	fks    []*ForeignKey
-	idxs   []*Index
+	schema  string
+	name    string
+	columns []*Column
+	pk      *PrimaryKey
+	fks     []*ForeignKey
+	idxs    []*Index
 }
 
 // SQLName is an SQL-friendly name of the table
@@ -39,7 +52,7 @@ func (t *Table) SQLName() string {
 
 // Columns of the table
 func (t *Table) Columns() []*Column {
-	return t.cols
+	return t.columns
 }
 
 // Indexes of the table
@@ -73,13 +86,11 @@ func (t *Table) PluralCamel() string {
 }
 
 // PrimaryKey fn
-func (t *Table) PrimaryKey() *Column {
-	for _, col := range t.cols {
-		if col.isPrimaryKey {
-			return col
-		}
+func (t *Table) PrimaryKey() *PrimaryKey {
+	if len(t.pk.columns) == 0 {
+		return nil
 	}
-	return nil
+	return t.pk
 }
 
 // Uniques fn
@@ -96,7 +107,7 @@ func (t *Table) Uniques() (uniques []*Index) {
 // Select builds the SQL SELECT string
 func (t *Table) Select() string {
 	var cols []string
-	for _, col := range t.cols {
+	for _, col := range t.columns {
 		cols = append(cols, `"`+col.SQLName()+`"`)
 	}
 	return strings.Join(cols, ", ")
@@ -105,7 +116,7 @@ func (t *Table) Select() string {
 // Returning builds the SQL RETURNING string
 func (t *Table) Returning() string {
 	var cols []string
-	for _, col := range t.cols {
+	for _, col := range t.columns {
 		cols = append(cols, strconv.Quote(col.SQLName()))
 	}
 	return strings.Join(cols, ", ")
@@ -115,7 +126,7 @@ func (t *Table) Returning() string {
 func (t *Table) Scan() string {
 	camel := gen.Camel(singular(t.name))
 	var cols []string
-	for _, col := range t.cols {
+	for _, col := range t.columns {
 		cols = append(cols, `&_`+camel+`.`+col.Pascal())
 	}
 	return strings.Join(cols, ", ")
@@ -123,7 +134,7 @@ func (t *Table) Scan() string {
 
 // Filters fn
 func (t *Table) Filters() (filters []*Filter) {
-	for _, col := range t.cols {
+	for _, col := range t.columns {
 		filters = append(filters, newFilter(col.name, col.dataType, col.notNull))
 	}
 	return filters
@@ -131,7 +142,7 @@ func (t *Table) Filters() (filters []*Filter) {
 
 // Orders fn
 func (t *Table) Orders() (orders []*OrderField) {
-	for _, col := range t.cols {
+	for _, col := range t.columns {
 		orders = append(orders, newOrder(col.name, col.comment, col.dataType))
 	}
 	return orders

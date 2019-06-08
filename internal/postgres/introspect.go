@@ -96,10 +96,27 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 
 	for _, table := range tt {
 		// get the columns
-		columns, err := getColumns(d.Conn, enums, schemaName, table.Name)
+		cols, err := getColumns(d.Conn, enums, schemaName, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get columns for '%s' from schema", table.Name)
 		}
+
+		var columns []*schema.Column
+		var pks []*schema.Column
+		for _, col := range cols {
+			dt, err := getType(enums, schemaName, col.DataType)
+			if err != nil {
+				return nil, err
+			}
+			column := schema.NewColumn(col.Name, "", dt, col.NotNull, nil, col.DefaultValue, col.IsPrimaryKey)
+			columns = append(columns, column)
+			if col.IsPrimaryKey {
+				pks = append(pks, column)
+			}
+		}
+
+		// group the primary key columns into a composite primary key
+		pk := schema.NewPrimaryKey(pks, paramPrefix)
 
 		// get the foreign keys
 		fks, err := getForeignKeys(d.Conn, enums, schemaName, table.Name)
@@ -124,7 +141,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 			indexes = append(indexes, schema.NewIndex(index.Name, index.IsUnique, index.IsPrimary, paramPrefix, columns))
 		}
 
-		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, fks, indexes))
+		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, pk, fks, indexes))
 	}
 
 	return schema.New(
@@ -174,7 +191,7 @@ func getTables(conn *pgx.Conn, schemaName string) (tables []*Table, err error) {
 	return tables, nil
 }
 
-func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (columns []*schema.Column, err error) {
+func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (columns []*Column, err error) {
 	// sql query
 	// TODO: support onDelete and onUpdate
 	const sqlstr = `
@@ -207,25 +224,16 @@ func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table s
 	// load results
 	for q.Next() {
 		var c Column
-
 		// scan
 		err = q.Scan(&c.FieldOrdinal, &c.Name, &c.DataType, &c.NotNull, &c.Comment, &c.DefaultValue, &c.IsPrimaryKey)
 		if err != nil {
 			return columns, err
 		}
-
-		dt, err := getType(enums, schemaName, c.DataType)
-		if err != nil {
-			return columns, err
-		}
-
-		col := schema.NewColumn(c.Name, "", dt, c.NotNull, c.Comment, c.DefaultValue, c.IsPrimaryKey)
-		columns = append(columns, col)
+		columns = append(columns, &c)
 	}
 	if e := q.Err(); e != nil {
 		return nil, e
 	}
-
 	return columns, nil
 }
 

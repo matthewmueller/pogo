@@ -185,7 +185,7 @@ var tests = []testutil.Test{
 				drop table if exists blogs;
 			`,
 		Func:   `blog.Find(db)`,
-		Expect: `{"rowid":1,"name":"a"}`,
+		Expect: `{"name":"a","rowid":1}`,
 	},
 	{
 		Before: `
@@ -229,7 +229,7 @@ var tests = []testutil.Test{
 				drop table if exists blogs;
 			`,
 		Func:   `blog.Find(db, blog.NewFilter().Name("b"))`,
-		Expect: `{"rowid":2,"name":"b"}`,
+		Expect: `{"name":"b","rowid":2}`,
 	},
 	{
 		Before: `
@@ -262,7 +262,7 @@ var tests = []testutil.Test{
 				drop table if exists posts;
 			`,
 		Func:   `blog.FindByRowID(db, 2)`,
-		Expect: `{"rowid":2,"name":"b"}`,
+		Expect: `{"name":"b","rowid":2}`,
 	},
 	{
 		Before: `
@@ -297,7 +297,7 @@ var tests = []testutil.Test{
 				drop table if exists blogs;
 			`,
 		Func:   `blog.FindByURL(db, "http://b.com")`,
-		Expect: `{"rowid":2,"name":"b","url":"http://b.com"}`,
+		Expect: `{"name":"b","rowid":2,"url":"http://b.com"}`,
 	},
 	{
 		Before: `
@@ -323,7 +323,7 @@ var tests = []testutil.Test{
 				drop table if exists posts;
 			`,
 		Func:   `post.FindByBlogIDAndSlug(db, 2, "s")`,
-		Expect: `{"id":2,"blog_id":2,"title":"b","slug":"s"}`,
+		Expect: `{"blog_id":2,"id":2,"slug":"s","title":"b"}`,
 	},
 	{
 		Before: `
@@ -663,8 +663,8 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists blogs;
 		`,
-		Func:   `blog.UpsertByID(db, 3, blog.New().Name("c"))`,
-		Expect: `3`,
+		Func:   `blog.Upsert(db, blog.New().ID(1).Name("c"))`,
+		Expect: `0`,
 	},
 	{
 		Before: `
@@ -678,10 +678,9 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists blogs;
 		`,
-		Func:   `blog.UpsertByID(db, 2, blog.New().Name("c"))`,
+		Func:   `blog.Upsert(db, blog.New().ID(2).Name("c"))`,
 		Expect: `0`,
 	},
-
 	// TODO: handle edge cases like this
 	// {
 	// 	Before: `
@@ -698,7 +697,6 @@ var tests = []testutil.Test{
 	// 	Func:   `blog.UpsertByID(db, -10, blog.New().Name("c"))`,
 	// 	Expect: `0`,
 	// },
-
 	{
 		Before: `
 			create table if not exists blogs (
@@ -716,7 +714,6 @@ var tests = []testutil.Test{
 		Func:   `blog.UpsertByURL(db, "http://c.com", blog.New().Name("c"))`,
 		Expect: `3`,
 	},
-
 	{
 		Before: `
 			create table if not exists blogs (
@@ -734,7 +731,6 @@ var tests = []testutil.Test{
 		Func:   `blog.UpsertByURL(db, "http://b.com", blog.New().Name("c"))`,
 		Expect: `0`,
 	},
-
 	{
 		Before: `
 			create table if not exists migrate (
@@ -746,5 +742,182 @@ var tests = []testutil.Test{
 		`,
 		Func:   `migrate.Insert(db, migrate.New().Version(0))`,
 		Expect: `1`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key)
+			);
+			insert into variables (name, key, value, email) values ("a", "b", "c", "d");
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.FindByKeyAndName(db, "b", "a")`,
+		Expect: `{"email":"d","key":"b","name":"a","value":"c"}`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key)
+			);
+			insert into variables (name, key, value, email) values ("a", "b", "c", "d");
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.FindByKeyAndName(db, "b", "a")`,
+		Expect: `{"email":"d","key":"b","name":"a","value":"c"}`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key),
+				unique(value, email)
+			);
+			insert into variables (name, key, value, email) values ('a', 'b', 'c', 'd');
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.FindByEmailAndValue(db, "d", "c")`,
+		Expect: `{"email":"d","key":"b","name":"a","value":"c"}`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key)
+			);
+			insert into variables (name, key, value, email) values ("a", "b", "c", "d");
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `err = variable.UpdateByKeyAndName(db, "b", "a", variable.New().Email("e"))`,
+		Expect: `null`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				count integer not null,
+				primary key(name, key),
+				unique(value, email)
+			);
+			insert into variables (name, key, value, email, count) values ('a', 'b', 'c', 'd', 0);
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `err = variable.UpdateByEmailAndValue(db, "d", "c", variable.New().Count(1))`,
+		Expect: `null`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key)
+			);
+			insert into variables (name, key, value, email) values ("a", "b", "c", "d");
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `err = variable.DeleteByKeyAndName(db, "b", "a")`,
+		Expect: `null`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key),
+				unique(value, email)
+			);
+			insert into variables (name, key, value, email) values ('a', 'b', 'c', 'd');
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `err = variable.DeleteByEmailAndValue(db, "d", "c")`,
+		Expect: `null`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key)
+			);
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.Upsert(db, variable.New().Key("a").Name("b").Value("c").Email("d"))`,
+		Expect: `1`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				count integer not null,
+				primary key(name, key),
+				unique(value, email)
+			);
+			insert into variables (name, key, value, email, count) values ('a', 'b', 'c', 'd', 0);
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.UpsertByEmailAndValue(db, "d", "c", variable.New().Name("h").Key("g").Count(1))`,
+		Expect: `0`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				count integer not null,
+				primary key(name, key),
+				unique(value, email)
+			);
+			insert into variables (name, key, value, email, count) values ('a', 'b', 'c', 'd', 0);
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.UpsertByEmailAndValue(db, "r", "c", variable.New().Name("h").Key("g").Count(1))`,
+		Expect: `2`,
 	},
 }

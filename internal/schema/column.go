@@ -43,13 +43,6 @@ func (c *Column) Name() string {
 
 // Pascal case
 func (c *Column) Pascal() string {
-	// for sqlite
-	if c.name == "rowid" {
-		return "RowID"
-	}
-	// if c.alias != "" {
-	// 	return gen.Pascal(c.alias)
-	// }
 	return gen.Pascal(c.name)
 }
 

@@ -84,13 +84,21 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 	for _, table := range tt {
 		// turn columns into schema.Column
 		var columns []*schema.Column
+		var pks []*schema.Column
 		for _, col := range colmap[table.Name] {
 			dt, err := getType(schemaName, col.DataType)
 			if err != nil {
 				return nil, err
 			}
-			columns = append(columns, schema.NewColumn(col.ColumnName, col.Alias, dt, col.NotNull, nil, col.DefaultValue, col.IsPrimaryKey))
+			column := schema.NewColumn(col.ColumnName, col.Alias, dt, col.NotNull, nil, col.DefaultValue, col.IsPrimaryKey)
+			columns = append(columns, column)
+			if col.IsPrimaryKey {
+				pks = append(pks, column)
+			}
 		}
+
+		// group the primary key columns into a composite primary key
+		pk := schema.NewPrimaryKey(pks, paramPrefix)
 
 		// get the foreign keys
 		fks, err := d.getForeignKeys(schemaName, table.Name, colmap)
@@ -102,7 +110,6 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the indexes for '%s' from schema", table.Name)
 		}
-
 		// get each of the index columns
 		var indexes []*schema.Index
 		for _, index := range idxs {
@@ -112,8 +119,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 			}
 			indexes = append(indexes, schema.NewIndex(index.IndexName, index.IsUnique, index.Origin == "pk", paramPrefix, icols))
 		}
-
-		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, fks, indexes))
+		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, pk, fks, indexes))
 	}
 
 	return schema.New(
@@ -168,7 +174,7 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err er
 	}
 	defer q.Close()
 
-	var hasPrimaryKey bool
+	pks := 0
 
 	// load results
 	for q.Next() {
@@ -188,9 +194,9 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err er
 			c.DefaultValue = &s
 		}
 
-		if primaryKey == 1 {
-			hasPrimaryKey = true
+		if primaryKey > 0 {
 			c.IsPrimaryKey = true
+			pks++
 		}
 
 		cols = append(cols, &c)
@@ -199,26 +205,21 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err er
 		return nil, e
 	}
 
-	// shift the fields
-	// shift := 0
-
 	// if we don't have an explicit primary key,
 	// sqlite assigns a 64bit integer named "rowid"
 	// prepend it to the existing columns
-	if !hasPrimaryKey {
+	if pks == 0 {
 		cols = append([]*Column{
 			{
 				FieldOrdinal: 0,
 				ColumnName:   "rowid",
-				// TODO: also check that id isn't already taken
-				// Alias:        "row_id",
 				DataType:     "INTEGER",
 				NotNull:      true,
 				DefaultValue: nil,
 				IsPrimaryKey: true,
 			},
 		}, cols...)
-		// shift++
+		return cols, nil
 	}
 
 	return cols, nil

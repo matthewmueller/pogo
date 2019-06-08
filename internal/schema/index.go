@@ -17,6 +17,7 @@ func NewIndex(
 	paramPrefix string,
 	columns []*IndexColumn,
 ) *Index {
+	sort.Slice(columns, func(i, j int) bool { return columns[i].name < columns[j].name })
 	return &Index{
 		name,
 		isUnique,
@@ -48,7 +49,13 @@ func (i *Index) IsPrimary() bool {
 
 // Columns fn
 func (i *Index) Columns() []*IndexColumn {
-	return i.columns
+	columns := make([]*IndexColumn, len(i.columns))
+	copy(columns[:], i.columns[:])
+	// sort the columns before using them
+	sort.Slice(columns, func(i, j int) bool {
+		return columns[i].name < columns[j].name
+	})
+	return columns
 }
 
 // Method for the index
