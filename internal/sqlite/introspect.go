@@ -110,7 +110,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to get index columns for %s", index.IndexName)
 			}
-			indexes = append(indexes, schema.NewIndex(index.IndexName, index.IsUnique, false, paramPrefix, icols))
+			indexes = append(indexes, schema.NewIndex(index.IndexName, index.IsUnique, index.Origin == "pk", paramPrefix, icols))
 		}
 
 		tables = append(tables, schema.NewTable(schemaName, table.Name, columns, fks, indexes))
@@ -299,15 +299,6 @@ func (d *DB) getIndexes(schemaName string, table string) (idxs []*Index, err err
 		if err != nil {
 			return nil, err
 		}
-
-		// // map to schema.Index
-		// var idx schema.Index
-		// idx.Name = i.IndexName
-		// idx.IsUnique = i.IsUnique
-		// idx.IsPrimary = false
-		// idx.SeqNo = i.SeqNo
-		// idx.Origin = i.Origin
-		// idx.IsPartial = i.IsPartial
 		idxs = append(idxs, &i)
 	}
 	if e := q.Err(); e != nil {

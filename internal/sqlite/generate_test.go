@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	text "github.com/matthewmueller/go-text"
 	"github.com/matthewmueller/pogo"
 	"github.com/matthewmueller/pogo/internal/sqlite"
 	"github.com/matthewmueller/pogo/internal/testutil"
+	"github.com/pkg/errors"
 	"github.com/tj/assert"
 )
 
@@ -735,6 +735,16 @@ var tests = []testutil.Test{
 		Expect: `0`,
 	},
 
-	// func (*Model) UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
-
+	{
+		Before: `
+			create table if not exists migrate (
+				version bigint not null primary key
+			);
+		`,
+		After: `
+			drop table if exists migrate;
+		`,
+		Func:   `migrate.Insert(db, migrate.New().Version(0))`,
+		Expect: `1`,
+	},
 }
