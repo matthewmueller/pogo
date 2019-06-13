@@ -160,7 +160,6 @@ var tests = []testutil.Test{
 		After: `
 			drop table if exists teams cascade;
 			drop extension if exists citext cascade;
-			drop extension if exists citext cascade;
 		`,
 		Func:   `team.FindByID(db, 2)`,
 		Expect: `{"active":true,"cost_per_user":1,"free_teammates":4,"id":2,"team_name":"b","token":22}`,
