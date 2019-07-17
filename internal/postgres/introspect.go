@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx"
-	"github.com/matthewmueller/errors"
 	"github.com/matthewmueller/pogo/internal/schema"
+	"github.com/pkg/errors"
 )
 
 // Table struct
