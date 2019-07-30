@@ -76,12 +76,16 @@ func TestSQLite(t *testing.T) {
 					// sqlite db
 					_ "github.com/mattn/go-sqlite3"
 
-					`+imp(`pogo`)+`
+					pogo `+imp(`pogo`)+`
 					`+imp(`pogo/blog`)+`
 					`+imp(`pogo/post`)+`
 				)
 
 				func main() {
+					// pogo.Log = func(sql string, v ...interface{}) {
+					// 	io.WriteString(os.Stderr, sql+"\n")
+					// }
+
 					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
 					_ = now
 
@@ -247,7 +251,6 @@ var tests = []testutil.Test{
 		Func:   `blog.Find(db, blog.NewFilter().Name("b"))`,
 		Expect: `{"id":2,"name":"b"}`,
 	},
-	// TODO: Find with all the other filters
 	{
 		Before: `
 				pragma foreign_keys = 1;
@@ -920,4 +923,329 @@ var tests = []testutil.Test{
 		Func:   `variable.UpsertByEmailAndValue(db, "r", "c", variable.New().Name("h").Key("g").Count(1))`,
 		Expect: `2`,
 	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameNot("abc"))`,
+		Expect: `{"id":2,"name":"bad"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameContains("d"))`,
+		Expect: `{"id":2,"name":"bad"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameNotContains("d"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameStartsWith("ab"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameNotStartsWith("ba"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameEndsWith("bc"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameNotEndsWith("ad"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameLt("abd"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameLte("abc"))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameGt("abd"))`,
+		Expect: `{"id":2,"name":"bad"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().NameGte("bad"))`,
+		Expect: `{"id":2,"name":"bad"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().ID(1))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().IDNot(2))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().IDLt(2))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().IDLte(1))`,
+		Expect: `{"id":1,"name":"abc"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().IDGt(1))`,
+		Expect: `{"id":2,"name":"bad"}`,
+	},
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null
+			);
+			insert into blogs (name) values ('abc');
+			insert into blogs (name) values ('bad');
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().IDGte(2))`,
+		Expect: `{"id":2,"name":"bad"}`,
+	},
+	// TODO: fix floats
+	// {
+	// 	Before: `
+	// 		pragma foreign_keys = 1;
+	// 		create table if not exists blogs (
+	// 			id integer primary key not null,
+	// 			name text not null,
+	// 			amount real not null
+	// 		);
+	// 		insert into blogs (name, amount) values ('abc', 1.03);
+	// 		insert into blogs (name, amount) values ('bad', 2.05);
+	// 	`,
+	// 	After: `
+	// 		drop table if exists blogs;
+	// 	`,
+	// 	Func:   `blog.Find(db, blog.NewFilter().Amount(1.03))`,
+	// 	Expect: `{"id":1,"name":"abc","amount":1.03}`,
+	// },
+	{
+		Before: `
+			pragma foreign_keys = 1;
+			create table if not exists blogs (
+				id integer primary key not null,
+				name text not null,
+				active boolean not null
+			);
+			insert into blogs (name, active) values ('abc', true);
+			insert into blogs (name, active) values ('bad', false);
+		`,
+		After: `
+			drop table if exists blogs;
+		`,
+		Func:   `blog.Find(db, blog.NewFilter().Active(true))`,
+		Expect: `{"active":true,"id":1,"name":"abc"}`,
+	},
+	// TODO: fix datetime filters
+	// {
+	// 	Before: `
+	// 		pragma foreign_keys = 1;
+	// 		create table if not exists blogs (
+	// 			id integer primary key not null,
+	// 			name text not null,
+	// 			created_at text not null default date('now', 'start of year')
+	// 		);
+	// 		insert into blogs (name) values ('abc');
+	// 		insert into blogs (name) values ('bad');
+	// 	`,
+	// 	After: `
+	// 		drop table if exists blogs;
+	// 	`,
+	// 	Func:   `blog.Find(db, blog.NewFilter().CreatedAt(time.Date(time.Now().Year(), time.January, 1, 0, 0, 0, 0, time.UTC)))`,
+	// 	Expect: `{"id":2,"name":"bad"}`,
+	// },
 }

@@ -8,10 +8,8 @@ import (
 func Name(t Test) string {
 	name := t.Name
 	if name == "" {
-		name = Truncate(t.Func, 20)
-		if i := strings.Index(t.Func, "("); i >= 0 {
-			name = Truncate(t.Func, i)
-		}
+		name = Truncate(t.Func, 80)
 	}
+	name = strings.ReplaceAll(name, " ", "")
 	return name
 }

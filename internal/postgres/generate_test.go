@@ -1417,8 +1417,17 @@ var tests = []testutil.Test{
 			drop table if exists events cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `event.Find(db, event.NewFilter().TimeLte(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
-		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		Func: `
+			func() (interface{}, error) {
+				evt, err := event.Find(db, event.NewFilter().TimeLte(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))
+				if err != nil {
+					return evt, err
+				}
+				*evt.Time = evt.Time.In(time.UTC)
+				return evt, nil
+			}()
+		`,
+		Expect: `{"id":1,"time":"2018-09-04T00:00:00Z"}`,
 	},
 	{
 		Before: `
@@ -1433,8 +1442,17 @@ var tests = []testutil.Test{
 			drop table if exists events cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `event.Find(db, event.NewFilter().TimeLt(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
-		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		Func: `
+			func() (interface{}, error) {
+				evt, err := event.Find(db, event.NewFilter().TimeLt(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))
+				if err != nil {
+					return evt, err
+				}
+				*evt.Time = evt.Time.In(time.UTC)
+				return evt, nil
+			}()
+		`,
+		Expect: `{"id":1,"time":"2018-09-04T00:00:00Z"}`,
 	},
 	{
 		Before: `
@@ -1449,8 +1467,17 @@ var tests = []testutil.Test{
 			drop table if exists events cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `event.Find(db, event.NewFilter().TimeGte(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))`,
-		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		Func: `
+			func() (interface{}, error) {
+				evt, err := event.Find(db, event.NewFilter().TimeGte(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))
+				if err != nil {
+					return evt, err
+				}
+				*evt.Time = evt.Time.In(time.UTC)
+				return evt, nil
+			}()
+		`,
+		Expect: `{"id":1,"time":"2018-09-04T00:00:00Z"}`,
 	},
 	{
 		Before: `
@@ -1459,14 +1486,23 @@ var tests = []testutil.Test{
 				id serial not null primary key,
 				"time" timestamp with time zone
 			);
-			insert into events ("time") values ('2018-09-04 00:00:00+00');
+			insert into events ("time") values ('2018-09-04 00:00:00Z');
 		`,
 		After: `
 			drop table if exists events cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `event.Find(db, event.NewFilter().TimeGt(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))`,
-		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		Func: `
+			func() (interface{}, error) {
+				evt, err := event.Find(db, event.NewFilter().TimeGt(time.Date(2018, 9, 2, 0, 0, 0, 0, time.UTC)))
+				if err != nil {
+					return evt, err
+				}
+				*evt.Time = evt.Time.In(time.UTC)
+				return evt, nil
+			}()
+		`,
+		Expect: `{"id":1,"time":"2018-09-04T00:00:00Z"}`,
 	},
 	{
 		Before: `
@@ -1475,14 +1511,23 @@ var tests = []testutil.Test{
 				id serial not null primary key,
 				"time" timestamp with time zone
 			);
-			insert into events ("time") values ('2018-09-04 00:00:00+00');
+			insert into events ("time") values ('2018-09-04 00:00:00Z');
 		`,
 		After: `
 			drop table if exists events cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `event.Find(db, event.NewFilter().Time(time.Date(2018, 9, 4, 0, 0, 0, 0, time.UTC)))`,
-		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		Func: `
+			func() (interface{}, error) {
+				evt, err := event.Find(db, event.NewFilter().Time(time.Date(2018, 9, 4, 0, 0, 0, 0, time.UTC)))
+				if err != nil {
+					return evt, err
+				}
+				*evt.Time = evt.Time.In(time.UTC)
+				return evt, nil
+			}()
+		`,
+		Expect: `{"id":1,"time":"2018-09-04T00:00:00Z"}`,
 	},
 	{
 		Before: `
@@ -1491,14 +1536,23 @@ var tests = []testutil.Test{
 				id serial not null primary key,
 				"time" timestamp with time zone
 			);
-			insert into events ("time") values ('2018-09-04 00:00:00+00');
+			insert into events ("time") values ('2018-09-04 00:00:00Z');
 		`,
 		After: `
 			drop table if exists events cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `event.Find(db, event.NewFilter().TimeNot(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))`,
-		Expect: `{"id":1,"time":"2018-09-04T07:00:00+07:00"}`,
+		Func: `
+		func() (interface{}, error) {
+			evt, err := event.Find(db, event.NewFilter().TimeNot(time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)))
+			if err != nil {
+				return evt, err
+			}
+			*evt.Time = evt.Time.In(time.UTC)
+			return evt, nil
+		}()
+	`,
+		Expect: `{"id":1,"time":"2018-09-04T00:00:00Z"}`,
 	},
 	{
 		Name: "nullable_time_nil",
