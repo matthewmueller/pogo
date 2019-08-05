@@ -12,7 +12,7 @@ var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/tem
 var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/go_sq_model.gotext"))
 
 // Generate the filesystem
-func (s *DB) Generate(schemas []string) (vfs.FileSystem, error) {
+func (s *DB) Generate(schemas []string, importer func(path string) string) (vfs.FileSystem, error) {
 	// TODO: remove this
 	schema, err := s.Introspect("")
 	if err != nil {

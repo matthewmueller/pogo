@@ -1248,4 +1248,21 @@ var tests = []testutil.Test{
 	// 	Func:   `blog.Find(db, blog.NewFilter().CreatedAt(time.Date(time.Now().Year(), time.January, 1, 0, 0, 0, 0, time.UTC)))`,
 	// 	Expect: `{"id":2,"name":"bad"}`,
 	// },
+	// {
+	// 	Before: `
+	// 		pragma foreign_keys = 1;
+	// 		create table if not exists blogs (
+	// 			id integer primary key not null,
+	// 			name text not null,
+	// 			active boolean not null
+	// 		);
+	// 		insert into blogs (name, active) values ('abc', true);
+	// 		insert into blogs (name, active) values ('bad', false);
+	// 	`,
+	// 	After: `
+	// 		drop table if exists blogs;
+	// 	`,
+	// 	Func:   `blog.Find(db, blog.NewFilter().Active(false).Name("bad"))`,
+	// 	Expect: `{"id":2,"name":"bad"}`,
+	// },
 }

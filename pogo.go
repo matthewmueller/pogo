@@ -28,7 +28,7 @@ type Introspector interface {
 
 // Generator interface
 type Generator interface {
-	Generate(schemas []string) (vfs.FileSystem, error)
+	Generate(schemas []string, importer func(path string) string) (vfs.FileSystem, error)
 }
 
 // Generate function
@@ -71,7 +71,10 @@ func Generate(uri string, outdir string, schemas ...string) error {
 	}
 
 	// generate the virtual filesystem
-	fs, err := generator.Generate(ss)
+	fs, err := generator.Generate(ss, func(path string) string {
+		fmt.Println("import path", path, "=", path)
+		return path
+	})
 	if err != nil {
 		return err
 	}

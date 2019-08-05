@@ -14,7 +14,7 @@ var modelT = template.MustCompile("model", templates.MustAssetString("internal/t
 var enumT = template.MustCompile("enum", templates.MustAssetString("internal/templates/go_pg_enum.gotext"))
 
 // Generate the database binding
-func (d *DB) Generate(schemas []string) (vfs.FileSystem, error) {
+func (d *DB) Generate(schemas []string, importer func(path string) string) (vfs.FileSystem, error) {
 	if len(schemas) == 0 {
 		return nil, errors.New("schema not specified")
 	}
