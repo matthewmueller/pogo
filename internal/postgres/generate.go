@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 
+	"github.com/matthewmueller/pogo/internal/importer"
 	"github.com/matthewmueller/pogo/internal/template"
 	"github.com/matthewmueller/pogo/internal/templates"
 	"github.com/matthewmueller/pogo/internal/vfs"
@@ -14,7 +15,7 @@ var modelT = template.MustCompile("model", templates.MustAssetString("internal/t
 var enumT = template.MustCompile("enum", templates.MustAssetString("internal/templates/go_pg_enum.gotext"))
 
 // Generate the database binding
-func (d *DB) Generate(schemas []string, importer func(path string) string) (vfs.FileSystem, error) {
+func (d *DB) Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem, error) {
 	if len(schemas) == 0 {
 		return nil, errors.New("schema not specified")
 	}
@@ -26,8 +27,9 @@ func (d *DB) Generate(schemas []string, importer func(path string) string) (vfs.
 
 	files := make(map[string]string)
 	files["pogo.go"], err = pogoT(template.Map{
-		"Package": "pogo",
-		"Schema":  schema,
+		"Importer": imp,
+		"Package":  "pogo",
+		"Schema":   schema,
 	})
 	if err != nil {
 		return nil, err
@@ -37,9 +39,10 @@ func (d *DB) Generate(schemas []string, importer func(path string) string) (vfs.
 		slug := table.Slug()
 		path := filepath.Join(slug, slug+".go")
 		files[path], err = modelT(template.Map{
-			"Package": slug,
-			"Schema":  schema,
-			"Table":   table,
+			"Importer": imp,
+			"Package":  slug,
+			"Schema":   schema,
+			"Table":    table,
 		})
 		if err != nil {
 			return nil, err
@@ -50,9 +53,10 @@ func (d *DB) Generate(schemas []string, importer func(path string) string) (vfs.
 		slug := enum.Slug()
 		path := filepath.Join("enum/", slug+".go")
 		files[path], err = enumT(template.Map{
-			"Package": "enum",
-			"Schema":  schema,
-			"Enum":    enum,
+			"Importer": imp,
+			"Package":  "enum",
+			"Schema":   schema,
+			"Enum":     enum,
 		})
 		if err != nil {
 			return nil, err

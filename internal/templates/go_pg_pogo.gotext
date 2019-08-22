@@ -1,6 +1,10 @@
 package {{$.Package}}
 
 import (
+  "fmt"
+	"strconv"
+	"strings"
+
 	"github.com/jackc/pgx"
 )
 
@@ -115,4 +119,10 @@ type Insertable interface {
 // the specific models in a generic way
 type Row interface {
 	Decode(v interface{}) error
+}
+
+// IsErrNoRows checks if an error was
+// caused by a result returning no rows
+func IsNoRows(err error) bool {
+  return err == pgx.ErrNoRows
 }

@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/pogo/internal/importer"
 	"github.com/matthewmueller/pogo/internal/postgres"
 	"github.com/matthewmueller/pogo/internal/schema"
 	"github.com/matthewmueller/pogo/internal/sqlite"
@@ -28,7 +29,7 @@ type Introspector interface {
 
 // Generator interface
 type Generator interface {
-	Generate(schemas []string, importer func(path string) string) (vfs.FileSystem, error)
+	Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem, error)
 }
 
 // Generate function
@@ -70,11 +71,11 @@ func Generate(uri string, outdir string, schemas ...string) error {
 		return fmt.Errorf("unsupported scheme: %s", u.Scheme)
 	}
 
+	// TODO: this is overkill, we just need to pass the path in
+	imp := importer.New(outdir)
+
 	// generate the virtual filesystem
-	fs, err := generator.Generate(ss, func(path string) string {
-		fmt.Println("import path", path, "=", path)
-		return path
-	})
+	fs, err := generator.Generate(imp, ss)
 	if err != nil {
 		return err
 	}

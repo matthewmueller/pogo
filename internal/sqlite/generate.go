@@ -3,6 +3,7 @@ package sqlite
 import (
 	"path/filepath"
 
+	"github.com/matthewmueller/pogo/internal/importer"
 	"github.com/matthewmueller/pogo/internal/template"
 	"github.com/matthewmueller/pogo/internal/templates"
 	"github.com/matthewmueller/pogo/internal/vfs"
@@ -12,7 +13,7 @@ var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/tem
 var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/go_sq_model.gotext"))
 
 // Generate the filesystem
-func (s *DB) Generate(schemas []string, importer func(path string) string) (vfs.FileSystem, error) {
+func (s *DB) Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem, error) {
 	// TODO: remove this
 	schema, err := s.Introspect("")
 	if err != nil {
@@ -21,8 +22,9 @@ func (s *DB) Generate(schemas []string, importer func(path string) string) (vfs.
 
 	files := make(map[string]string)
 	files["pogo.go"], err = pogoT(template.Map{
-		"Package": "pogo",
-		"Schema":  schema,
+		"Importer": imp,
+		"Package":  "pogo",
+		"Schema":   schema,
 	})
 	if err != nil {
 		return nil, err
@@ -32,9 +34,10 @@ func (s *DB) Generate(schemas []string, importer func(path string) string) (vfs.
 		slug := table.Slug()
 		path := filepath.Join(slug, slug+".go")
 		files[path], err = modelT(template.Map{
-			"Package": slug,
-			"Schema":  schema,
-			"Table":   table,
+			"Importer": imp,
+			"Package":  slug,
+			"Schema":   schema,
+			"Table":    table,
 		})
 		if err != nil {
 			return nil, err
