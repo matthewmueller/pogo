@@ -156,12 +156,14 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 func getTables(conn *pgx.Conn, schemaName string) (tables []*Table, err error) {
 	// sql query
 	const sqlstr = `
-	SELECT c.relkind, c.relname, false
-	FROM pg_class c
-	JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
-	WHERE n.nspname = $1 AND c.relkind = $2
-	ORDER BY c.relname
-`
+		SELECT
+			c.relkind as type,
+			c.relname as name
+		FROM pg_class c
+		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
+		WHERE n.nspname = $1 AND c.relkind = $2
+		ORDER BY c.relname
+	`
 
 	// run query
 	// DBLog(sqlstr, schema, relkind)
@@ -177,7 +179,7 @@ func getTables(conn *pgx.Conn, schemaName string) (tables []*Table, err error) {
 		var t Table
 
 		// scan
-		err = q.Scan(&t.Type, &t.Name, &t.ManualPk)
+		err = q.Scan(&t.Type, &t.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -195,22 +197,22 @@ func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table s
 	// sql query
 	// TODO: support onDelete and onUpdate
 	const sqlstr = `
-	SELECT
-	a.attnum,
-	a.attname,
-	format_type(a.atttypid, a.atttypmod),
-	a.attnotnull,
-	d.description,
-	pg_get_expr(ad.adbin, ad.adrelid),
-	COALESCE(ct.contype = 'p', false)
-	FROM pg_attribute a
-	JOIN ONLY pg_class c ON c.oid = a.attrelid
-	JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
-	LEFT JOIN pg_constraint ct ON ct.conrelid = c.oid AND a.attnum = ANY(ct.conkey) AND ct.contype IN('p', 'u')
-	LEFT JOIN pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
-	LEFT JOIN pg_description d ON d.objoid = a.attrelid AND d.objsubid = a.attnum
-	WHERE a.attisdropped = false AND n.nspname = $1 AND c.relname = $2 AND a.attnum > 0
-	ORDER BY a.attnum
+		SELECT
+			a.attnum as field_ordinal,
+			a.attname as name,
+			format_type(a.atttypid, a.atttypmod) as data_type,
+			a.attnotnull as not_null,
+			d.description as comment,
+			pg_get_expr(ad.adbin, ad.adrelid) as default_value,
+			COALESCE(ct.contype = 'p', false) as is_primary_key
+		FROM pg_attribute a
+		JOIN ONLY pg_class c ON c.oid = a.attrelid
+		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
+		LEFT JOIN pg_constraint ct ON ct.conrelid = c.oid AND a.attnum = ANY(ct.conkey) AND ct.contype IN('p', 'u')
+		LEFT JOIN pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
+		LEFT JOIN pg_description d ON d.objoid = a.attrelid AND d.objsubid = a.attnum
+		WHERE a.attisdropped = false AND n.nspname = $1 AND c.relname = $2 AND a.attnum > 0
+		ORDER BY a.attnum
 	`
 
 	// run query
@@ -239,18 +241,28 @@ func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table s
 
 func getForeignKeys(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (fks []*schema.ForeignKey, err error) {
 	// sql query
-
 	const sqlstr = `
-    SELECT b.attname, format_type(d.atttypid, d.atttypmod), r.conname, i.relname, c.relname, d.attname, 0, 0, '', '', ''
-    FROM pg_constraint r
-    JOIN ONLY pg_class a ON a.oid = r.conrelid
-    JOIN ONLY pg_attribute b ON b.attisdropped = false AND b.attnum = ANY(r.conkey) AND b.attrelid = r.conrelid
-    JOIN ONLY pg_class i on i.oid = r.conindid
-    JOIN ONLY pg_class c on c.oid = r.confrelid
-    JOIN ONLY pg_attribute d ON d.attisdropped = false AND d.attnum = ANY(r.confkey) AND d.attrelid = r.confrelid
-    JOIN ONLY pg_namespace n ON n.oid = r.connamespace
-    WHERE r.contype = 'f' AND n.nspname = $1 AND a.relname = $2
-    ORDER BY r.conname, b.attname
+		SELECT
+			b.attname as name,
+			format_type(d.atttypid, d.atttypmod) as data_type,
+			r.conname as full_name,
+			i.relname as ref_index_name,
+			c.relname as ref_table_name,
+			d.attname as ref_column_name,
+			0 as key_id,
+			0 as seq_no,
+			'' as on_update,
+			'' as on_delete,
+			'' as match
+		FROM pg_constraint r
+		JOIN ONLY pg_class a ON a.oid = r.conrelid
+		JOIN ONLY pg_attribute b ON b.attisdropped = false AND b.attnum = ANY(r.conkey) AND b.attrelid = r.conrelid
+		JOIN ONLY pg_class i on i.oid = r.conindid
+		JOIN ONLY pg_class c on c.oid = r.confrelid
+		JOIN ONLY pg_attribute d ON d.attisdropped = false AND d.attnum = ANY(r.confkey) AND d.attrelid = r.confrelid
+		JOIN ONLY pg_namespace n ON n.oid = r.connamespace
+		WHERE r.contype = 'f' AND n.nspname = $1 AND a.relname = $2
+		ORDER BY r.conname, b.attname
   `
 
 	// run query
@@ -287,18 +299,20 @@ func getForeignKeys(conn *pgx.Conn, enums []*schema.Enum, schemaName string, tab
 
 func getIndexes(conn *pgx.Conn, schemaName string, table string) (indexes []*Index, err error) {
 	// sql query
-	const sqlstr = `SELECT ` +
-		`DISTINCT ic.relname, ` + // ::varchar AS index_name
-		`i.indisunique, ` + // ::boolean AS is_unique
-		`i.indisprimary, ` + // ::boolean AS is_primary
-		`0, ` + // ::integer AS seq_no
-		`'', ` + // ::varchar AS origin
-		`false ` + // ::boolean AS is_partial
-		`FROM pg_index i ` +
-		`JOIN ONLY pg_class c ON c.oid = i.indrelid ` +
-		`JOIN ONLY pg_namespace n ON n.oid = c.relnamespace ` +
-		`JOIN ONLY pg_class ic ON ic.oid = i.indexrelid ` +
-		`WHERE i.indkey <> '0' AND n.nspname = $1 AND c.relname = $2`
+	const sqlstr = `
+		SELECT DISTINCT
+			ic.relname as name,
+			i.indisunique as is_unique,
+			i.indisprimary as is_primary,
+			0 as seq_no,
+			'' as origin,
+			false as is_partial
+		FROM pg_index i
+		JOIN ONLY pg_class c ON c.oid = i.indrelid
+		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
+		JOIN ONLY pg_class ic ON ic.oid = i.indexrelid
+		WHERE i.indkey <> '0' AND n.nspname = $1 AND c.relname = $2
+	`
 
 	// run query
 	// DBLog(sqlstr, schema, table)
@@ -383,10 +397,15 @@ func getIndexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, ta
 
 // indexColumns runs a custom query, returning results as IndexColumn.
 func indexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, index string) (columns []*IndexColumn, err error) {
-
 	// query the index columns
 	const sqlstr = `
-		SELECT (row_number() over()), a.attnum, a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull FROM pg_index i
+		SELECT
+			(row_number() over()) as seq_no,
+			a.attnum as cid,
+			a.attname as name,
+			format_type(a.atttypid, a.atttypmod) as data_type,
+			a.attnotnull as not_null
+		FROM pg_index i
 		JOIN ONLY pg_class c ON c.oid = i.indrelid
 		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
 		JOIN ONLY pg_class ic ON ic.oid = i.indexrelid
@@ -429,18 +448,17 @@ type columnOrder struct {
 // colOrder runs a custom query, returning results as columnOrder.
 func colOrder(conn *pgx.Conn, schemaName string, index string) (*columnOrder, error) {
 	var err error
-
 	// sql query
-	const sqlstr = `SELECT ` +
-		`i.indkey ` + // ::varchar AS ord
-		`FROM pg_index i ` +
-		`JOIN ONLY pg_class c ON c.oid = i.indrelid ` +
-		`JOIN ONLY pg_namespace n ON n.oid = c.relnamespace ` +
-		`JOIN ONLY pg_class ic ON ic.oid = i.indexrelid ` +
-		`WHERE n.nspname = $1 AND ic.relname = $2`
-
+	const sqlstr = `
+		SELECT
+			i.indkey as ord
+		FROM pg_index i
+		JOIN ONLY pg_class c ON c.oid = i.indrelid
+		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
+		JOIN ONLY pg_class ic ON ic.oid = i.indexrelid
+		WHERE n.nspname = $1 AND ic.relname = $2
+	`
 	// run query
-	// DBLog(sqlstr, schema, index)
 	var pco columnOrder
 	err = conn.QueryRow(sqlstr, schemaName, index).Scan(&pco.Ord)
 	if err != nil {
@@ -452,8 +470,14 @@ func colOrder(conn *pgx.Conn, schemaName string, index string) (*columnOrder, er
 
 func getProcedures(conn *pgx.Conn, schemaName string) (procs []*schema.Procedure, err error) {
 	// sql query
-	const sqlstr = `SELECT p.proname, pg_get_function_result(p.oid) FROM pg_proc p JOIN ONLY pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = $1`
-
+	const sqlstr = `
+		SELECT
+			p.proname as name,
+			pg_get_function_result(p.oid) as return_type
+		FROM pg_proc p
+		JOIN ONLY pg_namespace n ON p.pronamespace = n.oid
+		WHERE n.nspname = $1
+	`
 	// run query
 	q, err := conn.Query(sqlstr, schemaName)
 	if err != nil {
@@ -485,13 +509,15 @@ func getProcedures(conn *pgx.Conn, schemaName string) (procs []*schema.Procedure
 
 func getProcedureParams(conn *pgx.Conn, schemaName, procedure string) (params []*schema.ProcedureParam, err error) {
 	// sql query
-	const sqlstr = `SELECT ` +
-		`UNNEST(p.proargnames), ` + // ::varchar as name
-		`UNNEST(STRING_TO_ARRAY(oidvectortypes(p.proargtypes), ', ')) ` + // ::varchar AS param_type
-		`FROM pg_proc p ` +
-		`JOIN ONLY pg_namespace n ON p.pronamespace = n.oid ` +
-		`WHERE n.nspname = $1 AND p.proname = $2`
-
+	const sqlstr = `
+		SELECT
+			UNNEST(p.proargnames) as name,
+			UNNEST(STRING_TO_ARRAY(oidvectortypes(p.proargtypes), ', ')) as param_type
+		FROM pg_proc p
+		JOIN ONLY pg_namespace n ON p.pronamespace = n.oid
+		WHERE n.nspname = $1 AND p.proname = $2
+	`
+	// run query
 	q, err := conn.Query(sqlstr, schemaName, procedure)
 	if err != nil {
 		return nil, err
@@ -518,13 +544,12 @@ func getEnums(conn *pgx.Conn, schemaName string) (enums []*schema.Enum, err erro
 	// sql query
 	const sqlstr = `
     SELECT DISTINCT
-		t.typname
+			t.typname as name
 		FROM pg_type t
 		JOIN ONLY pg_namespace n ON n.oid = t.typnamespace
 		JOIN ONLY pg_enum e ON t.oid = e.enumtypid
 		WHERE n.nspname = $1
   `
-
 	// run query
 	// DBLog(sqlstr, schema)
 	q, err := conn.Query(sqlstr, schemaName)
@@ -567,8 +592,8 @@ func getEnumValues(conn *pgx.Conn, schemaName string, enum string) ([]*schema.En
 	// sql query
 	const sqlstr = `
     SELECT
-		e.enumlabel,
-		e.enumsortorder::int
+			e.enumlabel as label,
+			e.enumsortorder::int as order
 		FROM pg_type t
 		JOIN ONLY pg_namespace n ON n.oid = t.typnamespace
 		LEFT JOIN pg_enum e ON t.oid = e.enumtypid
