@@ -35,11 +35,18 @@ func (*Boolean) String() string {
 	return "bool"
 }
 
-// Integer type
-type Integer struct{}
+// Int type
+type Int struct{}
 
-func (*Integer) String() string {
+func (*Int) String() string {
 	return "int"
+}
+
+// Int64 type
+type Int64 struct{}
+
+func (*Int64) String() string {
+	return "int64"
 }
 
 // Float32 type

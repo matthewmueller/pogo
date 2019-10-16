@@ -1927,6 +1927,60 @@ var tests = []testutil.Test{
 		Func:   `variable.UpsertByEmailAndValue(db, "h", "c", variable.New().Name("d").Key("b").Count(1))`,
 		Expect: `{"count":1,"email":"h","key":"b","name":"d","value":"c"}`,
 	},
+	{
+		Before: `
+			create table if not exists big (
+				id serial primary key not null,
+				large bigint not null
+			);
+		`,
+		After: `
+			drop table if exists big;
+		`,
+		Func:   `big.Insert(db, big.New().Large(int64(123)))`,
+		Expect: `{"id":1,"large":123}`,
+	},
+	{
+		Before: `
+			create table if not exists big (
+				id serial primary key not null,
+				large bigint not null
+			);
+			insert into big (large) values (123);
+		`,
+		After: `
+			drop table if exists big;
+		`,
+		Func:   `big.FindByID(db, 1)`,
+		Expect: `{"id":1,"large":123}`,
+	},
+	{
+		Before: `
+			create table if not exists intabbrev (
+				id serial primary key not null,
+				n int not null
+			);
+		`,
+		After: `
+			drop table if exists intabbrev;
+		`,
+		Func:   `intabbrev.Insert(db, intabbrev.New().N(123))`,
+		Expect: `{"id":1,"n":123}`,
+	},
+	{
+		Before: `
+			create table if not exists intabbrev (
+				id serial primary key not null,
+				n int not null
+			);
+			insert into intabbrev (n) values (123);
+		`,
+		After: `
+			drop table if exists intabbrev;
+		`,
+		Func:   `intabbrev.FindByID(db, 1)`,
+		Expect: `{"id":1,"n":123}`,
+	},
 	// TODO: 0 values should come through
 	// {
 	// 	Before: `

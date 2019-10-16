@@ -385,9 +385,10 @@ func getType(schemaName, sqlType string) (schema.DataType, error) {
 		return &schema.String{}, nil
 	case "boolean":
 		return &schema.Boolean{}, nil
-	case "integer", "smallint", "bigint":
-		// TODO distinguish int32, int64, etc. with new types
-		return &schema.Integer{}, nil
+	case "integer", "smallint":
+		return &schema.Int{}, nil
+	case "bigint":
+		return &schema.Int64{}, nil
 	case "real", "double", "float":
 		// TODO distinguish float32, float64, etc. with new types
 		return &schema.Float32{}, nil

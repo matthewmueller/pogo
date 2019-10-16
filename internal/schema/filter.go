@@ -185,7 +185,7 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 			})
 		}
 
-	case *Integer:
+	case *Int, *Int64:
 		// field equals
 		fields = append(fields, &FilterField{
 			name:        f.name,
