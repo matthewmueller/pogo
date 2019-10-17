@@ -199,15 +199,15 @@ func NewOrder() *Order {
 	return &Order{}
 }
 
-var _ pogo.Condition = (*Order)(nil)
+var _ pogo.Condition = (*Orderer)(nil)
 
-// Order orders the given fields
-type Order struct {
+// Orderer orders the given fields
+type Orderer struct {
 	formats []string
 }
 
 // Clause fn
-func (o *Order) Clause() *pogo.Clause {
+func (o *Orderer) Clause() *pogo.Clause {
 	return &pogo.Clause{
 		Type:   "ORDER BY",
 		Format: strings.Join(o.formats, ", "),
@@ -216,7 +216,7 @@ func (o *Order) Clause() *pogo.Clause {
 
 {{ range $field := $.Table.Orders }}
 // {{ $field.Pascal }} sorts {{ $field.Name }} by an expression
-func (o *Order) {{ $field.Pascal }}(order OrderBy) *Order {
+func (o *Orderer) {{ $field.Pascal }}(order OrderBy) *Orderer {
 	o.formats = append(o.formats, fmt.Sprintf(`{{ $field.Format }}`, order))
 	return o
 }

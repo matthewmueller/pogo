@@ -1981,6 +1981,20 @@ var tests = []testutil.Test{
 		Func:   `intabbrev.FindByID(db, 1)`,
 		Expect: `{"id":1,"n":123}`,
 	},
+	{
+		Before: `
+			create table if not exists orders (
+				id serial primary key not null,
+				n int not null
+			);
+			insert into orders (n) values (123);
+		`,
+		After: `
+			drop table if exists orders;
+		`,
+		Func:   `order.FindByID(db, 1)`,
+		Expect: `{"id":1,"n":123}`,
+	},
 	// TODO: 0 values should come through
 	// {
 	// 	Before: `
