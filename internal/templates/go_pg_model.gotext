@@ -195,8 +195,8 @@ const (
 )
 
 // NewOrder fn
-func NewOrder() *Order {
-	return &Order{}
+func NewOrder() *Orderer {
+	return &Orderer{}
 }
 
 var _ pogo.Condition = (*Orderer)(nil)
