@@ -1306,18 +1306,17 @@ func Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
 
-  // DO UPDATE or DO NOTHING
-  _columnList := strings.Join(_c, ", ")
-  _upsertAction := `DO NOTHING `
-  if _columnList != `{{$pk.ColumnList}}` {
-    _upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) `
-  }
+  // setup the update fields
+	var _u []string
+	for _, c := range _c {
+		_u = append(_u, c+" = excluded."+c)
+	}
 
   // sql query
   sqlstr := `INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `) ` +
   `VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ({{$pk.ColumnList}}) ` +
-  _upsertAction +
+  `DO UPDATE SET ` + strings.Join(_u, ", ") + ` ` +
   `RETURNING {{$.Table.Returning}}`
 
   // log query if we've provided a logger
@@ -1341,18 +1340,17 @@ func (*Model) Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}},
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
 
-  // DO UPDATE or DO NOTHING
-  _columnList := strings.Join(_c, ", ")
-  _upsertAction := `DO NOTHING `
-  if _columnList != `{{$pk.ColumnList}}` {
-    _upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) `
-  }
+  // setup the update fields
+	var _u []string
+	for _, c := range _c {
+		_u = append(_u, c+" = excluded."+c)
+	}
 
   // sql query
   sqlstr := `INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `) ` +
   `VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ({{$pk.ColumnList}}) ` +
-  _upsertAction +
+  `DO UPDATE SET ` + strings.Join(_u, ", ") + ` ` +
   `RETURNING {{$.Table.Returning}}`
 
   // log query if we've provided a logger
@@ -1382,18 +1380,17 @@ func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Camel}} *In
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
 
-  // DO UPDATE or DO NOTHING
-  _columnList := strings.Join(_c, ", ")
-  _upsertAction := `DO NOTHING `
-  if _columnList != `{{$idx.ColumnList}}` {
-    _upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) `
-  }
+  // setup the update fields
+	var _u []string
+	for _, c := range _c {
+		_u = append(_u, c+" = excluded."+c)
+	}
 
   // sql query
   sqlstr := `INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `) ` +
   `VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ({{$idx.ColumnList}}) ` +
-  _upsertAction +
+  `DO UPDATE SET ` + strings.Join(_u, ", ") + ` ` +
   `RETURNING {{$.Table.Returning}}`
 
   // log query if we've provided a logger
@@ -1420,18 +1417,17 @@ func (*Model) UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Ca
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
 
-  // DO UPDATE or DO NOTHING
-  _columnList := strings.Join(_c, ", ")
-  _upsertAction := `DO NOTHING `
-  if _columnList != `{{$idx.ColumnList}}` {
-    _upsertAction = `DO UPDATE SET (` + strings.Join(_c, ", ") + `) = ( EXCLUDED.` + strings.Join(_c, ", EXCLUDED.") + `) `
-  }
+  // setup the update fields
+	var _u []string
+	for _, c := range _c {
+		_u = append(_u, c+" = excluded."+c)
+	}
 
   // sql query
   sqlstr := `INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `) ` +
   `VALUES (` + strings.Join(_i, ", ") + `) ` +
   `ON CONFLICT ({{$idx.ColumnList}}) ` +
-  _upsertAction +
+  `DO UPDATE SET ` + strings.Join(_u, ", ") + ` ` +
   `RETURNING {{$.Table.Returning}}`
 
   // log query if we've provided a logger

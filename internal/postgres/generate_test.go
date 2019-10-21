@@ -2022,6 +2022,20 @@ var tests = []testutil.Test{
 		Func:   `background.UpsertByBackgroundID(db, "1", background.New().BackgroundID("1"))`,
 		Expect: `{"background_id":"1","id":1}`,
 	},
+	{
+		Before: `
+			create table if not exists backgrounds (
+				id serial primary key not null,
+				background_id text not null unique
+			);
+			insert into backgrounds (background_id) values ('2');
+		`,
+		After: `
+			drop table if exists backgrounds;
+		`,
+		Func:   `background.UpsertByBackgroundID(db, "2", background.New().BackgroundID("2"))`,
+		Expect: `{"background_id":"2","id":1}`,
+	},
 	// TODO: 0 values should come through
 	// {
 	// 	Before: `
