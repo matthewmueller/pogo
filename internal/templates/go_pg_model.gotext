@@ -233,13 +233,23 @@ type Model struct { }
 func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
+  _ = _i
 
   // sql insert query, primary key provided by sequence
-  sqlstr := `
-    INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `)
-    VALUES (` + strings.Join(_i, ", ") + `)
-    RETURNING {{$.Table.Returning}}
-  `
+  var sqlstr string
+  if len(_c) == 0 {
+    sqlstr = `
+      INSERT INTO {{$.Table.SQLName}}
+      DEFAULT VALUES
+      RETURNING {{$.Table.Returning}}
+    `
+  } else {
+    sqlstr = `
+      INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `)
+      VALUES (` + strings.Join(_i, ", ") + `)
+      RETURNING {{$.Table.Returning}}
+    `
+  }
 
   // log query if we've provided a logger
   if pogo.Log != nil {
@@ -260,13 +270,23 @@ func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 func (*Model) Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   // get all the non-nil columns and prepare them for the query
   _c, _i, _v := slice({{$.Table.Camel}}.columns(), 0)
+  _ = _i
 
   // sql insert query, primary key provided by sequence
-  sqlstr := `
-    INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `)
-    VALUES (` + strings.Join(_i, ", ") + `)
-    RETURNING {{$.Table.Returning}}
-  `
+  var sqlstr string
+  if len(_c) == 0 {
+    sqlstr = `
+      INSERT INTO {{$.Table.SQLName}}
+      DEFAULT VALUES
+      RETURNING {{$.Table.Returning}}
+    `
+  } else {
+    sqlstr = `
+      INSERT INTO {{$.Table.SQLName}} (` + strings.Join(_c, ", ") + `)
+      VALUES (` + strings.Join(_i, ", ") + `)
+      RETURNING {{$.Table.Returning}}
+    `
+  }
 
   // log query if we've provided a logger
   if pogo.Log != nil {
