@@ -3,25 +3,25 @@ package schema
 import (
 	"strings"
 
-	gen "github.com/matthewmueller/go-gen"
+	text "github.com/matthewmueller/go-text"
 )
 
 // Singular makes each segment singular
 func singular(s string) string {
-	segments := strings.Split(gen.Snake(s), "_")
+	segments := strings.Split(text.Snake(s), "_")
 	var singles []string
 	for _, segment := range segments {
-		singles = append(singles, gen.Pascal(gen.Singular(segment)))
+		singles = append(singles, text.Pascal(text.Singular(segment)))
 	}
 	return strings.Join(singles, "")
 }
 
 // Plural makes each segment singular
 func plural(s string) string {
-	segments := strings.Split(gen.Snake(s), "_")
+	segments := strings.Split(text.Snake(s), "_")
 	var singles []string
 	for _, segment := range segments {
-		singles = append(singles, gen.Pascal(gen.Plural(segment)))
+		singles = append(singles, text.Pascal(text.Plural(segment)))
 	}
 	return strings.Join(singles, "")
 }

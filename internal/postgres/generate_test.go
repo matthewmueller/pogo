@@ -2048,6 +2048,18 @@ var tests = []testutil.Test{
 		Func:   `background.Insert(db, background.New())`,
 		Expect: `{"id":1}`,
 	},
+	{
+		Before: `
+			create table if not exists frame_gotos (
+				id serial primary key not null
+			);
+		`,
+		After: `
+			drop table if exists frame_gotos;
+		`,
+		Func:   `framegoto.Insert(db, framegoto.New())`,
+		Expect: `{"id":1}`,
+	},
 	// TODO: 0 values should come through
 	// {
 	// 	Before: `
