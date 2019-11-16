@@ -1776,6 +1776,40 @@ var tests = []testutil.Test{
 				key text not null,
 				value text not null,
 				email text not null,
+				primary key(name, key)
+			);
+			insert into variables (name, key, value, email) values ('a', 'b', 'c', 'd');
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.UpsertByKeyAndName(db, "b", "a", variable.New().Value("d").Email("e"))`,
+		Expect: `{"email":"e","key":"b","name":"a","value":"d"}`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
+				primary key(name, key)
+			);
+			insert into variables (name, key, value, email) values ('a', 'b', 'c', 'd');
+		`,
+		After: `
+			drop table if exists variables;
+		`,
+		Func:   `variable.UpsertByKeyAndName(db, "b", "b", variable.New().Value("d").Email("e"))`,
+		Expect: `{"email":"e","key":"b","name":"b","value":"d"}`,
+	},
+	{
+		Before: `
+			create table if not exists variables (
+				name text not null,
+				key text not null,
+				value text not null,
+				email text not null,
 				primary key(name, key),
 				unique(value, email)
 			);

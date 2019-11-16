@@ -1390,7 +1390,7 @@ func (*Model) Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}},
 {{ end }}
 
 {{/* Upsert by indices */}}
-{{ range $idx := .Table.Uniques }}
+{{ range $idx := .Table.Indexes }}
 {{/* Function: UpsertBy(FK) */}}
 // UpsertBy{{$idx.Method}} inserts a `{{$.Table.SQLName}}`, updating the row if `{{$idx.ColumnList}}` already exists.
 func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
