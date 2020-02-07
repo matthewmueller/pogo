@@ -1860,4 +1860,25 @@ var Postgres = []*Test{
 		QueryGo: `order.FindByID(db, 1)`,
 		Expect:  `{"id":1,"n":123}`,
 	},
+	{
+		Up: `
+		create table "public"."a" (
+			one integer not null,
+			two integer not null,
+			constraint "a_pkey" primary key ("one", "two")
+		);
+
+		create table "public"."b" (
+			one integer not null,
+			two integer not null,
+			constraint "b_one_fkey" foreign key ("one", "two") references "public"."a" ("one", "two")
+		);
+		`,
+		Down: `
+			drop table if exists a cascade;
+			drop table if exists b cascade;
+		`,
+		QueryGo: `b.FindByID(db, 1)`,
+		Expect:  `{"id":1,"n":123}`,
+	},
 }

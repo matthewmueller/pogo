@@ -40,8 +40,8 @@ func (i *Inspector) enums() (enums []*schema.Enum, err error) {
 		SELECT DISTINCT
 			t.typname as name
 		from pg_type t
-		join only pg_namespace n ON n.oid = t.typnamespace
-		join only pg_enum e ON t.oid = e.enumtypid
+		join only pg_namespace n on n.oid = t.typnamespace
+		join only pg_enum e on t.oid = e.enumtypid
 		where n.nspname = $1
 	`
 	rows, err := i.DB.Query(sql, i.Schema)
@@ -70,7 +70,6 @@ func (i *Inspector) enums() (enums []*schema.Enum, err error) {
 		if err != nil {
 			return nil, err
 		}
-		enums = append(enums, enum)
 	}
 	return enums, nil
 }
@@ -81,8 +80,8 @@ func (i *Inspector) enumValues(enum *schema.Enum) (values []*schema.EnumValue, e
 			e.enumsortorder::int as order,
 			e.enumlabel as value
 		from pg_type t
-		join only pg_namespace n ON n.oid = t.typnamespace
-		left join pg_enum e ON t.oid = e.enumtypid
+		join only pg_namespace n on n.oid = t.typnamespace
+		left join pg_enum e on t.oid = e.enumtypid
 		where n.nspname = $1 and t.typname = $2
 	`
 	rows, err := i.DB.Query(sql, i.Schema, enum.Name)
@@ -112,7 +111,7 @@ func (i *Inspector) tables(enums []*schema.Enum) (tables []*schema.Table, err er
 		SELECT
 			c.relname as name
 		from pg_class c
-		join only pg_namespace n ON n.oid = c.relnamespace
+		join only pg_namespace n on n.oid = c.relnamespace
 		where n.nspname = $1 and c.relkind = 'r'
 		order by c.relname
 	`
@@ -135,14 +134,27 @@ func (i *Inspector) tables(enums []*schema.Enum) (tables []*schema.Table, err er
 		return nil, err
 	}
 	rows.Close()
+	// fill up the columns first
 	for _, table := range tables {
-		// get the columns
 		table.Columns, err = i.columns(table, enums)
 		if err != nil {
 			return nil, err
 		}
+	}
+	// work on the indexes that depend on columns
+	for _, table := range tables {
 		// get the primary index
 		table.Primary, err = i.primary(table, table.Columns)
+		if err != nil {
+			return nil, err
+		}
+		// get the foreign keys
+		table.Foreigns, err = i.foreigns(table, tables)
+		if err != nil {
+			return nil, err
+		}
+		// get the unique indexes
+		table.Uniques, err = i.uniques(table, table.Columns)
 		if err != nil {
 			return nil, err
 		}
@@ -161,10 +173,10 @@ func (i *Inspector) columns(table *schema.Table, enums []*schema.Enum) (columns 
 			d.description as comment,
 			pg_get_expr(ad.adbin, ad.adrelid) as default_value
 		from pg_attribute a
-		join only pg_class c ON c.oid = a.attrelid
-		join only pg_namespace n ON n.oid = c.relnamespace
-		left join pg_attrdef ad ON ad.adrelid = c.oid and ad.adnum = a.attnum
-		left join pg_description d ON d.objoid = a.attrelid and d.objsubid = a.attnum
+		join only pg_class c on c.oid = a.attrelid
+		join only pg_namespace n on n.oid = c.relnamespace
+		left join pg_attrdef ad on ad.adrelid = c.oid and ad.adnum = a.attnum
+		left join pg_description d on d.objoid = a.attrelid and d.objsubid = a.attnum
 		where a.attisdropped = false and n.nspname = $1 and c.relname = $2 and a.attnum > 0
 		order by a.attnum
 	`
@@ -197,8 +209,8 @@ func (i *Inspector) primary(table *schema.Table, columns []*schema.Column) (prim
 			conname as name,
 			conkey as columns
 		from pg_constraint r
-		join only pg_class a ON a.oid = r.conrelid
-		join only pg_namespace n ON n.oid = r.connamespace
+		join only pg_class a on a.oid = r.conrelid
+		join only pg_namespace n on n.oid = r.connamespace
 		where r.contype = 'p' and n.nspname = $1 and a.relname = $2
 		order by conname;
 	`
@@ -209,7 +221,6 @@ func (i *Inspector) primary(table *schema.Table, columns []*schema.Column) (prim
 	defer rows.Close()
 	if rows.Next() {
 		primary = new(schema.Primary)
-		primary.Schema = i.Schema
 		var ids []int
 		// scan
 		err = rows.Scan(&primary.Name, &ids)
@@ -237,4 +248,114 @@ func (i *Inspector) primary(table *schema.Table, columns []*schema.Column) (prim
 	}
 	rows.Close()
 	return primary, nil
+}
+
+// find the primary key
+func (i *Inspector) foreigns(table *schema.Table, tables []*schema.Table) (foreigns []*schema.Foreign, err error) {
+	// sql query
+	const sql = `
+		select
+			r.conname as name,
+			r.conkey as columns,
+			r.confkey as ref_columns,
+			c.relname as ref_table,
+			n.nspname as ref_schema
+		from pg_constraint r
+		join only pg_namespace n on n.oid = r.connamespace
+		join only pg_class a on a.oid = r.conrelid
+		join only pg_class c on c.oid = r.confrelid
+		join only pg_namespace rn on rn.oid = c.relnamespace
+		where r.contype = 'f' and n.nspname = $1 and a.relname = $2;
+	`
+	rows, err := i.DB.Query(sql, i.Schema, table.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var foreign schema.Foreign
+		var columns []int
+		var refColumns []int
+		// scan
+		err = rows.Scan(&foreign.Name, &columns, &refColumns, &foreign.RefTable, &foreign.RefSchema)
+		if err != nil {
+			return nil, err
+		}
+		// link foreign columns to table columns
+		foreign.Columns = make([]*schema.Column, len(columns))
+		for i, id := range columns {
+			for j, column := range table.Columns {
+				if j+1 != id {
+					continue
+				}
+				foreign.Columns[i] = column
+			}
+		}
+		// link foreign reference columns to the referenced table columns
+		foreign.RefColumns = make([]*schema.Column, len(refColumns))
+		for _, refTable := range tables {
+			if refTable.Name != foreign.RefTable || refTable.Schema != foreign.RefSchema {
+				continue
+			}
+			for i, id := range refColumns {
+				for j, column := range refTable.Columns {
+					if j+1 != id {
+						continue
+					}
+					foreign.RefColumns[i] = column
+				}
+			}
+		}
+		foreigns = append(foreigns, &foreign)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	return foreigns, nil
+}
+
+// find the unique indexes
+func (i *Inspector) uniques(table *schema.Table, columns []*schema.Column) (uniques []*schema.Unique, err error) {
+	// sql query
+	const sql = `
+		select
+			conname as name,
+			conkey as columns
+		from pg_constraint r
+		join only pg_class a on a.oid = r.conrelid
+		join only pg_namespace n on n.oid = r.connamespace
+		where r.contype = 'u' and n.nspname = $1 and a.relname = $2
+		order by conname;
+	`
+	rows, err := i.DB.Query(sql, i.Schema, table.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var unique schema.Unique
+		var columns []int
+		// scan
+		err = rows.Scan(&unique.Name, &columns)
+		if err != nil {
+			return nil, err
+		}
+		// link foreign columns to table columns
+		unique.Columns = make([]*schema.Column, len(columns))
+		for i, id := range columns {
+			for j, column := range table.Columns {
+				if j+1 != id {
+					continue
+				}
+				unique.Columns[i] = column
+			}
+		}
+		uniques = append(uniques, &unique)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	return uniques, nil
 }

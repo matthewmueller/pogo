@@ -2,16 +2,17 @@ package schema
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 // Schema struct
 type Schema struct {
-	Name       string
-	Tables     Tables
-	Views      []*View
-	Enums      Enums
-	Procedures []*Procedure
+	Name   string
+	Tables Tables
+	Enums  Enums
+	// Views      []*View
+	// Procedures []*Procedure
 }
 
 const br = "\n\n"
@@ -52,12 +53,30 @@ type Table struct {
 
 	// constraints
 	Primary  *Primary
-	Foreigns []*Foreign
-	Uniques  []*Unique
+	Foreigns Foreigns
+	Uniques  Uniques
 }
 
 func (t *Table) String() string {
-	return fmt.Sprintf("create table %q.%q (\n\t%s,\n\t%s\n);", t.Schema, t.Name, t.Columns.Join(",\n\t"), t.Primary.String())
+	var fields strings.Builder
+	if len(t.Columns) > 0 {
+		fields.WriteString("\n\t")
+		fields.WriteString(t.Columns.String())
+	}
+	if t.Primary != nil {
+		fields.WriteString(",\n\t")
+		fields.WriteString(t.Primary.String())
+	}
+	if len(t.Foreigns) > 0 {
+		fields.WriteString(",\n\t")
+		fields.WriteString(t.Foreigns.String())
+	}
+	if len(t.Uniques) > 0 {
+		fields.WriteString(",\n\t")
+		fields.WriteString(t.Uniques.String())
+	}
+	fields.WriteString("\n")
+	return fmt.Sprintf("create table %q.%q (%s);", t.Schema, t.Name, fields.String())
 }
 
 // DataType type
@@ -72,12 +91,12 @@ func (datatype DataType) String() string {
 type Columns []*Column
 
 // Join columns by a separator
-func (columns Columns) Join(sep string) string {
+func (columns Columns) String() string {
 	blocks := make([]string, len(columns))
 	for i, column := range columns {
 		blocks[i] = column.String()
 	}
-	return strings.Join(blocks, sep)
+	return strings.Join(blocks, ",\n\t")
 }
 
 // Column struct
@@ -115,7 +134,7 @@ func (e *Enum) String() string {
 	for i, value := range e.Values {
 		values[i] = value.String()
 	}
-	return fmt.Sprintf(`create type %q.%q as enum (%s)`, e.Schema, e.Name, strings.Join(values, ", "))
+	return fmt.Sprintf(`create type %q.%q as enum (%s);`, e.Schema, e.Name, strings.Join(values, ", "))
 }
 
 // EnumValue is an enum value
@@ -130,41 +149,77 @@ func (e *EnumValue) String() string {
 
 // Primary constraint
 type Primary struct {
-	Schema  string
 	Name    string
 	Columns Columns
 }
 
 func (p *Primary) String() string {
+	if p == nil {
+		return ""
+	}
 	columns := make([]string, len(p.Columns))
 	for i, column := range p.Columns {
-		columns[i] = column.Name
+		columns[i] = strconv.Quote(column.Name)
 	}
-	return fmt.Sprintf(`constraint %q primary key (%q)`, p.Name, strings.Join(columns, ", "))
+	return fmt.Sprintf(`constraint %q primary key (%s)`, p.Name, strings.Join(columns, ", "))
+}
+
+// Foreigns list
+type Foreigns []*Foreign
+
+func (foreigns Foreigns) String() string {
+	blocks := make([]string, len(foreigns))
+	for i, column := range foreigns {
+		blocks[i] = column.String()
+	}
+	return strings.Join(blocks, ",\n\t")
 }
 
 // Foreign constraint
 type Foreign struct {
-	Schema     string
 	Name       string
 	Columns    Columns
+	RefSchema  string
 	RefTable   string
 	RefColumns Columns
 }
 
 func (f *Foreign) String() string {
-	return fmt.Sprintf(`constraint %q foreign key (%q) references %q.%q (%q)`, f.Name, f.Columns.Join(", "), f.Schema, f.RefTable, f.RefColumns.Join(", "))
+	columns := make([]string, len(f.Columns))
+	for i, column := range f.Columns {
+		columns[i] = strconv.Quote(column.Name)
+	}
+	refColumns := make([]string, len(f.RefColumns))
+	for i, column := range f.RefColumns {
+		refColumns[i] = strconv.Quote(column.Name)
+	}
+	return fmt.Sprintf(`constraint %q foreign key (%s) references %q.%q (%s)`, f.Name, strings.Join(columns, ", "), f.RefSchema, f.RefTable, strings.Join(refColumns, ", "))
+}
+
+// Uniques list
+type Uniques []*Unique
+
+// Unique string
+func (uniques Uniques) String() string {
+	blocks := make([]string, len(uniques))
+	for i, unique := range uniques {
+		blocks[i] = unique.String()
+	}
+	return strings.Join(blocks, ",\n\t")
 }
 
 // Unique constraint
 type Unique struct {
-	Schema  string
 	Name    string
-	Columns []*Column
+	Columns Columns
 }
 
 func (u *Unique) String() string {
-	return ``
+	columns := make([]string, len(u.Columns))
+	for i, column := range u.Columns {
+		columns[i] = strconv.Quote(column.Name)
+	}
+	return fmt.Sprintf(`constraint %q unique (%s)`, u.Name, strings.Join(columns, ", "))
 }
 
 // Procedure represents a stored procedure.
