@@ -1879,6 +1879,6 @@ var Postgres = []*Test{
 			drop table if exists b cascade;
 		`,
 		QueryGo: `b.FindByID(db, 1)`,
-		Expect:  `{"id":1,"n":123}`,
+		Expect:  ``,
 	},
 }
