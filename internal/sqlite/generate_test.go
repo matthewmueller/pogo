@@ -19,9 +19,7 @@ import (
 func TestSQLite(t *testing.T) {
 	uri := os.Getenv("SQLITE_URL")
 	assert.NotEmpty(t, uri)
-	cwd, err := os.Getwd()
-	assert.NoError(t, err)
-	tmpdir := filepath.Join(cwd, "tmp")
+	tmpdir := "tmp"
 	assert.NoError(t, os.RemoveAll(tmpdir))
 	defer func() {
 		if !t.Failed() {
@@ -64,8 +62,10 @@ func TestSQLite(t *testing.T) {
 			pogopath := filepath.Join(testpath, "pogo")
 			err = pogo.Generate(dbpath, pogopath, test.Schema)
 			assert.NoError(t, err)
-			imp := testutil.GoImport(t, testpath)
-			mainpath := filepath.Join(testpath, "main.go")
+			abspath, err := filepath.Abs(testpath)
+			assert.NoError(t, err)
+			imp := testutil.GoImport(t, abspath)
+			mainpath := filepath.Join(abspath, "main.go")
 			stdout, stderr, remove := testutil.GoRun(t, mainpath, `
 				package main
 

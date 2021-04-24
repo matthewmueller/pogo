@@ -35,14 +35,8 @@ github.com/matthewmueller/commander v0.0.0-20201203214022-21321082b103 h1:S+U/eU
 github.com/matthewmueller/commander v0.0.0-20201203214022-21321082b103/go.mod h1:dKn1WPRoZHH0obt9JqWcbt2vdB0XEm0hxKkOsRyfmqs=
 github.com/matthewmueller/diff v0.0.0-20191220174011-88a65b538395 h1:VV39oejCcozdMjjmF6Oqqgb4Qv9HCFxMATZapcn7nlo=
 github.com/matthewmueller/diff v0.0.0-20191220174011-88a65b538395/go.mod h1:A+0/W6f/f2+YoB8Bi6d02DWwtCfjEsGhJAiv3EiV8dU=
-github.com/matthewmueller/gotext v0.0.0-20201111210904-628ca512ae47 h1:0jWju0C6KWm5EXA+96mYfZgi7QQAKz5T2WSSYttUyyU=
-github.com/matthewmueller/gotext v0.0.0-20201111210904-628ca512ae47/go.mod h1:RJnMcKNPhXn/0Co8HUaTP53PVcT5tYcISnD8qDtLVhM=
-github.com/matthewmueller/gotext v0.0.0-20210424200035-c4f9a457028b h1:NLQgklQ2Rp9lwqwnr2J3ID3nYDZP/LshCoMSJdywjnU=
-github.com/matthewmueller/gotext v0.0.0-20210424200035-c4f9a457028b/go.mod h1:0mnotoJNdO4NPxld/GcrLppxwGWuMqgroWyu413oOvw=
 github.com/matthewmueller/gotext v0.0.0-20210424201144-265ed61725ac h1:SjopLdUF96kdJU8ynYmGVHoJmngpwFHRvR5p2plBXG4=
 github.com/matthewmueller/gotext v0.0.0-20210424201144-265ed61725ac/go.mod h1:0mnotoJNdO4NPxld/GcrLppxwGWuMqgroWyu413oOvw=
-github.com/matthewmueller/text v0.0.0-20201011180421-b22c1302b338 h1:dFtz1HAv6FJzWPlOnIt3hWmPsR2YX0ch4h4Xn7ClZkQ=
-github.com/matthewmueller/text v0.0.0-20201011180421-b22c1302b338/go.mod h1:50i2CQrKZaohJOXho0GDLjW8iZmI5R8AoJ1o60azyjg=
 github.com/matthewmueller/text v0.0.0-20201215225457-a00346c71bb3 h1:Rc2LvdLYEVSTkr4cxCgbrsJBveinwtj/oEk7/TA+c1E=
 github.com/matthewmueller/text v0.0.0-20201215225457-a00346c71bb3/go.mod h1:vtPaEU72VzARd4tSSzHIX7DddCEamoO2X4ozlrdmtNY=
 github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/matthewmueller/pogo/internal/schema"
@@ -75,9 +76,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get cols for '%s' from schema", table.Name)
 		}
-		for _, col := range cols {
-			colmap[table.Name] = append(colmap[table.Name], col)
-		}
+		colmap[table.Name] = append(colmap[table.Name], cols...)
 	}
 
 	// get the indexes
@@ -165,7 +164,7 @@ func (d *DB) getColumns(schemaName string, table string) (cols []*Column, err er
 	conn := d.DB
 
 	// sql query
-	var sqlstr = `PRAGMA table_info(` + table + `)`
+	var sqlstr = `PRAGMA table_info(` + strconv.Quote(table) + `)`
 
 	// run query
 	q, err := conn.Query(sqlstr)
@@ -229,7 +228,7 @@ func (d *DB) getForeignKeys(schemaName string, table string, colmap map[string][
 	conn := d.DB
 
 	// sql query
-	var sqlstr = `PRAGMA foreign_key_list(` + table + `)`
+	var sqlstr = `PRAGMA foreign_key_list(` + strconv.Quote(table) + `)`
 
 	// run query
 	q, err := conn.Query(sqlstr, table)
@@ -281,7 +280,7 @@ func (d *DB) getIndexes(schemaName string, table string) (idxs []*Index, err err
 	conn := d.DB
 
 	// sql query
-	sqlstr := `PRAGMA index_list(` + table + `)`
+	sqlstr := `PRAGMA index_list(` + strconv.Quote(table) + `)`
 
 	// run query
 	// DBLog(sqlstr, schema, table)
@@ -314,7 +313,7 @@ func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, in
 	conn := d.DB
 
 	// query the index columns
-	sqlstr := `PRAGMA index_info(` + index + `)`
+	sqlstr := `PRAGMA index_info(` + strconv.Quote(index) + `)`
 
 	// run query
 	q, err := conn.Query(sqlstr)

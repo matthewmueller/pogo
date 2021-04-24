@@ -3,6 +3,8 @@ package pogo
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 
 	"github.com/matthewmueller/pogo/internal/gofmt"
 	"github.com/matthewmueller/pogo/internal/importer"
@@ -61,8 +63,14 @@ func Generate(uri string, outdir string, schemas ...string) error {
 			ss = append(ss, "public")
 		}
 	case "", "sqlite", "sqlite3":
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(cwd, u.Path)
+		dbpath := path + "?" + u.Query().Encode()
 		// no schema is just a filepath
-		dr, err := sqlite.Open(u.String())
+		dr, err := sqlite.Open(dbpath)
 		if err != nil {
 			return err
 		}
