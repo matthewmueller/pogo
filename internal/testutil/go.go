@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/pogo/internal/gofmt"
 	"github.com/tj/assert"
 )
 
@@ -21,7 +21,7 @@ import (
 func GoRun(t testing.TB, path, main string) (string, string, func()) {
 	dir := filepath.Dir(path)
 
-	code, err := gen.Format(main)
+	code, err := gofmt.Format(main)
 	assert.NoError(t, err)
 
 	// ensure all the imports are coming this package

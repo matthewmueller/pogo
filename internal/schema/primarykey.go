@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
 )
 
 // NewPrimaryKey fn
@@ -33,7 +33,7 @@ func (pk *PrimaryKey) Columns() []*Column {
 func (pk *PrimaryKey) Method() string {
 	var cols []string
 	for _, col := range pk.columns {
-		pascal := gen.Pascal(col.name)
+		pascal := gotext.Pascal(col.name)
 		// fix sqlite's "rowid"
 		if col.name == "rowid" {
 			pascal = "RowID"
@@ -48,7 +48,7 @@ func (pk *PrimaryKey) Method() string {
 func (pk *PrimaryKey) Params() (string, error) {
 	var cols []string
 	for _, col := range pk.columns {
-		cols = append(cols, gen.Camel(col.name)+" "+col.dataType.String())
+		cols = append(cols, gotext.Camel(col.name)+" "+col.dataType.String())
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", "), nil
@@ -73,7 +73,7 @@ func (pk *PrimaryKey) Where() string {
 func (pk *PrimaryKey) Variables() string {
 	var cols []string
 	for _, col := range pk.columns {
-		cols = append(cols, gen.Camel(col.name))
+		cols = append(cols, gotext.Camel(col.name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", ")

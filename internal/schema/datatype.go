@@ -1,6 +1,6 @@
 package schema
 
-import gen "github.com/matthewmueller/go-gen"
+import "github.com/matthewmueller/gotext"
 
 // DataType for a column
 type DataType interface {
@@ -84,5 +84,5 @@ type Enumerable struct {
 }
 
 func (e *Enumerable) String() string {
-	return "enum." + gen.Pascal(e.Name)
+	return "enum." + gotext.Pascal(e.Name)
 }

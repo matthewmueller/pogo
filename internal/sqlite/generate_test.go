@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	text "github.com/matthewmueller/go-text"
+	text "github.com/matthewmueller/gotext"
 	"github.com/matthewmueller/pogo"
 	"github.com/matthewmueller/pogo/internal/sqlite"
 	"github.com/matthewmueller/pogo/internal/testutil"

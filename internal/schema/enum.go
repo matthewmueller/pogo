@@ -1,6 +1,9 @@
 package schema
 
-import gen "github.com/matthewmueller/go-gen"
+import (
+	"github.com/matthewmueller/gotext"
+	"github.com/matthewmueller/text"
+)
 
 // Enum struct
 type Enum struct {
@@ -10,17 +13,17 @@ type Enum struct {
 
 // Slug generates the slug case
 func (e *Enum) Slug() string {
-	return gen.Lower(gen.Slug(e.Name))
+	return gotext.Lower(text.Slug(e.Name))
 }
 
 // Pascal generates the pascal case
 func (e *Enum) Pascal() string {
-	return gen.Pascal(e.Name)
+	return gotext.Pascal(e.Name)
 }
 
 // Camel generates the camel case
 func (e *Enum) Camel() string {
-	return gen.Camel(e.Name)
+	return gotext.Camel(e.Name)
 }
 
 // EnumValue is an enum value
@@ -31,5 +34,5 @@ type EnumValue struct {
 
 // Pascal case
 func (v *EnumValue) Pascal() string {
-	return gen.Pascal(v.Label)
+	return gotext.Pascal(v.Label)
 }

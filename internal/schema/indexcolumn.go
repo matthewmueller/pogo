@@ -1,7 +1,7 @@
 package schema
 
 import (
-	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
 )
 
 // NewIndexColumn fn
@@ -32,12 +32,12 @@ func (c *IndexColumn) Name() string {
 
 // Pascal case
 func (c *IndexColumn) Pascal() string {
-	return gen.Pascal(c.name)
+	return gotext.Pascal(c.name)
 }
 
 // Camel case
 func (c *IndexColumn) Camel() string {
-	return gen.Camel(c.name)
+	return gotext.Camel(c.name)
 }
 
 // Type of the column

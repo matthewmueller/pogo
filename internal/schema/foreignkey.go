@@ -1,8 +1,6 @@
 package schema
 
-import (
-	"github.com/matthewmueller/go-gen"
-)
+import "github.com/matthewmueller/gotext"
 
 // NewForeignKey fn
 func NewForeignKey(
@@ -27,17 +25,17 @@ func (f *ForeignKey) Pascal() string {
 	if f.name == "rowid" {
 		return "RowID"
 	}
-	return gen.Pascal(f.name)
+	return gotext.Pascal(f.name)
 }
 
 // Camel case
 func (f *ForeignKey) Camel() string {
-	return gen.Camel(f.name)
+	return gotext.Camel(f.name)
 }
 
 // Snake case
 func (f *ForeignKey) Snake() string {
-	return gen.Snake(f.name)
+	return gotext.Snake(f.name)
 }
 
 // Type of column

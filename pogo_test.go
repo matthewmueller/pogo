@@ -11,7 +11,7 @@ package pogo_test
 
 // 	"github.com/matthewmueller/pogo"
 
-// 	text "github.com/matthewmueller/go-text"
+// 	text "github.com/matthewmueller/gotext"
 // 	"github.com/matthewmueller/pogo/internal/sqlite"
 // 	"github.com/matthewmueller/pogo/internal/testutil"
 // 	"github.com/tj/assert"

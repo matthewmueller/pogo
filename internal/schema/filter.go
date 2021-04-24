@@ -3,7 +3,7 @@ package schema
 import (
 	"fmt"
 
-	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
 )
 
 func newFilter(
@@ -599,28 +599,6 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 	return fields, nil
 }
 
-func newFilterField(
-	name string,
-	dataType DataType,
-	description string,
-	nullable bool,
-	format string,
-	nullformat string,
-	spread string,
-	value string,
-) *FilterField {
-	return &FilterField{
-		name,
-		dataType,
-		description,
-		nullable,
-		format,
-		nullformat,
-		spread,
-		value,
-	}
-}
-
 // FilterField struct
 type FilterField struct {
 	name        string
@@ -640,12 +618,12 @@ func (f *FilterField) Name() string {
 
 // Pascal case
 func (f *FilterField) Pascal() string {
-	return gen.Pascal(f.name)
+	return gotext.Pascal(f.name)
 }
 
 // Camel case
 func (f *FilterField) Camel() string {
-	return gen.Camel(f.name)
+	return gotext.Camel(f.name)
 }
 
 // Description of the field

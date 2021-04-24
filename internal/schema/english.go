@@ -3,7 +3,7 @@ package schema
 import (
 	"strings"
 
-	text "github.com/matthewmueller/go-text"
+	"github.com/matthewmueller/text"
 )
 
 // Singular makes each segment singular
@@ -16,7 +16,7 @@ func singular(s string) string {
 	return strings.Join(singles, "")
 }
 
-// Plural makes each segment singular
+// Plural makes each segment plural
 func plural(s string) string {
 	segments := strings.Split(text.Snake(s), "_")
 	var singles []string

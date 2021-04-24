@@ -3,7 +3,7 @@ package schema
 import (
 	"fmt"
 
-	"github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
 )
 
 func newOrder(
@@ -32,7 +32,7 @@ func (o *OrderField) Name() string {
 
 // Pascal case
 func (o *OrderField) Pascal() string {
-	return gen.Pascal(o.name)
+	return gotext.Pascal(o.name)
 }
 
 // Format the order by condition

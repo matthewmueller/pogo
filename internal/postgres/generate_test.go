@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	text "github.com/matthewmueller/go-text"
+	text "github.com/matthewmueller/gotext"
 	"github.com/matthewmueller/pogo"
 	"github.com/matthewmueller/pogo/internal/postgres"
 	"github.com/matthewmueller/pogo/internal/testutil"

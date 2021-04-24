@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
+	"github.com/matthewmueller/text"
 )
 
 // NewTable fn
@@ -62,27 +63,27 @@ func (t *Table) Indexes() []*Index {
 
 // Slug generates the slug case
 func (t *Table) Slug() string {
-	return gen.Lower(gen.Pascal(singular(t.name)))
+	return gotext.Lower(text.Pascal(singular(t.name)))
 }
 
 // Pascal generates the pascal case
 func (t *Table) Pascal() string {
-	return gen.Pascal(singular(t.name))
+	return gotext.Pascal(singular(t.name))
 }
 
 // Short generates a short variable
 func (t *Table) Short() string {
-	return gen.Lower(gen.Short(singular(t.name)))
+	return gotext.Lower(text.Short(singular(t.name)))
 }
 
 // Camel generates the camel case
 func (t *Table) Camel() string {
-	return gen.Camel(singular(t.name))
+	return gotext.Camel(singular(t.name))
 }
 
 // PluralCamel generates the camel case
 func (t *Table) PluralCamel() string {
-	return gen.Camel(plural(t.name))
+	return gotext.Camel(plural(t.name))
 }
 
 // PrimaryKey fn
@@ -124,7 +125,7 @@ func (t *Table) Returning() string {
 
 // Scan builds the DB.Scan(...) params
 func (t *Table) Scan() string {
-	camel := gen.Camel(singular(t.name))
+	camel := gotext.Camel(singular(t.name))
 	var cols []string
 	for _, col := range t.columns {
 		cols = append(cols, `&_`+camel+`.`+col.Pascal())

@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
 )
 
 // NewColumn fn
@@ -43,23 +43,23 @@ func (c *Column) Name() string {
 
 // Pascal case
 func (c *Column) Pascal() string {
-	return gen.Pascal(c.name)
+	return gotext.Pascal(c.name)
 }
 
 // Camel case
 func (c *Column) Camel() string {
 	// if c.alias != "" {
-	// 	return gen.Camel(c.alias)
+	// 	return gotext.Camel(c.alias)
 	// }
-	return gen.Camel(c.name)
+	return gotext.Camel(c.name)
 }
 
 // JSONKey fn
 func (c *Column) JSONKey() string {
 	// if c.alias != "" {
-	// 	return gen.Snake(c.alias)
+	// 	return gotext.Snake(c.alias)
 	// }
-	return gen.Snake(c.name)
+	return gotext.Snake(c.name)
 }
 
 // SQLName fn

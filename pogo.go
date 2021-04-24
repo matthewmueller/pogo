@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/pogo/internal/gofmt"
 	"github.com/matthewmueller/pogo/internal/importer"
 	"github.com/matthewmueller/pogo/internal/postgres"
 	"github.com/matthewmueller/pogo/internal/schema"
@@ -86,7 +86,7 @@ func Generate(uri string, outdir string, schemas ...string) error {
 	}
 
 	// format the code
-	if err := gen.FormatAll(outdir); err != nil {
+	if err := gofmt.FormatAll(outdir); err != nil {
 		return err
 	}
 

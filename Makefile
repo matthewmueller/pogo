@@ -1,6 +1,9 @@
 GREP ?= ""
 
-test: generate
+tidy:
+	@ go mod tidy
+
+test: tidy generate
 	@ rm -rf internal/postgres/tmp internal/sqlite/tmp
 	@ go test -v ./... -failfast -run $(GREP)
 

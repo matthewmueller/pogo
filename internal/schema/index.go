@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	gen "github.com/matthewmueller/go-gen"
+	"github.com/matthewmueller/gotext"
 )
 
 // NewIndex fn
@@ -62,7 +62,7 @@ func (i *Index) Columns() []*IndexColumn {
 func (i *Index) Method() string {
 	var cols []string
 	for _, col := range i.columns {
-		cols = append(cols, gen.Pascal(col.name))
+		cols = append(cols, gotext.Pascal(col.name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, "And")
@@ -82,7 +82,7 @@ func (i *Index) Description() string {
 func (i *Index) Params() (string, error) {
 	var cols []string
 	for _, col := range i.columns {
-		cols = append(cols, gen.Camel(col.name)+" "+col.dataType.String())
+		cols = append(cols, gotext.Camel(col.name)+" "+col.dataType.String())
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", "), nil
@@ -107,7 +107,7 @@ func (i *Index) Where() string {
 func (i *Index) Variables() string {
 	var cols []string
 	for _, col := range i.columns {
-		cols = append(cols, gen.Camel(col.name))
+		cols = append(cols, gotext.Camel(col.name))
 	}
 	sort.Strings(cols)
 	return strings.Join(cols, ", ")
