@@ -1265,4 +1265,24 @@ var tests = []testutil.Test{
 	// 	Func:   `blog.Find(db, blog.NewFilter().Active(false).Name("bad"))`,
 	// 	Expect: `{"id":2,"name":"bad"}`,
 	// },
+	{
+		Before: `
+			create table if not exists "documents" (
+				"id" integer not null primary key autoincrement,
+				"title" text unique not null
+			);
+
+			create virtual table if not exists "documents_fts" USING "fts5" (
+				"title",
+				content="documents",
+				content_rowid="id"
+			);
+		`,
+		After: `
+			drop table if exists "documents_fts";
+			drop table if exists "documents";
+		`,
+		Func:   `document.Insert(db, document.New().Title("A"))`,
+		Expect: `1`,
+	},
 }

@@ -12,7 +12,8 @@ import (
 
 // Table struct
 type Table struct {
-	Name string
+	Name    string // tbl_name
+	Virtual bool
 }
 
 // Index struct
@@ -85,7 +86,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		var columns []*schema.Column
 		var pks []*schema.Column
 		for _, col := range colmap[table.Name] {
-			dt, err := getType(schemaName, col.DataType)
+			dt, err := getType(schemaName, col.ColumnName, col.DataType)
 			if err != nil {
 				return nil, err
 			}
@@ -134,10 +135,16 @@ func (d *DB) getTables(schemaName, relkind string) (tables []*Table, err error) 
 	conn := d.DB
 
 	// sql query
-	const sqlstr = `SELECT
-		tbl_name AS table_name
-		FROM sqlite_master
-		WHERE tbl_name NOT LIKE 'sqlite_%' AND type = ?`
+	const sqlstr = `
+		SELECT
+			tbl_name, sql
+			FROM sqlite_master
+		WHERE
+			tbl_name NOT LIKE 'sqlite_%'
+			AND type = ?
+		ORDER BY
+			tbl_name asc
+	`
 
 	// run query
 	q, err := conn.Query(sqlstr, relkind)
@@ -147,12 +154,28 @@ func (d *DB) getTables(schemaName, relkind string) (tables []*Table, err error) 
 	defer q.Close()
 
 	// load results
+	virtuals := map[string]bool{}
 	for q.Next() {
 		var t Table
+		var sql string
 		// scan
-		err = q.Scan(&t.Name)
+		err = q.Scan(&t.Name, &sql)
 		if err != nil {
 			return nil, err
+		}
+		// Ignore virtual tables
+		if strings.HasPrefix(sql, "CREATE VIRTUAL TABLE") {
+			t.Virtual = true
+			virtuals[t.Name] = true
+			continue
+		}
+		// > 1. The name of the table contains one or more "_" characters.
+		// > 2. The part of the name prior to the last "_" exactly matches the name
+		//      of a virtual table that was created using CREATE VIRTUAL TABLE
+		// Ref: https://sqlite.org/vtab.html#xshadowname
+		head := stripLast(t.Name, "_")
+		if head != t.Name && virtuals[head] {
+			continue
 		}
 		tables = append(tables, &t)
 	}
@@ -265,7 +288,7 @@ func (d *DB) getForeignKeys(schemaName string, table string, colmap map[string][
 			return nil, fmt.Errorf("sqlite introspect: couldn't find foreign column: %q.(%q)", table, f.ColumnName)
 		}
 
-		dt, err := getType(schemaName, c.DataType)
+		dt, err := getType(schemaName, c.ColumnName, c.DataType)
 		if err != nil {
 			return nil, err
 		}
@@ -345,7 +368,7 @@ func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, in
 			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q) while getting the index columns", table, ic.ColumnName)
 		}
 
-		dt, err := getType(schemaName, c.DataType)
+		dt, err := getType(schemaName, c.ColumnName, c.DataType)
 		if err != nil {
 			return nil, err
 		}
@@ -359,10 +382,10 @@ func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, in
 }
 
 // getType takes an SQL type and returns a schema.Type
-func getType(schemaName, sqlType string) (schema.DataType, error) {
+func getType(schemaName, columnName, sqlType string) (schema.DataType, error) {
 	// handle SETOF
 	if strings.HasPrefix(sqlType, "SETOF ") {
-		t, err := getType(schemaName, sqlType[len("SETOF "):])
+		t, err := getType(schemaName, columnName, sqlType[len("SETOF "):])
 		if err != nil {
 			return nil, err
 		}
@@ -372,7 +395,7 @@ func getType(schemaName, sqlType string) (schema.DataType, error) {
 	// determine if it's an array
 	if strings.HasSuffix(sqlType, "[]") {
 		sqlType = sqlType[:len(sqlType)-2]
-		t, err := getType(schemaName, sqlType)
+		t, err := getType(schemaName, columnName, sqlType)
 		if err != nil {
 			return nil, err
 		}
@@ -397,7 +420,16 @@ func getType(schemaName, sqlType string) (schema.DataType, error) {
 		return &schema.DateTime{}, nil
 	case "json", "jsonb":
 		return &schema.JSON{}, nil
+	case "blob":
+		return &schema.String{}, nil
 	}
+	return nil, fmt.Errorf(`sqlite getType: unhandled data type for %q: %q`, columnName, sqlType)
+}
 
-	return nil, fmt.Errorf(`sqlite getType: unhandled data type: %q`, sqlType)
+func stripLast(s, sep string) (head string) {
+	idx := strings.LastIndex(s, sep)
+	if idx < 0 {
+		return s
+	}
+	return s[:idx]
 }
