@@ -2,9 +2,6 @@ package pogo
 
 import (
 	"fmt"
-	"net/url"
-	"os"
-	"path/filepath"
 
 	"github.com/matthewmueller/pogo/internal/gofmt"
 	"github.com/matthewmueller/pogo/internal/importer"
@@ -12,6 +9,7 @@ import (
 	"github.com/matthewmueller/pogo/internal/schema"
 	"github.com/matthewmueller/pogo/internal/sqlite"
 	"github.com/matthewmueller/pogo/internal/vfs"
+	"github.com/xo/dburl"
 )
 
 // Driver interface
@@ -36,7 +34,7 @@ type Generator interface {
 
 // Generate function
 func Generate(uri string, outdir string, schemas ...string) error {
-	u, err := url.Parse(uri)
+	u, err := dburl.Parse(uri)
 	if err != nil {
 		return err
 	}
@@ -53,7 +51,7 @@ func Generate(uri string, outdir string, schemas ...string) error {
 	// open the database
 	switch u.Scheme {
 	case "postgres":
-		dr, err := postgres.Open(u.String())
+		dr, err := postgres.Open(u.DSN)
 		if err != nil {
 			return err
 		}
@@ -63,14 +61,7 @@ func Generate(uri string, outdir string, schemas ...string) error {
 			ss = append(ss, "public")
 		}
 	case "", "sqlite", "sqlite3":
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		path := filepath.Join(cwd, u.Path)
-		dbpath := path + "?" + u.Query().Encode()
-		// no schema is just a filepath
-		dr, err := sqlite.Open(dbpath)
+		dr, err := sqlite.Open(u.DSN)
 		if err != nil {
 			return err
 		}

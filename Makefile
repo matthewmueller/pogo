@@ -1,6 +1,8 @@
 GREP ?= ""
 
-SQLITE_TAGS="sqlite_icu sqlite_foreign_keys sqlite_json sqlite_fts5"
+GOBINDATA := go run github.com/kevinburke/go-bindata/go-bindata
+
+SQLITE_TAGS="sqlite_foreign_keys sqlite_json sqlite_fts5"
 
 tidy:
 	@ go mod tidy
@@ -12,7 +14,7 @@ test: tidy generate
 precommit: test
 
 generate:
-	@ go-bindata -nometadata -o internal/templates/templates.go -pkg templates -ignore="templates\.go" internal/templates/...
+	@ $(GOBINDATA) -nometadata -o internal/templates/templates.go -pkg templates -ignore="templates\.go" internal/templates/...
 .PHONY: generate
 
 install:

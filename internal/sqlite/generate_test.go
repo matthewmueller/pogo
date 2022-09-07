@@ -60,7 +60,7 @@ func TestSQLite(t *testing.T) {
 			}
 
 			pogopath := filepath.Join(testpath, "pogo")
-			err = pogo.Generate(dbpath, pogopath, test.Schema)
+			err = pogo.Generate("sqlite://"+dbpath, pogopath, test.Schema)
 			assert.NoError(t, err)
 			abspath, err := filepath.Abs(testpath)
 			assert.NoError(t, err)

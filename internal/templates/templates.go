@@ -315,13 +315,13 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"internal": &bintree{nil, map[string]*bintree{
-		"templates": &bintree{nil, map[string]*bintree{
-			"go_pg_enum.gotext":  &bintree{internalTemplatesGo_pg_enumGotext, map[string]*bintree{}},
-			"go_pg_model.gotext": &bintree{internalTemplatesGo_pg_modelGotext, map[string]*bintree{}},
-			"go_pg_pogo.gotext":  &bintree{internalTemplatesGo_pg_pogoGotext, map[string]*bintree{}},
-			"go_sq_model.gotext": &bintree{internalTemplatesGo_sq_modelGotext, map[string]*bintree{}},
-			"go_sq_pogo.gotext":  &bintree{internalTemplatesGo_sq_pogoGotext, map[string]*bintree{}},
+	"internal": {nil, map[string]*bintree{
+		"templates": {nil, map[string]*bintree{
+			"go_pg_enum.gotext": {internalTemplatesGo_pg_enumGotext, map[string]*bintree{}},
+			"go_pg_model.gotext": {internalTemplatesGo_pg_modelGotext, map[string]*bintree{}},
+			"go_pg_pogo.gotext": {internalTemplatesGo_pg_pogoGotext, map[string]*bintree{}},
+			"go_sq_model.gotext": {internalTemplatesGo_sq_modelGotext, map[string]*bintree{}},
+			"go_sq_pogo.gotext": {internalTemplatesGo_sq_pogoGotext, map[string]*bintree{}},
 		}},
 	}},
 }}
