@@ -231,6 +231,9 @@ func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table s
 		if err != nil {
 			return columns, err
 		}
+		if c.Name == "time" {
+			fmt.Printf("%+v\n", c)
+		}
 		columns = append(columns, &c)
 	}
 	if e := q.Err(); e != nil {
@@ -669,7 +672,7 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		// TODO distinguish float32, float64, etc. with new types
 		return &schema.Float64{}, nil
 	case "time with time zone", "time without time zone":
-		return &schema.String{}, nil
+		return &schema.Time{}, nil
 	case "date", "timestamp", "timestamp with time zone", "timestamp without time zone":
 		return &schema.DateTime{}, nil
 	case "json", "jsonb":

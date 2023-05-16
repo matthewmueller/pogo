@@ -70,6 +70,13 @@ func (*DateTime) String() string {
 	return "time.Time"
 }
 
+// Time type
+type Time struct{}
+
+func (*Time) String() string {
+	return "pogo.Time"
+}
+
 // JSON type
 type JSON struct{}
 

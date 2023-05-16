@@ -31,6 +31,9 @@ func TestPG(t *testing.T) {
 	for _, test := range tests {
 		name := testutil.Name(test)
 		t.Run(name, func(t *testing.T) {
+			if test.Skip {
+				t.SkipNow()
+			}
 			pg, err := postgres.Open(url)
 			assert.NoError(t, err)
 			defer pg.Close()
@@ -57,7 +60,9 @@ func TestPG(t *testing.T) {
 				package main
 
 				import (
+					"context"
 					"time"
+					"github.com/jackc/pgx/v5"
 
 					`+imp(`pogo`)+`
 					`+imp(`pogo/enum`)+`
@@ -74,20 +79,22 @@ func TestPG(t *testing.T) {
 
 				func main() {
 					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
-					_ = now
+					timeWithoutTimezone := time.Date(2023, 5, 15, 13, 0, 0, 0, time.UTC)
+					_, _ = now, timeWithoutTimezone
+					ctx := context.TODO()
 
-					cfg, err := pgx.ParseConnectionString("`+url+`")
+					// cfg, err := pgx.ParseConnectionString("`+url+`")
+					// if err != nil {
+					// 	fmt.Fprintf(os.Stderr, err.Error())
+					// 	return
+					// }
+
+					db, err := pgx.Connect(ctx, "`+url+`")
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
-
-					db, err := pgx.Connect(cfg)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, err.Error())
-						return
-					}
-					defer db.Close()
+					defer db.Close(ctx)
 
 					actual, err := `+test.Func+`
 					if err != nil {
@@ -531,7 +538,7 @@ var tests = []testutil.Test{
 			drop table if exists standups_teammates cascade;
 			drop extension if exists citext cascade;
 		`,
-		Func:   `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
+		Func:   `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time(timeWithoutTimezone).Owner(true))`,
 		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00"}`,
 	},
 	{

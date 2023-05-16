@@ -391,6 +391,104 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 			})
 		}
 
+	case *Time:
+		// field equals
+		fields = append(fields, &FilterField{
+			name:        f.name,
+			description: f.name + " is equal to",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" = %%s`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field doesn't equal
+		fields = append(fields, &FilterField{
+			name:        f.name + "Not",
+			description: f.name + " is not equal to",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" != %%s`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field is in list
+		fields = append(fields, &FilterField{
+			name:        f.name + "In",
+			description: f.name + " is in",
+			dataType:    f.dataType,
+			spread:      `, `,
+			format:      fmt.Sprintf(`"%s" IN (%%s)`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field is not in list
+		fields = append(fields, &FilterField{
+			name:        f.name + "NotIn",
+			description: f.name + " is not in",
+			dataType:    f.dataType,
+			spread:      `, `,
+			format:      fmt.Sprintf(`"%s" NOT IN (%%s)`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field is less than
+		fields = append(fields, &FilterField{
+			name:        f.name + "Lt",
+			description: f.name + " is less than",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" < %%s`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field is less than or equal
+		fields = append(fields, &FilterField{
+			name:        f.name + "Lte",
+			description: f.name + " is less than or equal",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" <= %%s`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field is greater than
+		fields = append(fields, &FilterField{
+			name:        f.name + "Gt",
+			description: f.name + " is greater than",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" > %%s`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// field is greater than or equal
+		fields = append(fields, &FilterField{
+			name:        f.name + "Gte",
+			description: f.name + " is greater than or equal",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" >= %%s`, f.name),
+			value:       `%s.Format("15:04:05")`,
+		})
+
+		// if nullable
+		if !f.notNull {
+			fields = append(fields, &FilterField{
+				name:        "nullable_" + f.name,
+				description: "nullable " + f.name + " equals",
+				nullable:    true,
+				dataType:    f.dataType,
+				format:      fmt.Sprintf(`"%s" = %%s`, f.name),
+				nullformat:  fmt.Sprintf(`"%s" IS NULL`, f.name),
+				value:       `%s.Format("15:04:05")`,
+			})
+
+			fields = append(fields, &FilterField{
+				name:        "nullable_" + f.name + "_not",
+				description: "nullable " + f.name + " is not equal",
+				nullable:    true,
+				dataType:    f.dataType,
+				format:      fmt.Sprintf(`"%s" != %%s`, f.name),
+				nullformat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.name),
+				value:       `%s.Format("15:04:05")`,
+			})
+		}
+
 	case *DateTime:
 		// field equals
 		fields = append(fields, &FilterField{

@@ -1,6 +1,7 @@
 package {{$.Package}}
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -257,7 +258,7 @@ func Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     return nil, e
   }
@@ -294,7 +295,7 @@ func (*Model) Insert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}},
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     return nil, e
   }
@@ -349,7 +350,7 @@ func Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -379,7 +380,7 @@ func (*Model) Find(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, er
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -409,7 +410,7 @@ func FindBy{{$pk.Method}}(db pogo.DB, {{$pk.Params}}) (*{{$.Table.Pascal}}, erro
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$pk.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$pk.Variables}})
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -436,7 +437,7 @@ func (*Model) FindBy{{$pk.Method}}(db pogo.DB, {{$pk.Params}}) (*{{$.Table.Pasca
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$pk.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$pk.Variables}})
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -467,7 +468,7 @@ func FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pascal}}, er
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$idx.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$idx.Variables}})
   err := row.Scan({{$.Table.Scan}})
   if err != nil {
     if pogo.IsNoRows(err) {
@@ -495,7 +496,7 @@ func (*Model) FindBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pas
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$idx.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$idx.Variables}})
   err := row.Scan({{$.Table.Scan}})
   if err != nil {
     if pogo.IsNoRows(err) {
@@ -528,7 +529,7 @@ func FindMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, error
     pogo.Log(sqlstr, _v...)
   }
 
-  rows, err := db.Query(sqlstr, _v...)
+  rows, err := db.Query(context.TODO(), sqlstr, _v...)
   if err != nil {
     return {{$.Table.PluralCamel}}, err
   }
@@ -571,7 +572,7 @@ func (*Model) FindMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal
     pogo.Log(sqlstr, _v...)
   }
 
-  rows, err := db.Query(sqlstr, _v...)
+  rows, err := db.Query(context.TODO(), sqlstr, _v...)
   if err != nil {
     return {{$.Table.PluralCamel}}, err
   }
@@ -632,7 +633,7 @@ func Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (*{{$
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil,  Err{{$.Table.Pascal}}NotFound
@@ -681,7 +682,7 @@ func (*Model) Update(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Conditi
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil,  Err{{$.Table.Pascal}}NotFound
@@ -730,7 +731,7 @@ func UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Condition) (
     pogo.Log(sqlstr, _v...)
   }
 
-  rows, err := db.Query(sqlstr, _v...)
+  rows, err := db.Query(context.TODO(), sqlstr, _v...)
   if err != nil {
     return {{$.Table.PluralCamel}}, err
   }
@@ -791,7 +792,7 @@ func (*Model) UpdateMany(db pogo.DB, {{$.Table.Camel}} *Input, conds ...pogo.Con
     pogo.Log(sqlstr, _v...)
   }
 
-  rows, err := db.Query(sqlstr, _v...)
+  rows, err := db.Query(context.TODO(), sqlstr, _v...)
   if err != nil {
     return {{$.Table.PluralCamel}}, err
   }
@@ -866,7 +867,7 @@ func UpdateBy{{$pk.Method}}(db pogo.DB, {{$pk.Params}}, {{$.Table.Camel}} *Input
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, values...)
+  row := db.QueryRow(context.TODO(), sqlstr, values...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -926,7 +927,7 @@ func (*Model) UpdateBy{{$pk.Method}}(db pogo.DB, {{$pk.Params}}, {{$.Table.Camel
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, values...)
+  row := db.QueryRow(context.TODO(), sqlstr, values...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -988,7 +989,7 @@ func UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}, {{$.Table.Camel}} *Inp
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, values...)
+  row := db.QueryRow(context.TODO(), sqlstr, values...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1047,7 +1048,7 @@ func (*Model) UpdateBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}, {{$.Table.Cam
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, values...)
+  row := db.QueryRow(context.TODO(), sqlstr, values...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1079,7 +1080,7 @@ func Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, error) {
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1110,7 +1111,7 @@ func (*Model) Delete(db pogo.DB, conds ...pogo.Condition) (*{{$.Table.Pascal}}, 
   }
 
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1141,7 +1142,7 @@ func DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pascal}}, err
     pogo.Log(sqlstr, _v...)
   }
 
-  rows, err := db.Query(sqlstr, _v...)
+  rows, err := db.Query(context.TODO(), sqlstr, _v...)
   if err != nil {
     return {{$.Table.PluralCamel}}, err
   }
@@ -1184,7 +1185,7 @@ func (*Model) DeleteMany(db pogo.DB, conds ...pogo.Condition) ([]*{{$.Table.Pasc
     pogo.Log(sqlstr, _v...)
   }
 
-  rows, err := db.Query(sqlstr, _v...)
+  rows, err := db.Query(context.TODO(), sqlstr, _v...)
   if err != nil {
     return {{$.Table.PluralCamel}}, err
   }
@@ -1224,7 +1225,7 @@ func DeleteBy{{$pk.Method}}(db pogo.DB, {{$pk.Params}}) (*{{$.Table.Pascal}}, er
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$pk.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$pk.Variables}})
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1250,7 +1251,7 @@ func (*Model) DeleteBy{{$pk.Method}}(db pogo.DB, {{$pk.Params}}) (*{{$.Table.Pas
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$pk.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$pk.Variables}})
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1279,7 +1280,7 @@ func DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.Pascal}}, 
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$idx.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$idx.Variables}})
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1305,7 +1306,7 @@ func (*Model) DeleteBy{{$idx.Method}}(db pogo.DB, {{$idx.Params}}) (*{{$.Table.P
 
   // run the query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, {{$idx.Variables}})
+  row := db.QueryRow(context.TODO(), sqlstr, {{$idx.Variables}})
   if e := row.Scan({{$.Table.Scan}}); e != nil {
     if pogo.IsNoRows(e) {
       return nil, Err{{$.Table.Pascal}}NotFound
@@ -1346,7 +1347,7 @@ func Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}}, error) {
 
   // run query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil && !pogo.IsNoRows(e) {
     return nil, e
   }
@@ -1380,7 +1381,7 @@ func (*Model) Upsert(db pogo.DB, {{$.Table.Camel}} *Input) (*{{$.Table.Pascal}},
 
   // run query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil && !pogo.IsNoRows(e) {
     return nil, e
   }
@@ -1420,7 +1421,7 @@ func UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Camel}} *In
 
   // run query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil && !pogo.IsNoRows(e) {
     return nil, e
   }
@@ -1457,7 +1458,7 @@ func (*Model) UpsertBy{{$idx.Method}}(db pogo.DB, {{ $idx.Params}}, {{$.Table.Ca
 
   // run query
   var _{{$.Table.Camel}} {{$.Table.Pascal}}
-  row := db.QueryRow(sqlstr, _v...)
+  row := db.QueryRow(context.TODO(), sqlstr, _v...)
   if e := row.Scan({{$.Table.Scan}}); e != nil && !pogo.IsNoRows(e) {
     return nil, e
   }
