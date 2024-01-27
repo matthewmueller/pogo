@@ -1,0 +1,143 @@
+# 0.0.0 / 2022-10-16
+
+- remove unused code
+- add readme and license
+- fix for sqlite relative paths. remove sqlite_icu tag support until I can figure out why it won't compile
+- sqlite: ignore virtual tables and tables created to assist virtual tables. closes: #39
+- sqlite: fix tests to work with the path being relative to cwd
+- all: update dependencies and add go.mod
+- add primary key upserts
+- update templates
+- fix for reserved names within a table name (e.g. frame_gotos)
+- fix empty inserts
+- update the templates file
+- fix upserts with only one update. closes #32
+- fix upserts with only one update. closes #32
+- support an orders table
+- support an orders table
+- add support for bigints
+- cleanup the sql queries
+- only rely on goimports for formatting now. add pogo.IsNoRows(err)
+- another test, prep for #28
+- add more sqlite filter tests. fix time tests. HCMC => Berlin
+- drop duplicate cascade
+- order map keys, add composite primary keys
+- update template
+- sqlite: fix primary key index bug
+- update makefile
+- fix introspection failing on unnamed procedures. add failing test and todo to support uuids
+- add failing test and todo to support uuids
+- ensure insert is also working
+- support the numeric type
+- switch to pkg/errors
+- UpsertBy(...) to Upsert(...)
+- fix tests based on fresh database
+- minor improvements based on usage
+- remove the default schema in the CLI
+- a few more fixes
+- cleanup after all tests using defers
+- finish sqlite bindings
+- cleanup field
+- fixes test bug
+- trying to get tests working
+- refactored coerce into a new schema type: DataType
+- all ready for sqlite, need to plan a little bit though.
+- postgres tests passing again
+- everything setup to add postgres tests back in and start sqlite tests
+- test finally passing
+- major refactor, tests are setup, just need to fix them now
+- prep for sqlite templates
+- sqlite introspection working
+- remove test
+- test added models
+- if In(...) or NotIn(...) is empty, we return no results
+- don't fail on nil procedure names
+- support citext
+- cleanup datatype, add a test for filtering on a nullable foreign key
+- error out for empty filters that accept spreads
+- fix filtering by enum
+- more specific install
+- add nullable filters and fix time filters
+- add: model.InsertMany
+- support insertables
+- fix: filters should have quotes around all tables
+- remove queries. less useful now
+- fix and test enums
+- fix sorting for indexes
+- fix up lint errors
+- update readme example
+- add an example
+- cleanup
+- update docs
+- v6 is ready :-)
+- fix in and added a bunch of other tests
+- good progress today :-D
+- pogo and model are rendering
+- new and hopefully last pogo API finished up.
+- add context, but don't use it quite yet
+- don't add findby(PK). fix go type on find()
+- findby to findwhere and simplify template generation logic
+- update templates with new go-bindata
+- remove unused var
+- update to use new generator api
+- ensure we always return an empty array if there are no results on FindMany and UpdateMany
+- fix up the makefile and move outputs into \_examples
+- v3 finally ready
+- rewrote most of it
+- not working
+- not working at all, but we need to back out of this a bit
+- remove metadata from binaries
+- minor changes
+- fix enums for new pgx version
+- fix defer in builtins
+- simplify enums and unquote schemas before comparison
+- imports
+- fix identifiers that have the same name as a go builtin (e.g. type)
+- fix for absolute paths and schemas
+- support tables with hyphens and test text[] arrays
+- ready to go
+- started standupsteammates many-to-many tests
+- simplify upsert
+- add tests for upsert
+- finish team example tests
+- cleanup + basic tests in place
+- update templates
+- inserts now tested. accessors can do custom logic inside templates
+- started adding tests and making bugfixes
+- new api
+- new api in \_examples/pogo/team.go
+- add new readme
+- Merge branch 'v2'
+- add new generated jack. update makefile
+- remove jack tests and write generated tests
+- go errors have been fixed
+- finish remaining model parity with v1
+- added enum and many-to-many
+- rename to functions
+- untested, but goimports works. basic CRUD complete
+- move model to jack
+- update readme
+- fix templates for when tables start with c, i, or v
+- update coerce for floats
+- get rid of manually written guide models
+- remove .DS_Store
+- update readme
+- add autogen examples
+- update for empty result sets
+- update the bin
+- add findOne
+- add update many and delete many
+- use goimport for the indentation
+- update template comment
+- got findMany working, improved delete and fixed some other templates
+- get upsert working
+- support findByCol1AndCol2 when unique(col1, col2)
+- tons of improvemnts as i'm building out tempo
+- add findby{unique}
+- update for tempo
+- XOLog => DBLog
+- working with basic team tests
+- generating models that are correct :-)
+- everything is rendering out, still some errors though
+- manual model generation
+- Initial commit
