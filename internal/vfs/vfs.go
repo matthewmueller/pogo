@@ -140,13 +140,3 @@ func readDir(fs http.FileSystem, name string) ([]os.FileInfo, error) {
 	defer f.Close()
 	return f.Readdir(0)
 }
-
-// ReadFile reads the file named by path from fs and returns the contents.
-func readFile(fs http.FileSystem, path string) ([]byte, error) {
-	rc, err := fs.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer rc.Close()
-	return ioutil.ReadAll(rc)
-}

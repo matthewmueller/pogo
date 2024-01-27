@@ -3,16 +3,18 @@ package postgres
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 
 	"github.com/matthewmueller/pogo/internal/importer"
+	"github.com/matthewmueller/pogo/internal/schema"
 	"github.com/matthewmueller/pogo/internal/template"
 	"github.com/matthewmueller/pogo/internal/templates"
 	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
-var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/go_pg_pogo.gotext"))
-var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/go_pg_model.gotext"))
-var enumT = template.MustCompile("enum", templates.MustAssetString("internal/templates/go_pg_enum.gotext"))
+var pogoT = template.MustCompile("pogo", templates.MustAssetString("go_pg_pogo.gotext"))
+var modelT = template.MustCompile("model", templates.MustAssetString("go_pg_model.gotext"))
+var enumT = template.MustCompile("enum", templates.MustAssetString("go_pg_enum.gotext"))
 
 // Generate the database binding
 func (d *DB) Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem, error) {
@@ -43,6 +45,7 @@ func (d *DB) Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem,
 			"Package":  slug,
 			"Schema":   schema,
 			"Table":    table,
+			"HasEnums": hasEnums(table),
 		})
 		if err != nil {
 			return nil, err
@@ -64,4 +67,13 @@ func (d *DB) Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem,
 	}
 
 	return vfs.Map(files), nil
+}
+
+func hasEnums(table *schema.Table) bool {
+	for _, col := range table.Columns() {
+		if strings.HasPrefix(col.Type(), "enum.") {
+			return true
+		}
+	}
+	return false
 }

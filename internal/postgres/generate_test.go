@@ -20,7 +20,7 @@ func TestPG(t *testing.T) {
 	// tests := filter(tests, "pg")
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
-	tmpdir := filepath.Join(cwd, "tmp")
+	tmpdir := filepath.Join(cwd, "_tmp")
 	assert.NoError(t, os.RemoveAll(tmpdir))
 	defer func() {
 		if !t.Failed() {
@@ -70,6 +70,15 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/standupteammate`)+`
 					`+imp(`pogo/event`)+`
 					`+imp(`pogo/exercise`)+`
+					`+imp(`pogo/blog`)+`
+					`+imp(`pogo/convo`)+`
+					`+imp(`pogo/migrate`)+`
+					`+imp(`pogo/variable`)+`
+					`+imp(`pogo/big`)+`
+					`+imp(`pogo/intabbrev`)+`
+					`+imp(`pogo/order`)+`
+					`+imp(`pogo/background`)+`
+					`+imp(`pogo/framegoto`)+`
 				)
 
 				func main() {

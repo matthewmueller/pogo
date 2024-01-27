@@ -19,7 +19,7 @@ import (
 func TestSQLite(t *testing.T) {
 	uri := os.Getenv("SQLITE_URL")
 	assert.NotEmpty(t, uri)
-	tmpdir := "tmp"
+	tmpdir := "_tmp"
 	assert.NoError(t, os.RemoveAll(tmpdir))
 	defer func() {
 		if !t.Failed() {
@@ -79,6 +79,9 @@ func TestSQLite(t *testing.T) {
 					pogo `+imp(`pogo`)+`
 					`+imp(`pogo/blog`)+`
 					`+imp(`pogo/post`)+`
+					`+imp(`pogo/migrate`)+`
+					`+imp(`pogo/variable`)+`
+					`+imp(`pogo/document`)+`
 				)
 
 				func main() {

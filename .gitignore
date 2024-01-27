@@ -1,3 +1,4 @@
 /test/*/_tmp
 /test/*/pogo
 tmp/
+_tmp/

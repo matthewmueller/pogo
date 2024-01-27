@@ -9,8 +9,8 @@ import (
 	"github.com/matthewmueller/pogo/internal/vfs"
 )
 
-var pogoT = template.MustCompile("pogo", templates.MustAssetString("internal/templates/go_sq_pogo.gotext"))
-var modelT = template.MustCompile("model", templates.MustAssetString("internal/templates/go_sq_model.gotext"))
+var pogoT = template.MustCompile("pogo", templates.MustAssetString("go_sq_pogo.gotext"))
+var modelT = template.MustCompile("model", templates.MustAssetString("go_sq_model.gotext"))
 
 // Generate the filesystem
 func (s *DB) Generate(imp *importer.Importer, schemas []string) (vfs.FileSystem, error) {

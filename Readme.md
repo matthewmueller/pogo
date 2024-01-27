@@ -2,9 +2,7 @@
 
 Type-safe Database Client for Go. Supports PostgreSQL and SQLite.
 
-The code is stable and has been in production for many years now. This repository won't change much in the future.
-
-This code along with future updates will eventually be folded into https://github.com/livebud/bud.
+The code is stable and has been in production for many years now including [Standup Jack](https://standupjack.com).
 
 ## Usage
 
@@ -34,6 +32,17 @@ users, err := user.FindMany(db,
 ```
 
 Check out [the tests](https://github.com/matthewmueller/pogo/blob/master/internal/postgres/generate_test.go) for more usage examples.
+
+## Development
+
+### Running Tests
+
+To run the tests, you'll need to have PostgreSQL installed locally with an empty `pogo` database:
+
+```sh
+createdb pogo
+make test
+```
 
 ### License
 
