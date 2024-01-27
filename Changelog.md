@@ -1,3 +1,8 @@
+# 0.0.1 / 2024-01-27
+
+- update makefile
+- switch over to go/embed and rely less on goimport doing the right thing for tests
+
 # 0.0.0 / 2022-10-16
 
 - remove unused code
