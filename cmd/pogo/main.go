@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
@@ -21,7 +22,7 @@ func main() {
 	// flags
 	dbUrl := cmd.Flag("db", "database connection string").Envar("DATABASE_URL").String()
 	schema := cmd.Flag("schema", "database schema").Default("").String()
-	out := cmd.Flag("dir", "output directory to write to").Default("pogo").String()
+	out := cmd.Flag("dir", "output directory to write to").Default(filepath.Join("internal", "pogo")).String()
 
 	// run the generator
 	cmd.Run(func() error {
