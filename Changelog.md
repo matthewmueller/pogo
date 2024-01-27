@@ -1,3 +1,7 @@
+# 0.0.2 / 2024-01-27
+
+- switch default dir from pogo/ to internal/pogo
+
 # 0.0.1 / 2024-01-27
 
 - update makefile
