@@ -96,7 +96,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 
 	for _, table := range tt {
 		// get the columns
-		cols, err := getColumns(d.Conn, enums, schemaName, table.Name)
+		cols, err := getColumns(d.Conn, schemaName, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get columns for '%s' from schema", table.Name)
 		}
@@ -119,7 +119,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		pk := schema.NewPrimaryKey(pks, paramPrefix)
 
 		// get the foreign keys
-		fks, err := getForeignKeys(d.Conn, enums, schemaName, table.Name)
+		fks, err := getForeignKeys(d.Conn, schemaName, table.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get the foreign keys for '%s' from schema", table.Name)
 		}
@@ -193,7 +193,7 @@ func getTables(conn *pgx.Conn, schemaName string) (tables []*Table, err error) {
 	return tables, nil
 }
 
-func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (columns []*Column, err error) {
+func getColumns(conn *pgx.Conn, schemaName string, table string) (columns []*Column, err error) {
 	// sql query
 	// TODO: support onDelete and onUpdate
 	const sqlstr = `
@@ -239,7 +239,7 @@ func getColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table s
 	return columns, nil
 }
 
-func getForeignKeys(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string) (fks []*schema.ForeignKey, err error) {
+func getForeignKeys(conn *pgx.Conn, schemaName string, table string) (fks []*schema.ForeignKey, err error) {
 	// sql query
 	const sqlstr = `
 		SELECT
@@ -344,7 +344,7 @@ func getIndexes(conn *pgx.Conn, schemaName string, table string) (indexes []*Ind
 // get the column indexes
 func getIndexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, table string, index string) (columns []*schema.IndexColumn, err error) {
 	// load columns
-	cols, err := indexColumns(conn, enums, schemaName, index)
+	cols, err := indexColumns(conn, schemaName, index)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func getIndexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, ta
 }
 
 // indexColumns runs a custom query, returning results as IndexColumn.
-func indexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, index string) (columns []*IndexColumn, err error) {
+func indexColumns(conn *pgx.Conn, schemaName string, index string) (columns []*IndexColumn, err error) {
 	// query the index columns
 	const sqlstr = `
 		SELECT
