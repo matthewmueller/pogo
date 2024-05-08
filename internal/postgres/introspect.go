@@ -1,11 +1,12 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/matthewmueller/pogo/internal/schema"
 	"github.com/pkg/errors"
 )
@@ -168,7 +169,7 @@ func getTables(conn *pgx.Conn, schemaName string) (tables []*Table, err error) {
 	// run query
 	// DBLog(sqlstr, schema, relkind)
 	// "r" constant is for tables
-	q, err := conn.Query(sqlstr, schemaName, "r")
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, "r")
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +218,7 @@ func getColumns(conn *pgx.Conn, schemaName string, table string) (columns []*Col
 
 	// run query
 	// DBLog(sqlstr, schema, table, sys)
-	q, err := conn.Query(sqlstr, schemaName, table)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, table)
 	if err != nil {
 		return columns, err
 	}
@@ -267,7 +268,7 @@ func getForeignKeys(conn *pgx.Conn, schemaName string, table string) (fks []*sch
 
 	// run query
 	// DBLog(sqlstr, schema, table)
-	q, err := conn.Query(sqlstr, schemaName, table)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, table)
 	if err != nil {
 		return fks, err
 	}
@@ -316,7 +317,7 @@ func getIndexes(conn *pgx.Conn, schemaName string, table string) (indexes []*Ind
 
 	// run query
 	// DBLog(sqlstr, schema, table)
-	q, err := conn.Query(sqlstr, schemaName, table)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, table)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +416,7 @@ func indexColumns(conn *pgx.Conn, schemaName string, index string) (columns []*I
 
 	// run query
 	// DBLog(sqlstr, schema, index)
-	q, err := conn.Query(sqlstr, schemaName, index)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, index)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +461,7 @@ func colOrder(conn *pgx.Conn, schemaName string, index string) (*columnOrder, er
 	`
 	// run query
 	var pco columnOrder
-	err = conn.QueryRow(sqlstr, schemaName, index).Scan(&pco.Ord)
+	err = conn.QueryRow(context.TODO(), sqlstr, schemaName, index).Scan(&pco.Ord)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +480,7 @@ func getProcedures(conn *pgx.Conn, schemaName string) (procs []*schema.Procedure
 		WHERE n.nspname = $1
 	`
 	// run query
-	q, err := conn.Query(sqlstr, schemaName)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +519,7 @@ func getProcedureParams(conn *pgx.Conn, schemaName, procedure string) (params []
 		WHERE n.nspname = $1 AND p.proname = $2
 	`
 	// run query
-	q, err := conn.Query(sqlstr, schemaName, procedure)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, procedure)
 	if err != nil {
 		return nil, err
 	}
@@ -552,7 +553,7 @@ func getEnums(conn *pgx.Conn, schemaName string) (enums []*schema.Enum, err erro
   `
 	// run query
 	// DBLog(sqlstr, schema)
-	q, err := conn.Query(sqlstr, schemaName)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -602,7 +603,7 @@ func getEnumValues(conn *pgx.Conn, schemaName string, enum string) ([]*schema.En
 
 	// run query
 	// DBLog(sqlstr, schema, enum)
-	q, err := conn.Query(sqlstr, schemaName, enum)
+	q, err := conn.Query(context.TODO(), sqlstr, schemaName, enum)
 	if err != nil {
 		return nil, err
 	}

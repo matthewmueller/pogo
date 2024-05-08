@@ -1,6 +1,7 @@
 package postgres_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,16 +32,17 @@ func TestPG(t *testing.T) {
 	for _, test := range tests {
 		name := testutil.Name(test)
 		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
 			pg, err := postgres.Open(url)
 			assert.NoError(t, err)
-			defer pg.Close()
+			defer pg.Close(ctx)
 
 			if test.After != "" {
-				_, err = pg.Exec(test.After)
+				_, err = pg.Exec(ctx, test.After)
 				assert.NoError(t, err)
 			}
 			if test.Before != "" {
-				_, err = pg.Exec(test.Before)
+				_, err = pg.Exec(ctx, test.Before)
 				assert.NoError(t, err)
 			}
 
@@ -58,6 +60,8 @@ func TestPG(t *testing.T) {
 
 				import (
 					"time"
+					"context"
+					"github.com/jackc/pgx/v5"
 
 					`+imp(`pogo`)+`
 					`+imp(`pogo/enum`)+`
@@ -85,18 +89,12 @@ func TestPG(t *testing.T) {
 					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
 					_ = now
 
-					cfg, err := pgx.ParseConnectionString("`+url+`")
+					db, err := pgx.Connect(context.TODO(), "`+url+`")
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
-
-					db, err := pgx.Connect(cfg)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, err.Error())
-						return
-					}
-					defer db.Close()
+					defer db.Close(context.TODO())
 
 					actual, err := `+test.Func+`
 					if err != nil {
