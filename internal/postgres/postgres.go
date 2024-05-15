@@ -1,14 +1,14 @@
 package postgres
 
-import "github.com/jackc/pgx"
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5"
+)
 
 // Open a URL
 func Open(uri string) (*DB, error) {
-	cfg, err := pgx.ParseConnectionString(uri)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := pgx.Connect(cfg)
+	conn, err := pgx.Connect(context.TODO(), uri)
 	if err != nil {
 		return nil, err
 	}

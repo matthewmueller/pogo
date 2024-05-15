@@ -1,6 +1,7 @@
 package postgres_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,16 +32,17 @@ func TestPG(t *testing.T) {
 	for _, test := range tests {
 		name := testutil.Name(test)
 		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
 			pg, err := postgres.Open(url)
 			assert.NoError(t, err)
-			defer pg.Close()
+			defer pg.Close(ctx)
 
 			if test.After != "" {
-				_, err = pg.Exec(test.After)
+				_, err = pg.Exec(ctx, test.After)
 				assert.NoError(t, err)
 			}
 			if test.Before != "" {
-				_, err = pg.Exec(test.Before)
+				_, err = pg.Exec(ctx, test.Before)
 				assert.NoError(t, err)
 			}
 
@@ -58,6 +60,8 @@ func TestPG(t *testing.T) {
 
 				import (
 					"time"
+					"context"
+					"github.com/jackc/pgx/v5"
 
 					`+imp(`pogo`)+`
 					`+imp(`pogo/enum`)+`
@@ -85,18 +89,12 @@ func TestPG(t *testing.T) {
 					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
 					_ = now
 
-					cfg, err := pgx.ParseConnectionString("`+url+`")
+					db, err := pgx.Connect(context.TODO(), "`+url+`")
 					if err != nil {
 						fmt.Fprintf(os.Stderr, err.Error())
 						return
 					}
-
-					db, err := pgx.Connect(cfg)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, err.Error())
-						return
-					}
-					defer db.Close()
+					defer db.Close(context.TODO())
 
 					actual, err := `+test.Func+`
 					if err != nil {
@@ -541,7 +539,7 @@ var tests = []testutil.Test{
 			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.Insert(db, standupteammate.New().StandupID(1).TeammateID(2).Status(enum.StandupTeammateStatusActive).Time("1:00").Owner(true))`,
-		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00"}`,
+		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00.000000"}`,
 	},
 	{
 		Before: `
@@ -601,7 +599,7 @@ var tests = []testutil.Test{
 			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().StandupID(1).TeammateID(2).Time("1:00").Status(enum.StandupTeammateStatusActive).Owner(true))`,
-		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00"}`,
+		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00.000000"}`,
 	},
 	{
 		Before: `
@@ -662,7 +660,7 @@ var tests = []testutil.Test{
 			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.UpsertByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Status(enum.StandupTeammateStatusInvited).Owner(true))`,
-		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"INVITED","teammate_id":2,"time":"01:00:00"}`,
+		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"INVITED","teammate_id":2,"time":"01:00:00.000000"}`,
 	},
 	{
 		Before: `
@@ -723,7 +721,7 @@ var tests = []testutil.Test{
 			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.UpdateByStandupIDAndTeammateID(db, 1, 2, standupteammate.New().Time("1:00").Owner(true))`,
-		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00"}`,
+		Expect: `{"id":1,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":2,"time":"01:00:00.000000"}`,
 	},
 	{
 		Before: `
@@ -986,7 +984,7 @@ var tests = []testutil.Test{
 			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.FindMany(db, standupteammate.NewFilter().StandupID(1))`,
-		Expect: `[{"id":1,"standup_id":1,"status":"ACTIVE","teammate_id":1,"time":"12:00:00"},{"id":2,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":3,"time":"01:00:00"}]`,
+		Expect: `[{"id":1,"standup_id":1,"status":"ACTIVE","teammate_id":1,"time":"12:00:00.000000"},{"id":2,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":3,"time":"01:00:00.000000"}]`,
 	},
 	{
 		Before: `
@@ -1238,7 +1236,7 @@ var tests = []testutil.Test{
 			drop extension if exists citext cascade;
 		`,
 		Func:   `standupteammate.Find(db, standupteammate.NewFilter().Owner(true).StandupIDIn(1, 3))`,
-		Expect: `{"id":2,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":3,"time":"01:00:00"}`,
+		Expect: `{"id":2,"owner":true,"standup_id":1,"status":"ACTIVE","teammate_id":3,"time":"01:00:00.000000"}`,
 	},
 	{
 		Before: `
