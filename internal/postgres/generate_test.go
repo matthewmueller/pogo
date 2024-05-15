@@ -31,7 +31,9 @@ func TestPG(t *testing.T) {
 
 	for _, test := range tests {
 		name := testutil.Name(test)
-		t.Run(name, func(t *testing.T) {
+
+		// Run with the direct connect
+		t.Run(name+"_direct", func(t *testing.T) {
 			ctx := context.Background()
 			pg, err := postgres.Open(url)
 			assert.NoError(t, err)
@@ -61,7 +63,7 @@ func TestPG(t *testing.T) {
 				import (
 					"time"
 					"context"
-					"github.com/jackc/pgx/v5"
+					"github.com/jackc/pgx/v5/pgxpool"
 
 					`+imp(`pogo`)+`
 					`+imp(`pogo/enum`)+`
@@ -95,6 +97,120 @@ func TestPG(t *testing.T) {
 						return
 					}
 					defer db.Close(context.TODO())
+
+					actual, err := `+test.Func+`
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					buf, err := json.Marshal(actual)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+
+					fmt.Fprintf(os.Stdout, "%s", string(buf))
+				}
+			`)
+			defer func() {
+				if !t.Failed() {
+					remove()
+				}
+			}()
+
+			if stderr != "" {
+				if test.Error != "" {
+					if test.Error == stderr {
+						return
+					}
+					fmt.Println("# Expect:")
+					fmt.Println(test.Error)
+					fmt.Println()
+					fmt.Println("# Actual:")
+					fmt.Println(stderr)
+					fmt.Println()
+					t.Fatal(testutil.Diff(test.Error, stderr))
+				}
+				t.Fatal(errors.New(stderr))
+			}
+
+			if test.Expect != stdout {
+				fmt.Println("# Expect:")
+				fmt.Println(test.Expect)
+				fmt.Println()
+				fmt.Println("# Actual:")
+				fmt.Println(stdout)
+				fmt.Println()
+				t.Fatal(testutil.Diff(test.Expect, stdout))
+			}
+		})
+
+		// Run with the pool
+		t.Run(name+"_pool", func(t *testing.T) {
+			ctx := context.Background()
+			pg, err := postgres.Open(url)
+			assert.NoError(t, err)
+			defer pg.Close(ctx)
+
+			if test.After != "" {
+				_, err = pg.Exec(ctx, test.After)
+				assert.NoError(t, err)
+			}
+			if test.Before != "" {
+				_, err = pg.Exec(ctx, test.Before)
+				assert.NoError(t, err)
+			}
+
+			testpath := filepath.Join(tmpdir, text.Snake(name))
+			err = os.MkdirAll(testpath, 0755)
+			assert.NoError(t, err)
+			pogopath := filepath.Join(testpath, "pogo")
+			err = pogo.Generate(url, pogopath, test.Schema)
+			assert.NoError(t, err)
+
+			imp := testutil.GoImport(t, testpath)
+			mainpath := filepath.Join(testpath, "main.go")
+			stdout, stderr, remove := testutil.GoRun(t, mainpath, `
+				package main
+
+				import (
+					"time"
+					"context"
+					"github.com/jackc/pgx/v5/pgxpool"
+
+					`+imp(`pogo`)+`
+					`+imp(`pogo/enum`)+`
+					`+imp(`pogo/team`)+`
+					`+imp(`pogo/cron`)+`
+					`+imp(`pogo/report`)+`
+					`+imp(`pogo/standup`)+`
+					`+imp(`pogo/question`)+`
+					`+imp(`pogo/teammate`)+`
+					`+imp(`pogo/standupteammate`)+`
+					`+imp(`pogo/event`)+`
+					`+imp(`pogo/exercise`)+`
+					`+imp(`pogo/blog`)+`
+					`+imp(`pogo/convo`)+`
+					`+imp(`pogo/migrate`)+`
+					`+imp(`pogo/variable`)+`
+					`+imp(`pogo/big`)+`
+					`+imp(`pogo/intabbrev`)+`
+					`+imp(`pogo/order`)+`
+					`+imp(`pogo/background`)+`
+					`+imp(`pogo/framegoto`)+`
+				)
+
+				func main() {
+					now := time.Date(2018, 9, 5, 0, 0, 0, 0, time.UTC)
+					_ = now
+
+					db, err := pgxpool.New(context.TODO(), "`+url+`")
+					if err != nil {
+						fmt.Fprintf(os.Stderr, err.Error())
+						return
+					}
+					defer db.Close()
 
 					actual, err := `+test.Func+`
 					if err != nil {
