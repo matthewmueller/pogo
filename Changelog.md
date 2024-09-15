@@ -1,3 +1,7 @@
+# 0.0.4 / 2024-09-15
+
+- run tests with pgx.Conn and pgxpool.Pool
+
 # 0.0.3 / 2024-05-14
 
 - upgrade to pgx/v5
