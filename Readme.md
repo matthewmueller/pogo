@@ -2,7 +2,7 @@
 
 Type-safe Database Client for Go. Supports PostgreSQL and SQLite.
 
-The code is stable and has been in production for many years now including [Standup Jack](https://standupjack.com).
+The code has been in production for many years now including [Standup Jack](https://standupjack.com).
 
 ## Install
 
@@ -15,20 +15,16 @@ go install github.com/matthewmueller/pogo/cmd/pogo@latest
 ### Introspect your database
 
 ```sh
-# connect to a postgres database and build the client in pogo/
-pogo --db $(POSTGRES_URL) --schema public --dir ./pogo
+# connect to a postgres database and build the client into internal/pogo
+pogo --db $(POSTGRES_URL) --schema public --dir ./internal/pogo
 ```
 
 ### Using the Generated Client
 
 ```go
-pgconfig, err := pgx.ParseURI(env.DatabaseURL)
+db, err := pgxpool.New(ctx, url.DSN)
 if err != nil {
-  return err
-}
-db, err := pgx.Connect(pgconfig)
-if err != nil {
-  return err
+  return nil, err
 }
 
 users, err := user.FindMany(db,
