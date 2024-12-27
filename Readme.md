@@ -4,6 +4,12 @@ Type-safe Database Client for Go. Supports PostgreSQL and SQLite.
 
 The code is stable and has been in production for many years now including [Standup Jack](https://standupjack.com).
 
+## Install
+
+```sh
+go install github.com/matthewmueller/pogo/cmd/pogo@latest
+```
+
 ## Usage
 
 ### Introspect your database
