@@ -85,6 +85,8 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/order`)+`
 					`+imp(`pogo/background`)+`
 					`+imp(`pogo/framegoto`)+`
+					`+imp(`pogo/host`)+`
+					`+imp(`pogo/ranking`)+`
 				)
 
 				func main() {
@@ -199,6 +201,8 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/order`)+`
 					`+imp(`pogo/background`)+`
 					`+imp(`pogo/framegoto`)+`
+					`+imp(`pogo/host`)+`
+					`+imp(`pogo/ranking`)+`
 				)
 
 				func main() {
@@ -2217,6 +2221,84 @@ var tests = []testutil.Test{
 		Func:   `framegoto.Insert(db, framegoto.New())`,
 		Expect: `{"id":1}`,
 	},
+	{
+		Before: `
+			create table hosts (
+				id bigserial primary key not null,
+				name text not null unique,
+				created_at timestamp with time zone not null default now(),
+				updated_at timestamp with time zone not null default now()
+			);
+			create table rankings (
+				id bigserial primary key not null,
+				host bigint references hosts(id) on delete cascade on update cascade,
+				harmonic_rank bigint not null,
+				harmonic_value float not null,
+				pagerank_rank bigint not null,
+				pagerank_value float not null,
+				crawled_at timestamp with time zone not null,
+				created_at timestamp with time zone not null default now(),
+				updated_at timestamp with time zone not null default now(),
+				unique(crawled_at, host)
+			);
+			alter table hosts
+				add column crawl_key text,
+				add column crawled_at timestamp with time zone,
+				add constraint hosts_crawl_key_crawled_at_unique unique (crawl_key, crawled_at);
+
+			alter table rankings
+				add column crawl_key text,
+				add constraint rankings_crawl_key_unique unique (crawl_key, crawled_at);
+		`,
+		After: `
+			drop table if exists hosts cascade;
+			drop table if exists rankings cascade;
+		`,
+		Func:   `host.Insert(db, host.New().Name("example.com").CrawlKey("example").CrawledAt(now).CreatedAt(now).UpdatedAt(now))`,
+		Expect: `{"crawl_key":"example","crawled_at":"2018-09-04T19:00:00-05:00","created_at":"2018-09-04T19:00:00-05:00","id":1,"name":"example.com","updated_at":"2018-09-04T19:00:00-05:00"}`,
+	},
+	{
+		Before: `
+			create table hosts (
+				id bigserial primary key not null
+			);
+			create table rankings (
+				id bigserial primary key not null,
+				host bigint references hosts(id) on delete cascade on update cascade,
+				crawled_at timestamp with time zone not null,
+				unique(crawled_at, host)
+			);
+			alter table rankings
+				add column crawl_key text,
+				add constraint rankings_crawl_key_unique unique (crawl_key, crawled_at);
+			insert into hosts (id) values (1);
+		`,
+		After: `
+			drop table if exists hosts cascade;
+			drop table if exists rankings cascade;
+		`,
+		Func: `ranking.Insert(db, ranking.New().Host(1).CrawlKey("example").CrawledAt(now))
+		`,
+		Expect: `{"crawl_key":"example","crawled_at":"2018-09-04T19:00:00-05:00","host":1,"id":1}`,
+	},
+	// {
+	// 	Before: `
+	// 		CREATE EXTENSION IF NOT EXISTS vector;
+	// 		CREATE TABLE random (
+	// 			collection_id uuid REFERENCES langchain_pg_collection(uuid) ON DELETE CASCADE,
+	// 			embedding vector,
+	// 			document character varying,
+	// 			cmetadata json,
+	// 			uuid uuid PRIMARY KEY
+	// 		);
+	// 	`,
+	// 	After: `
+	// 		drop table if exists random cascade;
+	// 		drop extension if exists vector cascade;
+	// 	`,
+	// 	Func:   `framegoto.Insert(db, framegoto.New())`,
+	// 	Expect: `{"id":1}`,
+	// },
 	// TODO: 0 values should come through
 	// {
 	// 	Before: `

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os/exec"
 )
 
@@ -40,12 +39,12 @@ func Format(input string) (output string, err error) {
 	io.Copy(stdin, reader)
 	stdin.Close()
 
-	formatted, err := ioutil.ReadAll(stdout)
+	formatted, err := io.ReadAll(stdout)
 	if err != nil {
 		return output, err
 	}
 
-	formattingError, err := ioutil.ReadAll(stderr)
+	formattingError, err := io.ReadAll(stderr)
 	if err != nil {
 		return output, err
 	}
@@ -70,11 +69,11 @@ func FormatAll(dir string) (err error) {
 	}
 	defer stderr.Close()
 
-	if e := cmd.Start(); e != nil {
+	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("error running goimports: %w", err)
 	}
 
-	formattingError, err := ioutil.ReadAll(stderr)
+	formattingError, err := io.ReadAll(stderr)
 	if err != nil {
 		return fmt.Errorf("stderr error: %w: %s", err, formattingError)
 	}

@@ -11,6 +11,7 @@ require (
 	github.com/matthewmueller/text v0.0.0-20201215225457-a00346c71bb3
 	github.com/mattn/go-sqlite3 v1.14.20
 	github.com/pkg/errors v0.9.1
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/sergi/go-diff v1.2.0
 	github.com/tj/assert v0.0.3
 	github.com/xo/dburl v0.12.1

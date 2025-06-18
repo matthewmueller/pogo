@@ -199,21 +199,29 @@ func getColumns(conn *pgx.Conn, schemaName string, table string) (columns []*Col
 	// TODO: support onDelete and onUpdate
 	const sqlstr = `
 		SELECT
-			a.attnum as field_ordinal,
-			a.attname as name,
-			format_type(a.atttypid, a.atttypmod) as data_type,
-			a.attnotnull as not_null,
-			d.description as comment,
-			pg_get_expr(ad.adbin, ad.adrelid) as default_value,
-			COALESCE(ct.contype = 'p', false) as is_primary_key
+				a.attnum AS field_ordinal,
+				a.attname AS name,
+				format_type(a.atttypid, a.atttypmod) AS data_type,
+				a.attnotnull AS not_null,
+				d.description AS comment,
+				pg_get_expr(ad.adbin, ad.adrelid) AS default_value,
+				EXISTS ( -- primary-key check
+						SELECT 1
+						FROM   pg_constraint pk
+						WHERE  pk.conrelid = c.oid
+							AND  pk.contype = 'p'
+							AND  a.attnum = ANY (pk.conkey)
+				) AS is_primary_key
 		FROM pg_attribute a
 		JOIN ONLY pg_class c ON c.oid = a.attrelid
 		JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
-		LEFT JOIN pg_constraint ct ON ct.conrelid = c.oid AND a.attnum = ANY(ct.conkey) AND ct.contype IN('p', 'u')
 		LEFT JOIN pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
 		LEFT JOIN pg_description d ON d.objoid = a.attrelid AND d.objsubid = a.attnum
-		WHERE a.attisdropped = false AND n.nspname = $1 AND c.relname = $2 AND a.attnum > 0
-		ORDER BY a.attnum
+		WHERE a.attisdropped = false
+			AND n.nspname = $1
+			AND c.relname = $2
+			AND a.attnum > 0
+		ORDER BY a.attnum;
 	`
 
 	// run query
@@ -658,7 +666,7 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 	}
 
 	switch sqlType {
-	case "text", "uuid", "citext":
+	case "text", "uuid", "citext", "character varying":
 		return &schema.String{}, nil
 	case "boolean":
 		return &schema.Boolean{}, nil
@@ -666,7 +674,7 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		return &schema.Int{}, nil
 	case "bigint":
 		return &schema.Int64{}, nil
-	case "real", "double", "float":
+	case "real", "double", "float", "double precision":
 		// TODO distinguish float32, float64, etc. with new types
 		return &schema.Float64{}, nil
 	case "time with time zone", "time without time zone":
