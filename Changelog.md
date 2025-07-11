@@ -1,3 +1,9 @@
+# 0.0.5 / 2025-07-11
+
+- pg: add filter support for All and Any for lists like text[]
+- fix bigint and bigserial. simplify column query fixing deduped column.
+- small improvement to gofmt error handling
+
 # 0.0.4 / 2024-09-15
 
 - run tests with pgx.Conn and pgxpool.Pool
