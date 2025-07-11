@@ -87,6 +87,7 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/framegoto`)+`
 					`+imp(`pogo/host`)+`
 					`+imp(`pogo/ranking`)+`
+					`+imp(`pogo/wdtopic`)+`
 				)
 
 				func main() {
@@ -203,6 +204,7 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/framegoto`)+`
 					`+imp(`pogo/host`)+`
 					`+imp(`pogo/ranking`)+`
+					`+imp(`pogo/wdtopic`)+`
 				)
 
 				func main() {
@@ -2281,6 +2283,181 @@ var tests = []testutil.Test{
 		`,
 		Expect: `{"crawl_key":"example","crawled_at":"2018-09-04T19:00:00-05:00","host":1,"id":1}`,
 	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().Aliases([]string{"Mars"}))`,
+		Expect: `[{"aliases":["Mars"],"id":"Q1"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesNot([]string{"Mars"}))`,
+		Expect: `[{"aliases":["Earth","Moon"],"id":"Q2"},{"aliases":["Earth","Mars"],"id":"Q3"},{"id":"Q4"}]`,
+	},
+
+	// Contains
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesAll([]string{"Mars"}))`,
+		Expect: `[{"aliases":["Mars"],"id":"Q1"},{"aliases":["Earth","Mars"],"id":"Q3"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesAll([]string{"Mars", "Earth"}))`,
+		Expect: `[{"aliases":["Earth","Mars"],"id":"Q3"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesAll([]string{}))`,
+		Expect: `[{"aliases":["Mars"],"id":"Q1"},{"aliases":["Earth","Moon"],"id":"Q2"},{"aliases":["Earth","Mars"],"id":"Q3"},{"id":"Q4"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesAll([]string{"Venus"}))`,
+		Expect: `[]`,
+	},
+
+	// Not Contains
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesNotAny([]string{"Mars"}))`,
+		Expect: `[{"aliases":["Earth","Moon"],"id":"Q2"},{"id":"Q4"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesNotAny([]string{"Mars", "Earth"}))`,
+		Expect: `[{"id":"Q4"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesNotAny([]string{}))`,
+		Expect: `[{"aliases":["Mars"],"id":"Q1"},{"aliases":["Earth","Moon"],"id":"Q2"},{"aliases":["Earth","Mars"],"id":"Q3"},{"id":"Q4"}]`,
+	},
+	{
+		Before: `
+			create table wd_topics (
+					id text primary key,
+					aliases text[] not null default '{}'
+			);
+			insert into wd_topics (id, aliases) values ('Q1', '{"Mars"}');
+			insert into wd_topics (id, aliases) values ('Q2', '{"Earth","Moon"}');
+			insert into wd_topics (id, aliases) values ('Q3', '{"Earth","Mars"}');
+			insert into wd_topics (id, aliases) values ('Q4', '{}');
+		`,
+		After: `
+			drop table if exists wd_topics cascade;
+		`,
+		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesNotAny([]string{"Venus"}))`,
+		Expect: `[{"aliases":["Mars"],"id":"Q1"},{"aliases":["Earth","Moon"],"id":"Q2"},{"aliases":["Earth","Mars"],"id":"Q3"},{"id":"Q4"}]`,
+	},
+
 	// {
 	// 	Before: `
 	// 		CREATE EXTENSION IF NOT EXISTS vector;

@@ -548,9 +548,18 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 	case *List:
 		// field equals
 		fields = append(fields, &FilterField{
-			name:        f.name + "Contains",
-			description: f.name + " contains",
+			name:        f.name,
+			description: f.name + " equals",
 			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" = %%s`, f.name),
+		})
+
+		// field doesn't equal
+		fields = append(fields, &FilterField{
+			name:        f.name + "Not",
+			description: f.name + " is not equal to",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" != %%s`, f.name),
 		})
 
 		// if nullable
@@ -573,6 +582,38 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 				nullformat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.name),
 			})
 		}
+
+		// field contains all
+		fields = append(fields, &FilterField{
+			name:        f.name + "All",
+			description: f.name + " contains all",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" @> %%s`, f.name),
+		})
+
+		// field not contains any
+		fields = append(fields, &FilterField{
+			name:        f.name + "NotAll",
+			description: f.name + "does not contain all",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`NOT ("%s" @> %%s)`, f.name),
+		})
+
+		// field contains any
+		fields = append(fields, &FilterField{
+			name:        f.name + "Any",
+			description: f.name + " contains any",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`"%s" && %%s`, f.name),
+		})
+
+		// field not contains any
+		fields = append(fields, &FilterField{
+			name:        f.name + "NotAny",
+			description: f.name + "does not contain any",
+			dataType:    f.dataType,
+			format:      fmt.Sprintf(`NOT ("%s" && %%s)`, f.name),
+		})
 
 		// // field equals
 		// fields = append(fields, &FilterField{
