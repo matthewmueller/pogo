@@ -1,3 +1,8 @@
+# 0.0.6 / 2026-01-25
+
+- support `bytea`
+- better unsupported type error handling
+
 # 0.0.5 / 2025-07-11
 
 - pg: add filter support for All and Any for lists like text[]
