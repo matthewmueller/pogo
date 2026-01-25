@@ -86,7 +86,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		var columns []*schema.Column
 		var pks []*schema.Column
 		for _, col := range colmap[table.Name] {
-			dt, err := getType(schemaName, col.ColumnName, col.DataType)
+			dt, err := getType(schemaName, table.Name, col.ColumnName, col.DataType)
 			if err != nil {
 				return nil, err
 			}
@@ -288,7 +288,7 @@ func (d *DB) getForeignKeys(schemaName string, table string, colmap map[string][
 			return nil, fmt.Errorf("sqlite introspect: couldn't find foreign column: %q.(%q)", table, f.ColumnName)
 		}
 
-		dt, err := getType(schemaName, c.ColumnName, c.DataType)
+		dt, err := getType(schemaName, table, c.ColumnName, c.DataType)
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, in
 			return nil, fmt.Errorf("sqlite introspect: couldn't find referenced column: %q.(%q) while getting the index columns", table, ic.ColumnName)
 		}
 
-		dt, err := getType(schemaName, c.ColumnName, c.DataType)
+		dt, err := getType(schemaName, table, c.ColumnName, c.DataType)
 		if err != nil {
 			return nil, err
 		}
@@ -382,10 +382,10 @@ func (d *DB) getIndexColumns(schemaName string, table string, cols []*Column, in
 }
 
 // getType takes an SQL type and returns a schema.Type
-func getType(schemaName, columnName, sqlType string) (schema.DataType, error) {
+func getType(schemaName, tableName, columnName, sqlType string) (schema.DataType, error) {
 	// handle SETOF
 	if strings.HasPrefix(sqlType, "SETOF ") {
-		t, err := getType(schemaName, columnName, sqlType[len("SETOF "):])
+		t, err := getType(schemaName, tableName, columnName, sqlType[len("SETOF "):])
 		if err != nil {
 			return nil, err
 		}
@@ -395,7 +395,7 @@ func getType(schemaName, columnName, sqlType string) (schema.DataType, error) {
 	// determine if it's an array
 	if strings.HasSuffix(sqlType, "[]") {
 		sqlType = sqlType[:len(sqlType)-2]
-		t, err := getType(schemaName, columnName, sqlType)
+		t, err := getType(schemaName, tableName, columnName, sqlType)
 		if err != nil {
 			return nil, err
 		}
@@ -423,7 +423,7 @@ func getType(schemaName, columnName, sqlType string) (schema.DataType, error) {
 	case "blob":
 		return &schema.String{}, nil
 	}
-	return nil, fmt.Errorf(`sqlite getType: unhandled data type for %q: %q`, columnName, sqlType)
+	return nil, fmt.Errorf(`sqlite getType: unhandled data type for %q: %q`, tableName+columnName, sqlType)
 }
 
 func stripLast(s, sep string) (head string) {

@@ -77,6 +77,12 @@ func (*JSON) String() string {
 	return "json.RawMessage"
 }
 
+type Bytes struct{}
+
+func (*Bytes) String() string {
+	return "[]byte"
+}
+
 // Enumerable type
 type Enumerable struct {
 	Schema string

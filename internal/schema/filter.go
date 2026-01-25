@@ -633,6 +633,62 @@ func (f *Filter) Fields() (fields []*FilterField, err error) {
 		// 	// format:   fmt.Sprintf(`%s NOT IN (%%s)`, f.name),
 		// })
 
+	case *Bytes:
+		// field equals
+		fields = append(fields, &FilterField{
+			name:        f.name,
+			dataType:    f.dataType,
+			description: f.name + " equals",
+			format:      fmt.Sprintf(`"%s" = %%s`, f.name),
+		})
+
+		// field doesn't equal
+		fields = append(fields, &FilterField{
+			name:        f.name + "Not",
+			dataType:    f.dataType,
+			description: f.name + " doesn't equal",
+			format:      fmt.Sprintf(`"%s" != %%s`, f.name),
+		})
+
+		// field is in list
+		fields = append(fields, &FilterField{
+			name:        f.name + "In",
+			dataType:    f.dataType,
+			description: f.name + " is in",
+			format:      fmt.Sprintf(`"%s" IN (%%s)`, f.name),
+			spread:      `, `,
+		})
+
+		// field is not in list
+		fields = append(fields, &FilterField{
+			name:        f.name + "NotIn",
+			dataType:    f.dataType,
+			description: f.name + " is not in",
+			format:      fmt.Sprintf(`"%s" NOT IN (%%s)`, f.name),
+			spread:      `, `,
+		})
+
+		// if nullable
+		if !f.notNull {
+			fields = append(fields, &FilterField{
+				name:        "nullable_" + f.name,
+				dataType:    f.dataType,
+				description: "nullable " + f.name + " equals",
+				nullable:    true,
+				format:      fmt.Sprintf(`"%s" = %%s`, f.name),
+				nullformat:  fmt.Sprintf(`"%s" IS NULL`, f.name),
+			})
+
+			fields = append(fields, &FilterField{
+				name:        "nullable_" + f.name + "_not",
+				dataType:    f.dataType,
+				description: "nullable " + f.name + " is not equal",
+				nullable:    true,
+				format:      fmt.Sprintf(`"%s" != %%s`, f.name),
+				nullformat:  fmt.Sprintf(`"%s" IS NOT NULL`, f.name),
+			})
+		}
+
 	default:
 		return fields, fmt.Errorf("filter fields: unknown type %q", f.dataType.String())
 	}

@@ -105,7 +105,7 @@ func (d *DB) Introspect(schemaName string) (*schema.Schema, error) {
 		var columns []*schema.Column
 		var pks []*schema.Column
 		for _, col := range cols {
-			dt, err := getType(enums, schemaName, col.DataType)
+			dt, err := getType(enums, schemaName, table.Name, col.Name, col.DataType)
 			if err != nil {
 				return nil, err
 			}
@@ -393,7 +393,7 @@ func getIndexColumns(conn *pgx.Conn, enums []*schema.Enum, schemaName string, ta
 			return nil, fmt.Errorf("could not find %s%s index %s column id %d", s, table, index, cid)
 		}
 
-		dt, err := getType(enums, schemaName, c.DataType)
+		dt, err := getType(enums, schemaName, table, c.Name, c.DataType)
 		if err != nil {
 			return nil, err
 		}
@@ -638,10 +638,10 @@ func getEnumValues(conn *pgx.Conn, schemaName string, enum string) ([]*schema.En
 }
 
 // getType takes an SQL type and returns a schema.Type
-func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType, error) {
+func getType(enums []*schema.Enum, schemaName, tableName, colName, sqlType string) (schema.DataType, error) {
 	// handle SETOF
 	if strings.HasPrefix(sqlType, "SETOF ") {
-		t, err := getType(enums, schemaName, sqlType[len("SETOF "):])
+		t, err := getType(enums, schemaName, tableName, colName, sqlType[len("SETOF "):])
 		if err != nil {
 			return nil, err
 		}
@@ -651,7 +651,7 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 	// determine if it's an array
 	if strings.HasSuffix(sqlType, "[]") {
 		sqlType = sqlType[:len(sqlType)-2]
-		t, err := getType(enums, schemaName, sqlType)
+		t, err := getType(enums, schemaName, tableName, colName, sqlType)
 		if err != nil {
 			return nil, err
 		}
@@ -683,6 +683,8 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		return &schema.DateTime{}, nil
 	case "json", "jsonb":
 		return &schema.JSON{}, nil
+	case "bytea":
+		return &schema.Bytes{}, nil
 	}
 
 	// handle enums
@@ -700,5 +702,5 @@ func getType(enums []*schema.Enum, schemaName, sqlType string) (schema.DataType,
 		}
 	}
 
-	return nil, fmt.Errorf(`postgres getType: unhandled data type: %q`, sqlType)
+	return nil, fmt.Errorf(`postgres getType: unhandled data type for %q: %q`, tableName+"."+colName, sqlType)
 }

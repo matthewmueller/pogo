@@ -88,6 +88,7 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/host`)+`
 					`+imp(`pogo/ranking`)+`
 					`+imp(`pogo/wdtopic`)+`
+					`+imp(`pogo/session`)+`
 				)
 
 				func main() {
@@ -205,6 +206,7 @@ func TestPG(t *testing.T) {
 					`+imp(`pogo/host`)+`
 					`+imp(`pogo/ranking`)+`
 					`+imp(`pogo/wdtopic`)+`
+					`+imp(`pogo/session`)+`
 				)
 
 				func main() {
@@ -2456,6 +2458,37 @@ var tests = []testutil.Test{
 		`,
 		Func:   `wdtopic.FindMany(db, wdtopic.NewFilter().AliasesNotAny([]string{"Venus"}))`,
 		Expect: `[{"aliases":["Mars"],"id":"Q1"},{"aliases":["Earth","Moon"],"id":"Q2"},{"aliases":["Earth","Mars"],"id":"Q3"},{"id":"Q4"}]`,
+	},
+	{
+		Before: `
+			create table if not exists sessions (
+				id text primary key,
+				data bytea not null,
+				expiry bigint not null
+			);
+		`,
+		After: `
+			drop table if exists sessions cascade;
+		`,
+		Func: `session.Insert(db, session.New().ID("sess1").Data([]byte("some data")).Expiry(1620000000))`,
+		// base64 of "some data"
+		Expect: `{"data":"c29tZSBkYXRh","expiry":1620000000,"id":"sess1"}`,
+	},
+	{
+		Before: `
+			create table if not exists sessions (
+				id text primary key,
+				data bytea not null,
+				expiry bigint not null
+			);
+			insert into sessions (id, data, expiry) values ('sess1', 'some data', 1620000000);
+		`,
+		After: `
+			drop table if exists sessions cascade;
+		`,
+		Func: `session.FindByID(db, "sess1")`,
+		// base64 of "some data"
+		Expect: `{"data":"c29tZSBkYXRh","expiry":1620000000,"id":"sess1"}`,
 	},
 
 	// {
